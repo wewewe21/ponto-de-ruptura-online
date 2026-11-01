@@ -1,5 +1,22 @@
 # PONTO DE RUPTURA — Operação MURALHA
 
+## Multiplayer online
+
+No menu, escolha **MULTIPLAYER ONLINE**, informe seu nome e entre em uma sala ou crie a sua. O servidor coloca cada jogador no time com menos pessoas. Use **Copiar convite da sala** para chamar amigos.
+
+- Deathmatch em equipes: até 12 jogadores, 50 abates ou 10 minutos por partida.
+- 8 abates seguidos como soldado liberam o **Colosso MX-9**. Pressione **B** para pilotá-lo: visão própria, arma pesada e 900 de blindagem. Ao perder o robô, retorne como soldado e conquiste outra sequência.
+- Clima compartilhado e sorteado por partida: 60% dia aberto, 25% dia nublado, 10% entardecer e 5% chuva leve.
+- Movimento, colisões, tiros, vida, recarga, abates e recompensas são validados pelo servidor. **TAB** abre o placar; **ESC** libera o mouse. A partida online continua com o menu aberto.
+
+Para desenvolvimento local, na pasta raiz: `npm install`, depois `npm start`. Abra `http://localhost:8080`. Node.js 22 ou superior. `npm test` executa os testes; `node game/test/live.cjs` verifica dois clientes reais e o ciclo do Colosso.
+
+### Publicação no Render
+
+O serviço Node serve o jogo e os WebSockets na mesma porta definida por `PORT`. Use `npm ci --omit=dev` no build e `npm start` na inicialização; saúde em `/health`. `render.yaml` registra o plano gratuito e região Virginia. Three.js é servido localmente, com a versão fixada no lockfile.
+
+Salas e partidas ficam na memória. Reiniciar o serviço reinicia as salas. O plano gratuito do Render pode adormecer quando fica sem tráfego; a primeira conexão pode precisar aguardar o despertar.
+
 Missão de campanha FPS militar: usina hidrelétrica tomada por paramilitares, noite de tempestade, três bloqueadores de sinal, suporte tático conquistado, reviravolta, defesa em ondas e extração.
 
 | O quê | Onde |
@@ -9,11 +26,11 @@ Missão de campanha FPS militar: usina hidrelétrica tomada por paramilitares, n
 
 ## Como jogar
 
-1. Dê dois cliques em `game/iniciar.bat` (usa Node.js; se não houver, tenta Python).
+1. Dê dois cliques em `game/iniciar.bat` (usa Node.js e instala as dependências na primeira execução).
 2. O navegador abre em `http://localhost:8080`.
 3. **INICIAR MISSÃO** → briefing → **INICIAR** (o clique trava o mouse). `ESC` pausa.
 
-Precisa de internet na primeira carga (Three.js e fontes vêm de CDN). Fones de ouvido recomendados: todo o som é espacializado.
+Three.js e os assets são servidos pelo próprio jogo; as fontes têm reserva local caso a fonte online não esteja disponível. Fones de ouvido recomendados: todo o som é espacializado.
 
 Para rodar manualmente:
 

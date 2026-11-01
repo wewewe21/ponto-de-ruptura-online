@@ -22,6 +22,7 @@ import { Allies } from './ai/ally.js';
 import { Support } from './game/support.js';
 import { HUD, Dialog } from './game/hud.js';
 import { Mission } from './game/mission.js';
+import { Multiplayer } from './multiplayer/client.js';
 
 const $ = (id) => document.getElementById(id);
 const DIFF = {
@@ -131,7 +132,7 @@ async function boot() {
   G.dialog = new Dialog(G);
   G.mission = new Mission(G);
   G.input = new Input(canvas);
-  G.input.onUnlock = () => { if (G.state === 'playing') pause(); };
+  G.input.onUnlock = () => { if (G.multiplayer?.active) G.multiplayer.menu = true; else if (G.state === 'playing') pause(); };
   G.vm.set('SD9');
   applyWorldFlags(G, {});
   resize();
@@ -141,10 +142,12 @@ async function boot() {
   try { renderer.compile(G.scene, G.camera); renderer.compile(G.vm.scene, G.vm.camera); } catch (e) {}
   G.hud.show(false);
   setupMenus();
+  G.multiplayer = new Multiplayer(G);
+  await G.multiplayer.init();
   applyQuality();
   G.state = 'title';
   $('loading').hidden = true;
-  $('title').hidden = false;
+  $('title').hidden = !$('mp-lobby').hidden;
   G.audio.musicMode = 'menu';
   const wake = () => { G.audio.init(); G.audio.setVolumes(); G.audio.setMusic(G.audio.musicMode || 'menu', true); };
   addEventListener('pointerdown', wake, { once: true }); addEventListener('keydown', wake, { once: true });
@@ -163,11 +166,13 @@ function resize() {
   G.post.resize(innerWidth, innerHeight, pr);
   G.fx.resize(innerHeight * pr, G.camera.fov);
   G.hud && G.hud.resize();
+  G.multiplayer?.resize();
 }
 
 // ---------- estados ----------
 function show(id) { for (const s of ['title', 'briefing', 'pause', 'death', 'victory', 'settings', 'controls', 'chapters']) $(s).hidden = s !== id; }
 function startMission(stepId) {
+  G.weather.clearMatchWeather();
   G.audio.init(); G.audio.setVolumes(); G.audio.tts = G.settings.tts;
   resetStats();
   G.mission.timers = [];
@@ -366,7 +371,8 @@ function loop(now) {
   last = now;
   fpsAcc += dt; fpsN++;
   if (fpsAcc > 0.5) { $('fps').textContent = Math.round(fpsN / fpsAcc) + ' fps'; fpsAcc = 0; fpsN = 0; }
-  if (G.state === 'title' || G.state === 'briefing' || G.state === 'victory') { attract(dt); G.audio.ctx && G.audio.setMusic(G.state === 'victory' ? 'victory' : 'menu'); }
+  if (G.multiplayer?.active) G.multiplayer.update(dt);
+  else if (G.state === 'title' || G.state === 'briefing' || G.state === 'victory') { attract(dt); G.audio.ctx && G.audio.setMusic(G.state === 'victory' ? 'victory' : 'menu'); }
   else if (G.state === 'playing' || G.state === 'dead') update(dt);
   else if (G.state === 'paused') { /* congelado */ }
   render();
@@ -477,6 +483,7 @@ function update(dt) {
   if (!$('fullmap').hidden) G.hud.drawFullMap();
 }
 function render() {
+  if (G.multiplayer?.active) { G.multiplayer.render(); return; }
   const showVM = (G.state === 'playing' || G.state === 'paused') && !G.cinematic && !G.player.dead;
   G.post.render(G.scene, G.camera, showVM ? G.vm.scene : null, G.vm.camera);
 }

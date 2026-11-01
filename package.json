@@ -1,0 +1,14 @@
+{
+  "name": "ponto-de-ruptura-online",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Ponto de Ruptura: campanha e deathmatch online por equipes",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "start": "node game/server.js",
+    "build": "node game/tools/vendor-three.cjs",
+    "test": "node --test game/test/*.test.cjs",
+    "postinstall": "node game/tools/vendor-three.cjs"
+  },
+  "dependencies": { "three": "0.170.0", "ws": "^8.18.3" }
+}

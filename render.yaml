@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: ponto-de-ruptura-online
+    runtime: node
+    region: virginia
+    plan: free
+    buildCommand: npm ci --omit=dev
+    startCommand: npm start
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: 24

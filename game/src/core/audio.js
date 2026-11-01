@@ -36,7 +36,7 @@ export class GameAudio {
     const comp = C.createDynamicsCompressor();
     comp.threshold.value = -14; comp.ratio.value = 4; comp.attack.value = 0.003; comp.release.value = 0.25;
     this.master.connect(comp).connect(C.destination);
-    this.sfx = C.createGain(); this.sfx.connect(this.master);
+    this.sfxBus = C.createGain(); this.sfxBus.connect(this.master);
     this.amb = C.createGain(); this.amb.connect(this.master);
     this.musicBus = C.createGain(); this.musicBus.gain.value = this.vol.music; this.musicBus.connect(this.master);
     this.radioBus = C.createGain(); this.radioBus.gain.value = 0.9;
@@ -44,7 +44,7 @@ export class GameAudio {
     this.radioBus.connect(rbp).connect(this.master);
     // ensurdecimento (flash/explosão)
     this.deafen = C.createBiquadFilter(); this.deafen.type = 'lowpass'; this.deafen.frequency.value = 20000;
-    this.sfx.disconnect(); this.sfx.connect(this.deafen).connect(this.master);
+    this.sfxBus.disconnect(); this.sfxBus.connect(this.deafen).connect(this.master);
     // ruídos base
     const mk = (len, fn) => { const b = C.createBuffer(2, C.sampleRate * len, C.sampleRate); for (let ch = 0; ch < 2; ch++) { const d = b.getChannelData(ch); fn(d); } return b; };
     this.white = mk(2, (d) => { for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1; });
@@ -97,13 +97,13 @@ export class GameAudio {
   _out(pos, vol = 1, ref = 6) {
     const C = this.ctx;
     const g = C.createGain(); g.gain.value = vol;
-    if (!pos) { g.connect(this.sfx); g.connect(this.revSend); return g; }
+    if (!pos) { g.connect(this.sfxBus); g.connect(this.revSend); return g; }
     const pan = C.createPanner();
     pan.panningModel = 'equalpower'; pan.distanceModel = 'inverse'; pan.refDistance = ref; pan.rolloffFactor = 1.1; pan.maxDistance = 2000;
     if (pan.positionX) { pan.positionX.value = pos.x; pan.positionY.value = pos.y; pan.positionZ.value = pos.z; } else pan.setPosition(pos.x, pos.y, pos.z);
     const d = this.camPos ? Math.hypot(pos.x - this.camPos.x, pos.y - this.camPos.y, pos.z - this.camPos.z) : 10;
     const lp = C.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = clamp(20000 / (1 + d / 35), 400, 20000);
-    g.connect(lp).connect(pan).connect(this.sfx);
+    g.connect(lp).connect(pan).connect(this.sfxBus);
     const send = C.createGain(); send.gain.value = clamp(0.3 + d / 120, 0.3, 1.2); g.connect(send).connect(this.revSend);
     return g;
   }
@@ -383,7 +383,7 @@ export class GameAudio {
     const setPos = (p) => { if (pan.positionX) { pan.positionX.value = p.x; pan.positionY.value = p.y; pan.positionZ.value = p.z; } else pan.setPosition(p.x, p.y, p.z); };
     setPos(pos);
     const g = C.createGain(); g.gain.value = 0;
-    g.connect(pan).connect(this.sfx);
+    g.connect(pan).connect(this.sfxBus);
     const nodes = [];
     const LS = { turbine: 'amb_turbine', spill: 'amb_spill', heli: 'amb_heli', jammer: 'amb_jammer', alarm: 'amb_alarm', fire: 'amb_fire', engine: 'amb_engine' }[kind];
     if (LS && this.bank && this.bank.ready && this.bank.has(LS)) {

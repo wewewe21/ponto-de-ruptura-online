@@ -1,6 +1,7 @@
 // Tempestade: céu com nuvens, chuva na GPU, relâmpagos (luz, raio no céu, trovão), vento, névoa.
 import * as THREE from 'three';
 import { rand, clamp, lerp } from '../core/utils.js';
+import { MATCH_WEATHER } from './match-weather.js';
 
 export class Weather {
   constructor(G) {
@@ -22,10 +23,11 @@ export class Weather {
   _buildSky() {
     const mat = new THREE.ShaderMaterial({
       side: THREE.BackSide, depthWrite: false, fog: false,
-      uniforms: { uTime: { value: 0 }, uFlash: { value: 0 }, uStorm: { value: 0.6 }, tCloud: { value: this.G.pbr && this.G.pbr.skyclouds ? this.G.pbr.skyclouds.map : null }, uHasCloud: { value: this.G.pbr && this.G.pbr.skyclouds ? 1 : 0 } },
+      uniforms: { uTime: { value: 0 }, uFlash: { value: 0 }, uStorm: { value: 0.6 }, uMatch: { value: 0 }, uLow: { value: new THREE.Color() }, uHigh: { value: new THREE.Color() }, uCloudColor: { value: new THREE.Color() }, uCloudAmount: { value: 0 }, uSun: { value: new THREE.Vector3() }, uSunColor: { value: new THREE.Color() }, tCloud: { value: this.G.pbr && this.G.pbr.skyclouds ? this.G.pbr.skyclouds.map : null }, uHasCloud: { value: this.G.pbr && this.G.pbr.skyclouds ? 1 : 0 } },
       vertexShader: `varying vec3 vDir; void main(){ vDir = normalize(position); vec4 p = modelViewMatrix*vec4(position,1.0); gl_Position = projectionMatrix*p; gl_Position.z = gl_Position.w; }`,
       fragmentShader: `
-        varying vec3 vDir; uniform float uTime, uFlash, uStorm, uHasCloud; uniform sampler2D tCloud;
+        varying vec3 vDir; uniform float uTime, uFlash, uStorm, uHasCloud, uMatch, uCloudAmount;
+        uniform vec3 uLow, uHigh, uCloudColor, uSun, uSunColor; uniform sampler2D tCloud;
         float hash(vec2 p){ return fract(sin(dot(p, vec2(127.1,311.7)))*43758.5453); }
         float noise(vec2 p){ vec2 i=floor(p), f=fract(p); vec2 u=f*f*(3.-2.*f);
           return mix(mix(hash(i),hash(i+vec2(1,0)),u.x), mix(hash(i+vec2(0,1)),hash(i+vec2(1,1)),u.x), u.y); }
@@ -52,7 +54,15 @@ export class Weather {
           col += vec3(0.09, 0.05, 0.02) * south * 0.5;
           // relâmpago ilumina as nuvens por dentro
           col += vec3(0.55, 0.62, 0.8) * uFlash * (0.25 + clouds * 1.4) * smoothstep(-0.05, 0.3, h);
+          if (uMatch > 0.5) {
+            col = mix(uLow, uHigh, smoothstep(-0.02, 0.85, h));
+            float cover = smoothstep(1.0-uCloudAmount, 1.25-uCloudAmount, clouds);
+            col = mix(col, uCloudColor, cover * 0.85);
+            float sunDot = max(0.0, dot(d, normalize(uSun)));
+            col += uSunColor * (pow(sunDot, 1200.0) * 1.4 + pow(sunDot, 16.0) * 0.12) * (1.0-cover*0.92);
+          }
           gl_FragColor = vec4(col, 1.0);
+          if (uMatch > 0.5) gl_FragColor = linearToOutputTexel(gl_FragColor);
         }`,
     });
     this.skyMat = mat;
@@ -83,7 +93,7 @@ export class Weather {
           p = mod(p - uCam + uBox*0.5, uBox) + uCam - uBox*0.5;
           p -= normalize(vel) * 0.55 * aEnd;
           float d = length(p - uCam);
-          float keep = step(fract(position.x*13.7+position.z*7.3), uDensity);
+          float keep = step(0.00001, uDensity) * step(fract(position.x*13.7+position.z*7.3), uDensity);
           vA = (1.0 - aEnd*0.7) * smoothstep(25.0, 4.0, d) * smoothstep(0.4, 1.5, d) * keep;
           gl_Position = projectionMatrix * viewMatrix * vec4(p, 1.0);
         }`,
@@ -119,6 +129,7 @@ export class Weather {
     this.G.scene.add(this.cities);
   }
   strike(near = false) {
+    if (this.matchWeather && !this.matchWeather.lightning) return;
     // sequência de 2-3 flashes
     const t = this.time;
     this.flashSeq = [{ t, v: 1 }, { t: t + 0.08, v: 0.25 }, { t: t + 0.16, v: 0.9 }];
@@ -168,8 +179,10 @@ export class Weather {
     o.y = (o.y - 24 * dt) % bx.y;
     o.z = (o.z + this.windDir.y * wind * dt) % bx.z;
     U.uFlash.value = f;
-    U.uDensity.value = clamp(0.45 + I * 0.6, 0, 1);
-    U.uOpacity.value = this.indoor ? 0 : 0.26 + I * 0.12;
+    const dry = I <= 0;
+    this.rain.visible = !dry && !this.indoor;
+    U.uDensity.value = dry ? 0 : this.matchWeather ? I : clamp(0.45 + I * 0.6, 0, 1);
+    U.uOpacity.value = this.indoor || dry ? 0 : this.matchWeather ? 0.24 : 0.26 + I * 0.12;
     this.windStrength = wind;
     this.skyMat.uniforms.uTime.value = t;
     this.skyMat.uniforms.uFlash.value = f;
@@ -184,8 +197,55 @@ export class Weather {
     const target = !z ? 1 : z.name === 'gallery' ? 0.12 : z.indoor ? 0.4 : z.dark ? 0.55 : 1;
     this.ambK = this.ambK === undefined ? target : this.ambK + (target - this.ambK) * Math.min(1, dt * 2.5);
     const fk = this.indoor ? 0.25 : 1;
+    if (this.matchWeather) {
+      const p = this.matchWeather;
+      fog.density = p.fogDensity; fog.color.setHex(p.fog);
+      this.G.moon.intensity = p.sun * Math.max(0.3, this.ambK);
+      this.G.hemi.intensity = p.hemi * this.ambK;
+      this.G.scene.environmentIntensity = p.environment * Math.max(0.15, this.ambK);
+      return;
+    }
     this.G.moon.intensity = (LB.moon + f * 3.2 * fk) * Math.max(0.3, this.ambK);
     this.G.hemi.intensity = (LB.hemi + f * 1.1 * fk) * this.ambK;
     this.G.scene.environmentIntensity = (0.7 + f * 1.5 * fk) * Math.max(0.15, this.ambK);
+  }
+  setMatchWeather(id) {
+    const p = MATCH_WEATHER[id];
+    if (!p) throw new RangeError(`Unknown match weather: ${id}`);
+    const G = this.G;
+    if (!this._campaignWeather) this._campaignWeather = {
+      intensity: this.intensity, lightningDisabled: this.lightningDisabled,
+      nextStrike: Math.max(0, this.nextStrike - this.time),
+      hemi: G.hemi.color.clone(), ground: G.hemi.groundColor.clone(), moon: G.moon.color.clone(),
+      hemiIntensity: G.hemi.intensity, moonIntensity: G.moon.intensity,
+      environment: G.scene.environmentIntensity, fog: G.scene.fog.color.clone(), density: G.scene.fog.density,
+      cities: this.cities.visible, ambK: this.ambK,
+    };
+    this.matchWeather = p; this.matchWeatherId = id; this.intensity = p.rain;
+    this.lightningDisabled = !p.lightning; this.flashSeq = []; this.flash = 0; this.boltMat.opacity = 0;
+    const U = this.skyMat.uniforms;
+    U.uMatch.value = 1; U.uLow.value.setHex(p.skyLow); U.uHigh.value.setHex(p.skyHigh);
+    U.uCloudColor.value.setHex(p.cloud); U.uCloudAmount.value = p.cloudAmount;
+    U.uSun.value.set(-0.4, p.sunHeight, -0.28).normalize(); U.uSunColor.value.setHex(p.sunColor);
+    G.hemi.color.setHex(p.hemiSky); G.hemi.groundColor.setHex(p.ground); G.moon.color.setHex(p.sunColor);
+    this.cities.visible = false; this.ambK = undefined;
+    this.update(0);
+    return p;
+  }
+  clearMatchWeather() {
+    const s = this._campaignWeather;
+    if (!s) return;
+    const G = this.G;
+    this.matchWeather = null; this.matchWeatherId = null; this._campaignWeather = null;
+    this.intensity = s.intensity; this.lightningDisabled = s.lightningDisabled;
+    this.nextStrike = this.time + s.nextStrike; this.flashSeq = []; this.flash = 0;
+    this.boltMat.opacity = 0; this.skyMat.uniforms.uMatch.value = 0; this.skyMat.uniforms.uFlash.value = 0;
+    G.hemi.color.copy(s.hemi); G.hemi.groundColor.copy(s.ground); G.moon.color.copy(s.moon);
+    G.hemi.intensity = s.hemiIntensity; G.moon.intensity = s.moonIntensity;
+    G.scene.environmentIntensity = s.environment; G.scene.fog.color.copy(s.fog); G.scene.fog.density = s.density;
+    this.cities.visible = s.cities; this.ambK = s.ambK;
+    this.rain.visible = this.intensity > 0 && !this.indoor;
+    this.rainMat.uniforms.uDensity.value = this.intensity <= 0 ? 0 : clamp(0.45 + this.intensity * 0.6, 0, 1);
+    this.rainMat.uniforms.uOpacity.value = this.indoor || this.intensity <= 0 ? 0 : 0.26 + this.intensity * 0.12;
   }
 }

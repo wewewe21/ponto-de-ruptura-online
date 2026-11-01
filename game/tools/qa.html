@@ -1,0 +1,33 @@
+<!doctype html><html lang="pt-BR"><head><base href="/"><meta charset="utf-8"><title>Verificação visual · Ponto de Ruptura</title><script type="importmap">{"imports":{"three":"/vendor/three/build/three.module.js","three/addons/":"/vendor/three/addons/"}}</script><style>body{margin:0;background:#0a1015;color:#dae9e9;font:13px sans-serif}header{display:flex;align-items:center;gap:10px;padding:12px;flex-wrap:wrap}button{padding:8px 12px;background:#20343e;color:#f0e6c7;border:1px solid #738d94;cursor:pointer}canvas{display:block;width:100vw;height:calc(100vh - 95px)}#status{padding:8px 12px;color:#a9d7ce}</style></head><body>
+<header><b>VERIFICAÇÃO VISUAL</b><button id="hip">Robô: visão normal</button><button id="ads">Robô: mira</button><button id="fire">Disparar</button><button id="reload">Recarregar</button><button id="remote">Robô remoto</button><button id="fall">Queda do robô</button><button id="soldier">Soldado remoto</button><button data-weather="day_clear">Dia aberto</button><button data-weather="day_cloudy">Dia nublado</button><button data-weather="sunset">Entardecer</button><button data-weather="rain">Chuva leve</button></header><div id="status">Carregando os modelos originais…</div><canvas id="view"></canvas>
+<script type="module">
+import * as THREE from 'three';
+import {makeTextures} from '/src/world/textures.js';
+import {Weather} from '/src/world/weather.js';
+import {Post} from '/src/render/post.js';
+import {RobotView} from '/src/multiplayer/robot-view.js';
+import {RemoteAvatars} from '/src/multiplayer/avatars.js';
+import {loadSoldierAssets,meshSoldiers} from '/src/actors/meshsoldier.js';
+const status=document.querySelector('#status');
+try{
+ const G={time:0,scene:new THREE.Scene(),player:{zone:null},pbr:{},level:{T:makeTextures()},lightBase:{hemi:2,moon:.58}};
+ G.scene.fog=new THREE.FogExp2(0x9abcca,.003);
+ G.renderer=new THREE.WebGLRenderer({canvas:document.querySelector('#view'),antialias:false});G.renderer.autoClear=false;G.renderer.toneMapping=THREE.NoToneMapping;
+ G.camera=new THREE.PerspectiveCamera(74,1,.05,300);G.camera.position.set(0,4.1,10);G.camera.lookAt(0,4.1,-10);
+ G.hemi=new THREE.HemisphereLight(0xc2e0ff,0x777b65,2.8);G.moon=new THREE.DirectionalLight(0xffefd0,3.4);G.moon.position.set(-10,20,5);G.scene.add(G.hemi,G.moon);
+ const ground=new THREE.Mesh(new THREE.PlaneGeometry(250,250),new THREE.MeshStandardMaterial({color:0x53615a,roughness:.85}));ground.rotation.x=-Math.PI/2;G.scene.add(ground);
+ for(let i=0;i<5;i++){const box=new THREE.Mesh(new THREE.BoxGeometry(3,2,3),new THREE.MeshStandardMaterial({color:i%2?0x8b8a73:0x506c6c,roughness:.8}));box.position.set((i-2)*7,1,-12);G.scene.add(box);}
+ G.weather=new Weather(G);G.weather.setMatchWeather('day_clear');G.post=new Post(G.renderer);
+ const view=await RobotView.create(G);await loadSoldierAssets();meshSoldiers.camera=G.camera;
+ const avatars=new RemoteAvatars(G);let mode='hip',weather='day_clear',reloadUntil=0,remoteDead=false,clock=0;
+ const player=(robot,dead=false)=>({id:'remote',name:robot?'COLOSSO MX-9':'OPERADOR',team:'bravo',x:0,y:0,z:-3,yaw:Math.PI,pitch:0,robot,dead,hp:robot?900:100});
+ const choose=(m)=>{mode=m;avatars.sync(m==='remote'||m==='soldier'?[player(m==='remote',false)]:[],'self');remoteDead=false;G.camera.position.set(0,m==='hip'||m==='ads'?4.1:3,10);G.camera.lookAt(0,m==='soldier'?1:2,-3);};
+ document.querySelector('#hip').onclick=()=>choose('hip');document.querySelector('#ads').onclick=()=>choose('ads');document.querySelector('#remote').onclick=()=>choose('remote');document.querySelector('#soldier').onclick=()=>choose('soldier');
+ document.querySelector('#fire').onclick=()=>view.kick();document.querySelector('#reload').onclick=()=>{reloadUntil=performance.now()+2500;};
+ document.querySelector('#fall').onclick=()=>{choose('remote');remoteDead=true;avatars.sync([player(true,true)],'self');};
+ for(const b of document.querySelectorAll('[data-weather]'))b.onclick=()=>{weather=b.dataset.weather;G.weather.setMatchWeather(weather);};
+ const resize=()=>{const w=innerWidth,h=Math.max(200,innerHeight-100);G.renderer.setSize(w,h,false);G.camera.aspect=w/h;G.camera.updateProjectionMatrix();view.resize(w/h);G.post.resize(w,h,1);};addEventListener('resize',resize);resize();
+ let previous=performance.now();const frame=now=>{const dt=Math.min(.05,(now-previous)/1000);previous=now;clock+=dt;G.time=clock;G.weather.update(dt);avatars.update(dt);view.update(dt,{adsT:mode==='ads'?1:0,speed:0,reloading:now<reloadUntil});G.post.uniforms.uTime.value=clock;G.post.uniforms.uExposure.value=1;
+ const first=mode==='hip'||mode==='ads';G.post.render(G.scene,G.camera,first?view.scene:null,view.camera);status.textContent=`Pronto · ${mode} · ${weather}${remoteDead?' · animação de morte':''} · modelos originais`;status.dataset.ready='true';requestAnimationFrame(frame);};requestAnimationFrame(frame);
+}catch(e){status.textContent='ERRO: '+e.message;console.error(e);}
+</script></body></html>

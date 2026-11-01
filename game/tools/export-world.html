@@ -1,0 +1,25 @@
+<!doctype html><html lang="pt-BR"><meta charset="utf-8"><title>Exportar colisões da arena</title>
+<script type="importmap">{"imports":{"three":"/vendor/three/build/three.module.js","three/addons/":"/vendor/three/addons/"}}</script>
+<body><h1>Colisões da Subestação</h1><p id="status">Carregando os modelos originais...</p><button id="export" disabled>Exportar arena-world.json</button><pre id="summary"></pre>
+<script type="module">
+import * as THREE from 'three';
+import {Physics} from '../src/world/physics.js';
+import {loadEnvModels} from '../src/world/env3d.js';
+import {buildLevel,applyWorldFlags} from '../src/world/level.js';
+const G={scene:new THREE.Scene(),physics:new Physics(),env:await loadEnvModels()};
+buildLevel(G);applyWorldFlags(G,{});
+const P=G.physics;
+const bounds={minX:-250,maxX:-145,minZ:24,maxZ:108};
+const inside=c=>c.maxX>=bounds.minX-3&&c.minX<=bounds.maxX+3&&c.maxZ>=bounds.minZ-3&&c.minZ<=bounds.maxZ+3;
+const cols=P.cols.filter(c=>c.active&&inside(c)).map(c=>{const o={};for(const k of ['minX','maxX','minY','maxY','minZ','maxZ','mat','noRay','noCollide','noGround','noMantle'])if(c[k]!==undefined)o[k]=c[k];return o;});
+const candidates={alpha:[[-240,98],[-227,99],[-214,98],[-199,99],[-183,99],[-165,98]],bravo:[[-240,33],[-225,33],[-210,34],[-197,33],[-182,34],[-164,34]]};
+const spawns={};for(const[team,points]of Object.entries(candidates)){spawns[team]=[];for(const[x,z]of points){const y=P.groundHeight(x,z,1,0.95);if(y< -3||P.boxBlocked(x-0.95,y+0.1,z-0.95,x+0.95,y+4.8,z+0.95))continue;spawns[team].push([x,y,z,team==='alpha'?0:Math.PI]);}}
+// Small original-map sample grid supplies additional safe points if props block a candidate.
+for(const team of ['alpha','bravo'])if(spawns[team].length<4)for(let x=-242;x<=-154;x+=8){const z=team==='alpha'?96:36,y=P.groundHeight(x,z,1,0.95);if(y> -3&&!P.boxBlocked(x-0.95,y+0.1,z-0.95,x+0.95,y+4.8,z+0.95))spawns[team].push([x,y,z,team==='alpha'?0:Math.PI]);}
+const data={version:1,bounds,cols,ramps:P.ramps.filter(inside),terrain:{minX:P.terrain.minX,minZ:P.terrain.minZ,size:P.terrain.size,n:P.terrain.n,h:Array.from(P.terrain.h)},spawns};
+const raw=JSON.stringify(data);
+document.querySelector('#status').textContent='Mapa original carregado. Exportação pronta.';
+document.querySelector('#summary').textContent=JSON.stringify({colliders:cols.length,spawns,bytes:raw.length},null,2);
+document.querySelector('#export').disabled=false;
+document.querySelector('#export').onclick=async()=>{const r=await fetch('/__arenaExport',{method:'POST',body:raw});document.querySelector('#status').textContent=await r.text();};
+</script></body></html>

@@ -51,12 +51,16 @@ export class Input {
     });
     addEventListener('blur', () => { this.keys.clear(); this.buttons = [false, false, false]; });
   }
-  lock() {
+  async lock() {
     try {
-      const p = this.canvas.requestPointerLock({ unadjustedMovement: true });
-      if (p && p.catch) p.catch(() => { try { this.canvas.requestPointerLock(); } catch (e) {} });
-    } catch (e) {
-      try { this.canvas.requestPointerLock(); } catch (e2) {}
+      await this.canvas.requestPointerLock({ unadjustedMovement: true });
+      return true;
+    } catch (error) {
+      if (error.name === 'NotSupportedError') {
+        try { await this.canvas.requestPointerLock(); return true; } catch (fallback) { error = fallback; }
+      }
+      this.onLockError?.(error);
+      return false;
     }
   }
   unlock() { if (document.pointerLockElement) document.exitPointerLock(); }
