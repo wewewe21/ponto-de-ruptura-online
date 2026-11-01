@@ -1,0 +1,786 @@
+{
+ "shot_sd9": {
+  "group": "sfx",
+  "dur": 2.2,
+  "files": [
+   "assets/audio/sfx/shot_sd9_1.mp3",
+   "assets/audio/sfx/shot_sd9_2.mp3",
+   "assets/audio/sfx/shot_sd9_3.mp3"
+  ]
+ },
+ "shot_kr7": {
+  "group": "sfx",
+  "dur": 2.8,
+  "files": [
+   "assets/audio/sfx/shot_kr7_1.mp3",
+   "assets/audio/sfx/shot_kr7_2.mp3",
+   "assets/audio/sfx/shot_kr7_3.mp3"
+  ]
+ },
+ "shot_vk12": {
+  "group": "sfx",
+  "dur": 3.2,
+  "files": [
+   "assets/audio/sfx/shot_vk12_1.mp3",
+   "assets/audio/sfx/shot_vk12_2.mp3"
+  ]
+ },
+ "shot_brk8": {
+  "group": "sfx",
+  "dur": 3,
+  "files": [
+   "assets/audio/sfx/shot_brk8_1.mp3",
+   "assets/audio/sfx/shot_brk8_2.mp3"
+  ]
+ },
+ "shot_p19": {
+  "group": "sfx",
+  "dur": 2,
+  "files": [
+   "assets/audio/sfx/shot_p19_1.mp3",
+   "assets/audio/sfx/shot_p19_2.mp3"
+  ]
+ },
+ "shot_rpl2": {
+  "group": "sfx",
+  "dur": 4.5,
+  "files": [
+   "assets/audio/sfx/shot_rpl2_1.mp3",
+   "assets/audio/sfx/shot_rpl2_2.mp3"
+  ]
+ },
+ "shot_ak": {
+  "group": "sfx",
+  "dur": 2.6,
+  "files": [
+   "assets/audio/sfx/shot_ak_1.mp3",
+   "assets/audio/sfx/shot_ak_2.mp3",
+   "assets/audio/sfx/shot_ak_3.mp3"
+  ]
+ },
+ "shot_lmg": {
+  "group": "sfx",
+  "dur": 2.6,
+  "files": [
+   "assets/audio/sfx/shot_lmg_1.mp3",
+   "assets/audio/sfx/shot_lmg_2.mp3"
+  ]
+ },
+ "shot_mg": {
+  "group": "sfx",
+  "dur": 2.6,
+  "files": [
+   "assets/audio/sfx/shot_mg_1.mp3",
+   "assets/audio/sfx/shot_mg_2.mp3"
+  ]
+ },
+ "shot_sniper": {
+  "group": "sfx",
+  "dur": 3.6,
+  "files": [
+   "assets/audio/sfx/shot_sniper_1.mp3",
+   "assets/audio/sfx/shot_sniper_2.mp3"
+  ]
+ },
+ "shot_minigun": {
+  "group": "sfx",
+  "dur": 1.6,
+  "files": [
+   "assets/audio/sfx/shot_minigun_1.mp3",
+   "assets/audio/sfx/shot_minigun_2.mp3"
+  ]
+ },
+ "shot_boss": {
+  "group": "sfx",
+  "dur": 3,
+  "files": [
+   "assets/audio/sfx/shot_boss_1.mp3",
+   "assets/audio/sfx/shot_boss_2.mp3",
+   "assets/audio/sfx/shot_boss_3.mp3"
+  ]
+ },
+ "mag_out": {
+  "group": "sfx",
+  "dur": 1,
+  "files": [
+   "assets/audio/sfx/mag_out_1.mp3",
+   "assets/audio/sfx/mag_out_2.mp3"
+  ]
+ },
+ "mag_in": {
+  "group": "sfx",
+  "dur": 1,
+  "files": [
+   "assets/audio/sfx/mag_in_1.mp3",
+   "assets/audio/sfx/mag_in_2.mp3"
+  ]
+ },
+ "bolt": {
+  "group": "sfx",
+  "dur": 1.2,
+  "files": [
+   "assets/audio/sfx/bolt_1.mp3",
+   "assets/audio/sfx/bolt_2.mp3"
+  ]
+ },
+ "pump": {
+  "group": "sfx",
+  "dur": 1.2,
+  "files": [
+   "assets/audio/sfx/pump_1.mp3",
+   "assets/audio/sfx/pump_2.mp3"
+  ]
+ },
+ "shell": {
+  "group": "sfx",
+  "dur": 0.9,
+  "files": [
+   "assets/audio/sfx/shell_1.mp3",
+   "assets/audio/sfx/shell_2.mp3"
+  ]
+ },
+ "swap": {
+  "group": "sfx",
+  "dur": 1,
+  "files": [
+   "assets/audio/sfx/swap_1.mp3",
+   "assets/audio/sfx/swap_2.mp3"
+  ]
+ },
+ "pin": {
+  "group": "sfx",
+  "dur": 0.9,
+  "files": [
+   "assets/audio/sfx/pin_1.mp3",
+   "assets/audio/sfx/pin_2.mp3"
+  ]
+ },
+ "ads": {
+  "group": "sfx",
+  "dur": 0.7,
+  "files": [
+   "assets/audio/sfx/ads_1.mp3",
+   "assets/audio/sfx/ads_2.mp3"
+  ]
+ },
+ "nvg_on": {
+  "group": "sfx",
+  "dur": 1.6,
+  "files": [
+   "assets/audio/sfx/nvg_on_1.mp3"
+  ]
+ },
+ "nvg_off": {
+  "group": "sfx",
+  "dur": 1,
+  "files": [
+   "assets/audio/sfx/nvg_off_1.mp3"
+  ]
+ },
+ "knife": {
+  "group": "sfx",
+  "dur": 1,
+  "files": [
+   "assets/audio/sfx/knife_1.mp3",
+   "assets/audio/sfx/knife_2.mp3"
+  ]
+ },
+ "melee": {
+  "group": "sfx",
+  "dur": 1,
+  "files": [
+   "assets/audio/sfx/melee_1.mp3",
+   "assets/audio/sfx/melee_2.mp3"
+  ]
+ },
+ "laser": {
+  "group": "sfx",
+  "dur": 1.2,
+  "files": [
+   "assets/audio/sfx/laser_1.mp3"
+  ]
+ },
+ "beep": {
+  "group": "sfx",
+  "dur": 0.5,
+  "files": [
+   "assets/audio/sfx/beep_1.mp3"
+  ]
+ },
+ "interact": {
+  "group": "sfx",
+  "dur": 0.6,
+  "files": [
+   "assets/audio/sfx/interact_1.mp3"
+  ]
+ },
+ "pickup": {
+  "group": "sfx",
+  "dur": 0.9,
+  "files": [
+   "assets/audio/sfx/pickup_1.mp3",
+   "assets/audio/sfx/pickup_2.mp3"
+  ]
+ },
+ "dryfire": {
+  "group": "sfx",
+  "dur": 0.5,
+  "files": [
+   "assets/audio/sfx/dryfire_1.mp3"
+  ]
+ },
+ "hit_body": {
+  "group": "sfx",
+  "dur": 0.6,
+  "files": [
+   "assets/audio/sfx/hit_body_1.mp3",
+   "assets/audio/sfx/hit_body_2.mp3"
+  ]
+ },
+ "hit_head": {
+  "group": "sfx",
+  "dur": 0.7,
+  "files": [
+   "assets/audio/sfx/hit_head_1.mp3",
+   "assets/audio/sfx/hit_head_2.mp3"
+  ]
+ },
+ "hit_kill": {
+  "group": "sfx",
+  "dur": 0.9,
+  "files": [
+   "assets/audio/sfx/hit_kill_1.mp3",
+   "assets/audio/sfx/hit_kill_2.mp3"
+  ]
+ },
+ "hit_armor": {
+  "group": "sfx",
+  "dur": 0.7,
+  "files": [
+   "assets/audio/sfx/hit_armor_1.mp3",
+   "assets/audio/sfx/hit_armor_2.mp3"
+  ]
+ },
+ "imp_concrete": {
+  "group": "sfx",
+  "dur": 0.9,
+  "files": [
+   "assets/audio/sfx/imp_concrete_1.mp3",
+   "assets/audio/sfx/imp_concrete_2.mp3",
+   "assets/audio/sfx/imp_concrete_3.mp3"
+  ]
+ },
+ "imp_metal": {
+  "group": "sfx",
+  "dur": 1.2,
+  "files": [
+   "assets/audio/sfx/imp_metal_1.mp3",
+   "assets/audio/sfx/imp_metal_2.mp3",
+   "assets/audio/sfx/imp_metal_3.mp3"
+  ]
+ },
+ "imp_wood": {
+  "group": "sfx",
+  "dur": 0.9,
+  "files": [
+   "assets/audio/sfx/imp_wood_1.mp3",
+   "assets/audio/sfx/imp_wood_2.mp3"
+  ]
+ },
+ "imp_flesh": {
+  "group": "sfx",
+  "dur": 0.8,
+  "files": [
+   "assets/audio/sfx/imp_flesh_1.mp3",
+   "assets/audio/sfx/imp_flesh_2.mp3"
+  ]
+ },
+ "imp_water": {
+  "group": "sfx",
+  "dur": 1,
+  "files": [
+   "assets/audio/sfx/imp_water_1.mp3",
+   "assets/audio/sfx/imp_water_2.mp3"
+  ]
+ },
+ "imp_glass": {
+  "group": "sfx",
+  "dur": 1.4,
+  "files": [
+   "assets/audio/sfx/imp_glass_1.mp3",
+   "assets/audio/sfx/imp_glass_2.mp3"
+  ]
+ },
+ "whiz": {
+  "group": "sfx",
+  "dur": 0.9,
+  "files": [
+   "assets/audio/sfx/whiz_1.mp3",
+   "assets/audio/sfx/whiz_2.mp3",
+   "assets/audio/sfx/whiz_3.mp3"
+  ]
+ },
+ "boom_big": {
+  "group": "sfx",
+  "dur": 5.5,
+  "files": [
+   "assets/audio/sfx/boom_big_1.mp3",
+   "assets/audio/sfx/boom_big_2.mp3",
+   "assets/audio/sfx/boom_big_3.mp3"
+  ]
+ },
+ "boom_small": {
+  "group": "sfx",
+  "dur": 3.5,
+  "files": [
+   "assets/audio/sfx/boom_small_1.mp3",
+   "assets/audio/sfx/boom_small_2.mp3"
+  ]
+ },
+ "boom_far": {
+  "group": "sfx",
+  "dur": 5,
+  "files": [
+   "assets/audio/sfx/boom_far_1.mp3",
+   "assets/audio/sfx/boom_far_2.mp3"
+  ]
+ },
+ "incoming": {
+  "group": "sfx",
+  "dur": 2.2,
+  "files": [
+   "assets/audio/sfx/incoming_1.mp3"
+  ]
+ },
+ "flashbang": {
+  "group": "sfx",
+  "dur": 2.5,
+  "files": [
+   "assets/audio/sfx/flashbang_1.mp3"
+  ]
+ },
+ "rocket_fly": {
+  "group": "sfx",
+  "dur": 2,
+  "files": [
+   "assets/audio/sfx/rocket_fly_1.mp3"
+  ]
+ },
+ "thunder": {
+  "group": "sfx",
+  "dur": 7,
+  "files": [
+   "assets/audio/sfx/thunder_1.mp3",
+   "assets/audio/sfx/thunder_2.mp3",
+   "assets/audio/sfx/thunder_3.mp3",
+   "assets/audio/sfx/thunder_4.mp3"
+  ]
+ },
+ "thunder_far": {
+  "group": "sfx",
+  "dur": 7,
+  "files": [
+   "assets/audio/sfx/thunder_far_1.mp3",
+   "assets/audio/sfx/thunder_far_2.mp3",
+   "assets/audio/sfx/thunder_far_3.mp3"
+  ]
+ },
+ "step_concrete": {
+  "group": "sfx",
+  "dur": 0.7,
+  "files": [
+   "assets/audio/sfx/step_concrete_1.mp3",
+   "assets/audio/sfx/step_concrete_2.mp3",
+   "assets/audio/sfx/step_concrete_3.mp3",
+   "assets/audio/sfx/step_concrete_4.mp3"
+  ]
+ },
+ "step_grass": {
+  "group": "sfx",
+  "dur": 0.7,
+  "files": [
+   "assets/audio/sfx/step_grass_1.mp3",
+   "assets/audio/sfx/step_grass_2.mp3",
+   "assets/audio/sfx/step_grass_3.mp3",
+   "assets/audio/sfx/step_grass_4.mp3"
+  ]
+ },
+ "step_metal": {
+  "group": "sfx",
+  "dur": 0.8,
+  "files": [
+   "assets/audio/sfx/step_metal_1.mp3",
+   "assets/audio/sfx/step_metal_2.mp3",
+   "assets/audio/sfx/step_metal_3.mp3",
+   "assets/audio/sfx/step_metal_4.mp3"
+  ]
+ },
+ "step_water": {
+  "group": "sfx",
+  "dur": 0.9,
+  "files": [
+   "assets/audio/sfx/step_water_1.mp3",
+   "assets/audio/sfx/step_water_2.mp3",
+   "assets/audio/sfx/step_water_3.mp3"
+  ]
+ },
+ "step_heavy": {
+  "group": "sfx",
+  "dur": 1,
+  "files": [
+   "assets/audio/sfx/step_heavy_1.mp3",
+   "assets/audio/sfx/step_heavy_2.mp3",
+   "assets/audio/sfx/step_heavy_3.mp3"
+  ]
+ },
+ "step_gravel": {
+  "group": "sfx",
+  "dur": 0.7,
+  "files": [
+   "assets/audio/sfx/step_gravel_1.mp3",
+   "assets/audio/sfx/step_gravel_2.mp3",
+   "assets/audio/sfx/step_gravel_3.mp3"
+  ]
+ },
+ "land": {
+  "group": "sfx",
+  "dur": 0.9,
+  "files": [
+   "assets/audio/sfx/land_1.mp3",
+   "assets/audio/sfx/land_2.mp3"
+  ]
+ },
+ "slide": {
+  "group": "sfx",
+  "dur": 1.2,
+  "files": [
+   "assets/audio/sfx/slide_1.mp3"
+  ]
+ },
+ "grenade_bounce": {
+  "group": "sfx",
+  "dur": 0.8,
+  "files": [
+   "assets/audio/sfx/grenade_bounce_1.mp3",
+   "assets/audio/sfx/grenade_bounce_2.mp3"
+  ]
+ },
+ "boss_roar": {
+  "group": "sfx",
+  "dur": 4,
+  "files": [
+   "assets/audio/sfx/boss_roar_1.mp3",
+   "assets/audio/sfx/boss_roar_2.mp3",
+   "assets/audio/sfx/boss_roar_3.mp3"
+  ]
+ },
+ "boss_step": {
+  "group": "sfx",
+  "dur": 1.8,
+  "files": [
+   "assets/audio/sfx/boss_step_1.mp3",
+   "assets/audio/sfx/boss_step_2.mp3",
+   "assets/audio/sfx/boss_step_3.mp3"
+  ]
+ },
+ "boss_servo": {
+  "group": "sfx",
+  "dur": 2,
+  "files": [
+   "assets/audio/sfx/boss_servo_1.mp3",
+   "assets/audio/sfx/boss_servo_2.mp3"
+  ]
+ },
+ "boss_missile": {
+  "group": "sfx",
+  "dur": 2.5,
+  "files": [
+   "assets/audio/sfx/boss_missile_1.mp3",
+   "assets/audio/sfx/boss_missile_2.mp3"
+  ]
+ },
+ "boss_death": {
+  "group": "sfx",
+  "dur": 6,
+  "files": [
+   "assets/audio/sfx/boss_death_1.mp3"
+  ]
+ },
+ "boss_slam": {
+  "group": "sfx",
+  "dur": 2.5,
+  "files": [
+   "assets/audio/sfx/boss_slam_1.mp3",
+   "assets/audio/sfx/boss_slam_2.mp3"
+  ]
+ },
+ "radio_on": {
+  "group": "sfx",
+  "dur": 0.6,
+  "files": [
+   "assets/audio/sfx/radio_on_1.mp3",
+   "assets/audio/sfx/radio_on_2.mp3"
+  ]
+ },
+ "radio_off": {
+  "group": "sfx",
+  "dur": 0.6,
+  "files": [
+   "assets/audio/sfx/radio_off_1.mp3",
+   "assets/audio/sfx/radio_off_2.mp3"
+  ]
+ },
+ "ui_click": {
+  "group": "sfx",
+  "dur": 0.5,
+  "files": [
+   "assets/audio/sfx/ui_click_1.mp3",
+   "assets/audio/sfx/ui_click_2.mp3"
+  ]
+ },
+ "ui_hover": {
+  "group": "sfx",
+  "dur": 0.4,
+  "files": [
+   "assets/audio/sfx/ui_hover_1.mp3"
+  ]
+ },
+ "ui_start": {
+  "group": "sfx",
+  "dur": 2.5,
+  "files": [
+   "assets/audio/sfx/ui_start_1.mp3"
+  ]
+ },
+ "checkpoint": {
+  "group": "sfx",
+  "dur": 2.2,
+  "files": [
+   "assets/audio/sfx/checkpoint_1.mp3"
+  ]
+ },
+ "objective": {
+  "group": "sfx",
+  "dur": 2,
+  "files": [
+   "assets/audio/sfx/objective_1.mp3"
+  ]
+ },
+ "jammer_off": {
+  "group": "sfx",
+  "dur": 3,
+  "files": [
+   "assets/audio/sfx/jammer_off_1.mp3"
+  ]
+ },
+ "support_ready": {
+  "group": "sfx",
+  "dur": 1.6,
+  "files": [
+   "assets/audio/sfx/support_ready_1.mp3"
+  ]
+ },
+ "heartbeat": {
+  "group": "sfx",
+  "dur": 1.6,
+  "files": [
+   "assets/audio/sfx/heartbeat_1.mp3"
+  ]
+ },
+ "breath": {
+  "group": "sfx",
+  "dur": 3,
+  "files": [
+   "assets/audio/sfx/breath_1.mp3"
+  ]
+ },
+ "door_breach": {
+  "group": "sfx",
+  "dur": 2,
+  "files": [
+   "assets/audio/sfx/door_breach_1.mp3"
+  ]
+ },
+ "flare": {
+  "group": "sfx",
+  "dur": 3,
+  "files": [
+   "assets/audio/sfx/flare_1.mp3"
+  ]
+ },
+ "elevator": {
+  "group": "sfx",
+  "dur": 4,
+  "files": [
+   "assets/audio/sfx/elevator_1.mp3"
+  ]
+ },
+ "water_rush": {
+  "group": "sfx",
+  "dur": 5,
+  "files": [
+   "assets/audio/sfx/water_rush_1.mp3"
+  ]
+ },
+ "crane_fall": {
+  "group": "sfx",
+  "dur": 4,
+  "files": [
+   "assets/audio/sfx/crane_fall_1.mp3"
+  ]
+ },
+ "amb_rain": {
+  "group": "loop",
+  "dur": 24,
+  "files": [
+   "assets/audio/loops/amb_rain_1.mp3"
+  ]
+ },
+ "amb_rain_metal": {
+  "group": "loop",
+  "dur": 24,
+  "files": [
+   "assets/audio/loops/amb_rain_metal_1.mp3"
+  ]
+ },
+ "amb_wind": {
+  "group": "loop",
+  "dur": 24,
+  "files": [
+   "assets/audio/loops/amb_wind_1.mp3"
+  ]
+ },
+ "amb_spill": {
+  "group": "loop",
+  "dur": 24,
+  "files": [
+   "assets/audio/loops/amb_spill_1.mp3"
+  ]
+ },
+ "amb_turbine": {
+  "group": "loop",
+  "dur": 20,
+  "files": [
+   "assets/audio/loops/amb_turbine_1.mp3"
+  ]
+ },
+ "amb_tunnel": {
+  "group": "loop",
+  "dur": 20,
+  "files": [
+   "assets/audio/loops/amb_tunnel_1.mp3"
+  ]
+ },
+ "amb_heli": {
+  "group": "loop",
+  "dur": 16,
+  "files": [
+   "assets/audio/loops/amb_heli_1.mp3"
+  ]
+ },
+ "amb_alarm": {
+  "group": "loop",
+  "dur": 12,
+  "files": [
+   "assets/audio/loops/amb_alarm_1.mp3"
+  ]
+ },
+ "amb_jammer": {
+  "group": "loop",
+  "dur": 12,
+  "files": [
+   "assets/audio/loops/amb_jammer_1.mp3"
+  ]
+ },
+ "amb_fire": {
+  "group": "loop",
+  "dur": 14,
+  "files": [
+   "assets/audio/loops/amb_fire_1.mp3"
+  ]
+ },
+ "amb_engine": {
+  "group": "loop",
+  "dur": 14,
+  "files": [
+   "assets/audio/loops/amb_engine_1.mp3"
+  ]
+ },
+ "amb_interior": {
+  "group": "loop",
+  "dur": 20,
+  "files": [
+   "assets/audio/loops/amb_interior_1.mp3"
+  ]
+ },
+ "amb_boss_thrust": {
+  "group": "loop",
+  "dur": 10,
+  "files": [
+   "assets/audio/loops/amb_boss_thrust_1.mp3"
+  ]
+ },
+ "mus_menu": {
+  "group": "music",
+  "dur": 80,
+  "files": [
+   "assets/audio/music/mus_menu_1.mp3"
+  ]
+ },
+ "mus_stealth": {
+  "group": "music",
+  "dur": 90,
+  "files": [
+   "assets/audio/music/mus_stealth_1.mp3"
+  ]
+ },
+ "mus_tension": {
+  "group": "music",
+  "dur": 90,
+  "files": [
+   "assets/audio/music/mus_tension_1.mp3"
+  ]
+ },
+ "mus_combat": {
+  "group": "music",
+  "dur": 90,
+  "files": [
+   "assets/audio/music/mus_combat_1.mp3"
+  ]
+ },
+ "mus_boss": {
+  "group": "music",
+  "dur": 100,
+  "files": [
+   "assets/audio/music/mus_boss_1.mp3"
+  ]
+ },
+ "mus_defense": {
+  "group": "music",
+  "dur": 90,
+  "files": [
+   "assets/audio/music/mus_defense_1.mp3"
+  ]
+ },
+ "mus_extract": {
+  "group": "music",
+  "dur": 80,
+  "files": [
+   "assets/audio/music/mus_extract_1.mp3"
+  ]
+ },
+ "mus_victory": {
+  "group": "music",
+  "dur": 40,
+  "files": [
+   "assets/audio/music/mus_victory_1.mp3"
+  ]
+ },
+ "mus_death": {
+  "group": "music",
+  "dur": 14,
+  "files": [
+   "assets/audio/music/mus_death_1.mp3"
+  ]
+ }
+}

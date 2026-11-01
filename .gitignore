@@ -4,10 +4,10 @@ node_modules/
 .env
 .env.*
 !.env.example
-Assets/
-Workflows api/
-*.jpg
-*.webp
+/Assets/
+/Workflows api/
+/*.jpg
+/*.webp
 game/vendor/
 game/test-results/
 *.log
