@@ -1,0 +1,33 @@
+<!doctype html><meta charset="utf-8"><title>FBX → GLB</title>
+<body style="font:14px monospace;background:#111;color:#ddd;white-space:pre">
+<script type="importmap">{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/" } }</script>
+<script type="module">
+// Converte o FBX do robô (Mixamo) em GLB compacto (texturas ≤ 2048) e grava em assets/models/ pelo servidor local.
+import * as THREE from 'three';
+import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
+import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
+const log = (t) => { document.body.append(t + '\n'); };
+const q = new URLSearchParams(location.search);
+const src = q.get('src') || 'assets/models/robot_rigged.fbx', dst = q.get('dst') || 'assets/models/robot_rigged_raw.glb';
+const fbx = await new FBXLoader().loadAsync(src);
+log('FBX carregado');
+await new Promise((r) => setTimeout(r, 2500));   // a textura embutida carrega de forma assíncrona
+fbx.traverse((o) => {
+  if (!(o.isMesh && o.material)) return;
+  const m = Array.isArray(o.material) ? o.material[0] : o.material;
+  let map = null;
+  if (m.map && m.map.image) {
+    const img = m.map.image, S = Math.min(2048, Math.max(img.width, img.height));
+    const k = S / Math.max(img.width, img.height), c = document.createElement('canvas'); c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+    c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+    map = new THREE.CanvasTexture(c); map.colorSpace = THREE.SRGBColorSpace;
+    log('textura ' + img.width + 'x' + img.height + ' -> ' + c.width + 'x' + c.height);
+  }
+  o.material = new THREE.MeshStandardMaterial({ map, roughness: 0.75, metalness: 0.2 });
+});
+const glb = await new Promise((res, rej) => new GLTFExporter().parse(fbx, res, rej, { binary: true, maxTextureSize: 2048, animations: [] }));
+log('GLB: ' + (glb.byteLength / 1048576).toFixed(1) + ' MB');
+const r = await fetch('/__save?path=' + encodeURIComponent(dst), { method: 'POST', body: glb });
+log(await r.text());
+window.DONE = 1;
+</script>

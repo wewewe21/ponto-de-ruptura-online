@@ -1,0 +1,75 @@
+/* ---------- UI premium: arte de capa, telas com imagem, cartões de capítulo ---------- */
+.screen { background: none !important; isolation: isolate; }
+.screen::before, .screen::after { content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none; }
+.screen::before { background: var(--bg) center / cover no-repeat; animation: kb 38s ease-in-out infinite alternate; transform-origin: 60% 55%; filter: saturate(1.05) contrast(1.04); }
+.screen::after { background:
+  radial-gradient(ellipse at 20% 55%, rgba(4,7,10,0.88) 0%, rgba(4,7,10,0.55) 45%, rgba(4,7,10,0.1) 80%),
+  linear-gradient(0deg, rgba(3,5,7,0.85), rgba(3,5,7,0) 38%),
+  linear-gradient(180deg, rgba(3,5,7,0.65), rgba(3,5,7,0) 24%); }
+@keyframes kb { from { transform: scale(1.03) translate(0, 0); } to { transform: scale(1.13) translate(-1.6%, -1.1%); } }
+#title { --bg: url(./assets/ui/title_bg.jpg); }
+#briefing { --bg: url(./assets/ui/briefing_bg.jpg); }
+#chapters { --bg: url(./assets/ui/pause_bg.jpg); }
+#settings, #controls { --bg: url(./assets/ui/pause_bg.jpg); }
+#pause { --bg: url(./assets/ui/pause_bg.jpg); }
+#death { --bg: url(./assets/ui/death_bg.jpg); }
+#victory { --bg: url(./assets/ui/victory_bg.jpg); }
+#pause::after, #settings::after, #controls::after, #chapters::after { background: radial-gradient(ellipse at 50% 50%, rgba(4,7,10,0.72), rgba(4,7,10,0.93)); backdrop-filter: blur(3px); }
+#death::after { background: radial-gradient(ellipse at 50% 60%, rgba(60,4,4,0.35), rgba(8,2,2,0.9)), linear-gradient(0deg, rgba(3,5,7,0.8), rgba(3,5,7,0) 40%); }
+#victory::after { background: radial-gradient(ellipse at 25% 55%, rgba(4,7,10,0.85), rgba(4,7,10,0.35) 60%, rgba(4,7,10,0.05)), linear-gradient(0deg, rgba(3,5,7,0.8), rgba(3,5,7,0) 40%); }
+/* segunda arte do título, em fusão lenta */
+.bgalt { position: fixed; inset: 0; z-index: -1; pointer-events: none; background: url(./assets/ui/title_bg2.jpg) center / cover no-repeat; opacity: 0; animation: alt 44s ease-in-out infinite, kb 38s ease-in-out infinite alternate; }
+@keyframes alt { 0%, 42% { opacity: 0; } 50%, 92% { opacity: 1; } 100% { opacity: 0; } }
+
+/* logotipo e menu */
+.menu { position: relative; z-index: 1; }
+.logo { font-size: clamp(54px, 10.5vw, 132px); line-height: 0.88; letter-spacing: 0.035em; text-shadow: 0 4px 0 rgba(0,0,0,0.55), 0 0 60px rgba(0,0,0,0.9);
+  background: linear-gradient(180deg, #ffffff 0%, #d7dde0 45%, #8f9aa0 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 6px 18px rgba(0,0,0,0.7)); }
+.logo em { background: linear-gradient(180deg, #ffe08a 0%, #ffb300 48%, #c77700 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+.tagline { text-shadow: 0 2px 10px rgba(0,0,0,0.9); color: #c9d0d4; }
+.kicker { text-shadow: 0 2px 8px rgba(0,0,0,0.9); }
+.btns { gap: 6px; width: min(380px, 100%); }
+.btn { position: relative; overflow: hidden; background: linear-gradient(90deg, rgba(10,14,17,0.88), rgba(10,14,17,0.55)); border: 1px solid rgba(255,255,255,0.14); border-left: 3px solid rgba(255,255,255,0.25); backdrop-filter: blur(4px); transition: transform .18s, background .18s, border-color .18s, color .18s; }
+.btn::after { content: '›'; position: absolute; right: 16px; top: 50%; transform: translate(-8px, -52%); opacity: 0; transition: .18s; font-size: 24px; color: var(--amber); }
+.btn::before { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(255,179,0,0.22), rgba(255,179,0,0)); transform: translateX(-101%); transition: transform .28s cubic-bezier(.2,.7,.2,1); }
+.btn:hover { transform: translateX(6px); background: linear-gradient(90deg, rgba(24,20,8,0.92), rgba(14,12,6,0.6)); }
+.btn:hover::before { transform: none; }
+.btn:hover::after { opacity: 1; transform: translate(0, -52%); }
+.btn.primary { border-left-color: var(--hazard); background: linear-gradient(90deg, rgba(40,28,4,0.92), rgba(18,14,6,0.6)); }
+.meta-row { text-shadow: 0 1px 6px #000; }
+.emblem { position: fixed; right: 3.2vw; bottom: 4.5vh; width: clamp(70px, 9vw, 130px); opacity: 0.9; filter: drop-shadow(0 6px 14px rgba(0,0,0,0.8)); z-index: 1; border-radius: 50%; mask-image: radial-gradient(circle, #000 62%, transparent 72%); -webkit-mask-image: radial-gradient(circle, #000 62%, transparent 72%); pointer-events: none; }
+.ver { position: fixed; left: 24px; bottom: 14px; font: 500 11px var(--f-mono); color: rgba(255,255,255,0.4); z-index: 1; letter-spacing: 0.12em; }
+
+/* briefing / painéis em vidro */
+#briefing .dossier, #briefing .grid > div:last-child { background: linear-gradient(180deg, rgba(8,12,15,0.72), rgba(8,12,15,0.55)); border: 1px solid rgba(255,255,255,0.12); padding: 18px 20px; backdrop-filter: blur(6px); box-shadow: 0 20px 60px rgba(0,0,0,0.5); }
+.card, .stat { backdrop-filter: blur(4px); background: rgba(8,12,15,0.62); }
+
+/* cartões de capítulo com miniatura */
+#chapter-list { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.chapter { position: relative; overflow: hidden; min-height: 150px; align-content: end; padding: 14px 16px; border: 1px solid rgba(255,255,255,0.16); background: #0a0d10; transition: transform .2s, border-color .2s, box-shadow .2s; }
+.chapter::before { content: ''; position: absolute; inset: 0; background: var(--img) center / cover no-repeat; transition: transform .6s cubic-bezier(.2,.7,.2,1), filter .3s; filter: saturate(0.85) brightness(0.78); }
+.chapter::after { content: ''; position: absolute; inset: 0; background: linear-gradient(0deg, rgba(3,5,7,0.94) 0%, rgba(3,5,7,0.35) 55%, rgba(3,5,7,0.05)); }
+.chapter > * { position: relative; z-index: 1; }
+.chapter:hover { border-color: var(--amber); transform: translateY(-3px); box-shadow: 0 14px 40px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,179,0,0.3); }
+.chapter:hover::before { transform: scale(1.08); filter: saturate(1.05) brightness(1); }
+.chapter .num { text-shadow: 0 1px 4px #000; }
+.chapter .t { text-shadow: 0 2px 8px #000; }
+
+/* morte / vitória */
+#death .kia { text-shadow: 0 0 40px rgba(255,40,30,0.55), 0 4px 0 rgba(0,0,0,0.6); }
+#death-tip { text-shadow: 0 2px 10px #000; }
+#victory h2 { font-size: clamp(34px, 6vw, 72px); text-shadow: 0 3px 0 rgba(0,0,0,0.5), 0 0 40px rgba(0,0,0,0.8); }
+
+/* carregamento */
+#loading { background: #05070a; overflow: hidden; isolation: isolate; }
+#loading::before { content: ''; position: absolute; inset: 0; z-index: -1; background: url(./assets/ui/loading_bg.jpg) center / cover no-repeat; animation: kb 30s ease-in-out infinite alternate; filter: brightness(0.75); }
+#loading::after { content: ''; position: absolute; inset: 0; z-index: -1; background: radial-gradient(ellipse at 50% 60%, rgba(3,5,7,0.2), rgba(3,5,7,0.88)); }
+#loading .box { width: min(560px, 86vw); padding-bottom: 6vh; align-self: end; margin-bottom: 8vh; }
+#loading .kicker { font-size: 18px; text-shadow: 0 2px 10px #000; }
+#load-track { height: 4px; background: rgba(255,255,255,0.16); }
+#load-bar { background: linear-gradient(90deg, #c77700, #ffb300); box-shadow: 0 0 14px rgba(255,179,0,0.6); }
+#load-text { text-shadow: 0 1px 6px #000; }
+#load-tip { margin-top: 18px; font: 500 15px/1.4 var(--f-ui); color: #cfd5cc; text-shadow: 0 2px 8px #000; min-height: 44px; }
+
+@media (max-width: 860px) { #chapter-list { grid-template-columns: 1fr 1fr; } .emblem { display: none; } }
+@media (prefers-reduced-motion: reduce) { .screen::before, .bgalt, #loading::before { animation: none !important; } }

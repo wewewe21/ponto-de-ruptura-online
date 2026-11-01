@@ -1,0 +1,13 @@
+node_modules/
+.unlazy/
+.claude/
+.env
+.env.*
+!.env.example
+Assets/
+Workflows api/
+*.jpg
+*.webp
+game/vendor/
+game/test-results/
+*.log

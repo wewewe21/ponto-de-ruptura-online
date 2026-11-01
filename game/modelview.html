@@ -1,0 +1,17 @@
+<!doctype html><meta charset="utf-8"><body style="margin:0;background:#667">
+<script type="importmap">{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/" } }</script>
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+window.THREE = THREE;
+const r = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true }); r.setSize(innerWidth, innerHeight); document.body.appendChild(r.domElement);
+const s = new THREE.Scene(); s.background = new THREE.Color(0x667788); s.add(new THREE.HemisphereLight(0xffffff, 0x555566, 2.4)); const d = new THREE.DirectionalLight(0xffffff, 2); d.position.set(1, 2, 3); s.add(d);
+const q = new URLSearchParams(location.search);
+const g = await new GLTFLoader().loadAsync(q.get('m')); s.add(g.scene); window.M = g.scene;
+let faces = 0; g.scene.traverse(o => { if (o.isMesh) faces += (o.geometry.index ? o.geometry.index.count : o.geometry.attributes.position.count) / 3; });
+const bb = new THREE.Box3().setFromObject(g.scene), c = bb.getCenter(new THREE.Vector3()), sz = bb.getSize(new THREE.Vector3());
+window.INFO = { faces, size: sz.toArray().map(x => +x.toFixed(2)), center: c.toArray().map(x => +x.toFixed(2)) };
+window.view = (ang, el = 0.1, mult = 1.6) => { const cam = new THREE.PerspectiveCamera(30, innerWidth / innerHeight, 0.01, 100); const R = Math.max(sz.x, sz.y, sz.z) * mult; cam.position.set(c.x + Math.sin(ang) * R, c.y + Math.sin(el) * R, c.z + Math.cos(ang) * R); cam.lookAt(c); r.render(s, cam); };
+view(Number(q.get('a') || 0), Number(q.get('e') || 0.1), Number(q.get('r') || 1.6));
+window.READY = 1;
+</script>
