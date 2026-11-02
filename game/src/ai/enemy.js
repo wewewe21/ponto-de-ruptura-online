@@ -78,7 +78,9 @@ export class Enemy {
     const d = this.pos.distanceTo(G.player.pos);
     if (d > 32) return;
     this.voiceT = rand(4, 7); G.director.voiceCd = 1.8;
-    G.hud.subtitle('HOSTIL', pick(CALL[kind] || [kind]), 1.8, true);
+    const text=pick(CALL[kind] || [kind]);
+    G.hud.subtitle('HOSTIL',text,Math.max(1.8,G.audio.speechDuration(text,'HOSTIL')),true);
+    G.audio.speak(text,'HOSTIL',{radio:false,pos:this.pos,channel:'hostile',maxDelay:1000});
   }
   // ---------- entradas de estímulo ----------
   engage(pos, reason, silent = false) {
@@ -403,7 +405,7 @@ export class Enemy {
     const G = this.G;
     if (this.state === 'patrol' && !this.chatted && this.guard === false && Math.random() < 0.05) {
       const d = this.pos.distanceTo(G.player.pos);
-      if (d < 16 && d > 5) { this.chatted = true; if (G.director.voiceCd <= 0) { G.hud.subtitle('HOSTIL', pick(CHATTER), 3.2, true); G.director.voiceCd = 4; } }
+      if (d < 16 && d > 5) { this.chatted = true; if (G.director.voiceCd <= 0) { const text=pick(CHATTER);G.hud.subtitle('HOSTIL',text,Math.max(3.2,G.audio.speechDuration(text,'HOSTIL')),true);G.audio.speak(text,'HOSTIL',{radio:false,pos:this.pos,channel:'hostile',maxDelay:1000});G.director.voiceCd=Math.max(4,G.audio.speechDuration(text,'HOSTIL')); } }
     }
     if (this.state === 'combat') this.combatThink();
   }

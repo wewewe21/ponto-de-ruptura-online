@@ -2,6 +2,7 @@
 // síntese procedural como reserva se um arquivo faltar. Posicional, reverb por ambiente, música dinâmica por estado.
 import { clamp, rand } from './utils.js';
 import { SampleBank, CrossLoop } from './samples.js';
+import { VoiceBank } from './voicebank.js';
 
 const GUNS = {
   SD9: { sup: true, thump: 85, nf: 900, len: 0.06, vol: 0.55 },
@@ -25,7 +26,8 @@ export class GameAudio {
     this.voices = 0;
     this.music = { intensity: 0, target: 0 };
     this.vol = { master: 0.85, music: 0.55, sfx: 1 };
-    this.tts = false;
+    this.tts = true;
+    this.speech = new VoiceBank(this);
     this.env = 'outdoor';
     this.loops = {};
   }
@@ -322,19 +324,10 @@ export class GameAudio {
     this._noise(this.radioBus, t, end ? 0.12 : 0.08, 'bandpass', 2600, 1, 0.35);
     if (!end) this._tone(this.radioBus, t, 0.05, 'sine', 1900, 1900, 0.08);
   }
-  speak(text, speaker) {
-    if (!this.tts || !window.speechSynthesis) return;
-    try {
-      const u = new SpeechSynthesisUtterance(text);
-      u.lang = 'pt-BR';
-      const P = { TROVÃO: [0.7, 1.0], FAÍSCA: [1.35, 1.15], ATALAIA: [1.05, 0.98], CORUJA: [0.6, 0.9], BARQUEIRO: [0.5, 0.85], 'CORVO-1': [1.25, 1.1] }[speaker] || [1, 1];
-      u.pitch = P[0]; u.rate = P[1] * 1.08; u.volume = 0.9;
-      const v = speechSynthesis.getVoices().find((v) => v.lang && v.lang.toLowerCase().startsWith('pt'));
-      if (v) u.voice = v;
-      speechSynthesis.speak(u);
-    } catch (e) {}
-  }
-  stopSpeech() { try { window.speechSynthesis && speechSynthesis.cancel(); } catch (e) {} }
+  loadVoices() { return this.speech.init(); }
+  speechDuration(text,speaker) { return this.speech.duration(speaker,text); }
+  speak(text,speaker,options={}) { return this.speech.play(speaker,text,options); }
+  stopSpeech(channel) { this.speech.stop(channel); }
 
   // ---------- loops ----------
   _loop(buf, type, freq, vol, out) {

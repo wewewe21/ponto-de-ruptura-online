@@ -4,6 +4,7 @@ import { applyWorldFlags } from '../world/level.js';
 import { RemoteAvatars } from './avatars.js';
 import { RobotView } from './robot-view.js';
 import { WEAPONS, ARSENAL as PRIMARIES } from '../actors/weapons.js';
+import { MP_VOICE_LINES } from './voice-lines.js';
 
 const $ = (id) => document.getElementById(id);
 const TEAM = { alpha: 'MARTELO', bravo: 'AFOGADOS' };
@@ -141,7 +142,8 @@ export class Multiplayer {
     $('mp-hud').hidden = false; this.menu = true;
     this.avatars = new RemoteAvatars(G);
     this.makeBoundary();
-    G.audio.init(); G.audio.setVolumes(); G.audio.setMusic('combat');
+    G.audio.init(); G.audio.tts=G.settings.voices; G.audio.setVolumes(); G.audio.setMusic('combat');
+    this.voiceUntil=0;this.voicePriority=0;this.voiceSerial=0;
     this.robotViewPromise ||= RobotView.create(G).then((view) => { this.robotView = view; view.resize(G.camera.aspect); return view; }).catch((e) => { this.robotViewPromise = null; this.toast('Não foi possível carregar o Colosso. Atualize a página para tentar novamente.'); console.error(e); });
     const url = new URL(location.href); url.searchParams.set('sala', this.roomId); history.replaceState(null, '', url);
     G.input.lock();
@@ -174,7 +176,8 @@ export class Multiplayer {
     if (!state?.room || !Array.isArray(state.players)) return;
     if (state.serverTime) this.offset = state.serverTime - Date.now();
     const self = state.players.find((p) => p.id === this.id); if (!self) return;
-    const previous = this.self; this.self = self; this.players = state.players; this.room = state.room;
+    const previous = this.self, previousRoom=this.room; this.self = self; this.players = state.players; this.room = state.room;
+    this.updateVoice(previous,self,previousRoom,state.room);
     const key = `${state.room.round}:${state.room.weather}`;
     if (this.weatherKey !== key) { this.weatherKey = key; this.G.weather.setMatchWeather(state.room.weather); }
     const teleport = this.firstSnapshot || !previous || self.robot !== previous.robot || self.dead !== previous.dead || this.round !== state.room.round;
@@ -191,6 +194,27 @@ export class Multiplayer {
     if (!self.robot && self.weapon && self.weapon !== this.weapon && performance.now() - this.weaponAt > 1500) this.applyWeapon(self.weapon, true);
     this.avatars?.sync(state.players,this.id); this.firstSnapshot=false;
     this.updateScoreboard();
+  }
+  speakMatch(kind,priority=1) {
+    const audio=this.G.audio,line=MP_VOICE_LINES[kind];if(!line||!audio?.speak)return;
+    const now=this.now();if(now<(this.voiceUntil||0)&&priority<=(this.voicePriority||0))return;
+    const [speaker,text]=line,serial=this.voiceSerial=(this.voiceSerial||0)+1;
+    this.voicePriority=priority;this.voiceUntil=now+((audio.speechDuration?.(text,speaker)||text.length*.06+1)+.5)*1000;
+    const subtitle=$('mp-voice-line');if(subtitle){subtitle.textContent=`${speaker}: ${text}`;subtitle.hidden=false;}
+    audio.speak(text,speaker,{radio:speaker!=='ECO',channel:'multiplayer',onStart:duration=>{if(this.voiceSerial===serial)this.voiceUntil=this.now()+(duration+.2)*1000;},onEnd:()=>{if(this.voiceSerial===serial){this.voiceUntil=0;if(subtitle)subtitle.hidden=true;}}});
+  }
+  updateVoice(previous,self,oldRoom,room) {
+    if(!this.G.audio?.speak)return;
+    if(!previous||oldRoom?.phase!==room.phase||oldRoom?.round!==room.round){
+      if(room.phase==='waiting')this.speakMatch('waiting',1);
+      else if(room.phase==='playing')this.speakMatch('start',3);
+      else if(room.phase==='intermission'){const opponent=self.team==='alpha'?'bravo':'alpha';this.speakMatch(room.scores.alpha===room.scores.bravo?'draw':room.scores[self.team]>room.scores[opponent]?'win':'loss',4);}
+    }
+    if(previous&&!previous.robotReady&&self.robotReady)this.speakMatch('ready',3);
+    if(previous&&!previous.robot&&self.robot)this.speakMatch('pilot',4);
+    if(previous&&!previous.dead&&self.dead)this.speakMatch(self.robot?'destroyed':'death',4);
+    if(previous?.dead&&!self.dead)this.speakMatch('respawn',1);
+    if(previous&&!self.robot&&!self.dead&&self.reloadUntil>this.now()&&!(previous.reloadUntil>this.now()))this.speakMatch('reload',0);
   }
   command(enabled) {
     const I=this.G.input,P=this.G.player;
@@ -264,7 +288,9 @@ export class Multiplayer {
       }
     } else if(e.type==='kill') {
       this.feed.unshift({text:`${e.name||'Ambiente'}  ›  ${e.victimName||'Soldado'}`,time:this.now()});this.feed=this.feed.slice(0,4);
-      if(e.killer===this.id)this.toast('+100 · ALVO ELIMINADO');
+      if(e.killer===this.id){this.toast('+100 · ALVO ELIMINADO');this.speakMatch('kill',0);}
+    } else if(e.type==='robot'&&e.active&&e.player!==this.id){
+      const pilot=this.players.find(p=>p.id===e.player);if(pilot)this.speakMatch(pilot.team===this.self?.team?'friendlyRobot':'enemyRobot',3);
     }
   }
   toast(text) { $('mp-toast').textContent=text;this.toastUntil=this.now()+4000; }
@@ -288,6 +314,7 @@ export class Multiplayer {
     $('mp-crosshair').hidden=s.dead||r.phase==='intermission'||(!s.robot&&this.G.weapons.adsT>0.5);
     $('mp-feed').replaceChildren(...this.feed.filter(x=>now-x.time<7000).map(x=>{const p=document.createElement('div');p.textContent=x.text;return p;}));
     $('mp-toast').hidden=!(now<this.toastUntil);
+    const voiceLine=$('mp-voice-line');if(voiceLine)voiceLine.hidden=now>=(this.voiceUntil||0);
     $('mp-waiting').hidden=r.phase!=='waiting';
     $('mp-dead').hidden=!s.dead;
     $('mp-respawn-time').textContent=Math.max(0,Math.ceil((s.respawnAt-now)/1000));
@@ -313,6 +340,7 @@ export class Multiplayer {
     G.post.render(G.scene,G.camera,this.self&&!this.self.dead?(view?view.scene:G.vm.scene):null,view?view.camera:G.vm.camera);
   }
   leave() {
+    this.G.audio?.stopSpeech?.();this.voiceUntil=0;this.voiceSerial=(this.voiceSerial||0)+1;
     const G=this.G;this.intentionalClose=true;this.active=false;this.connected=false;this.joining=false;clearTimeout(this.reconnectTimer);this.socket?.close();this.socket=null;
     this.avatars?.dispose();this.avatars=null;this.pending=[];this.self=null;this.players=[];this.weatherKey=null;
     if(this.boundary){G.scene.remove(this.boundary);this.boundary.geometry.dispose();this.boundary.material.dispose();this.boundary=null;}

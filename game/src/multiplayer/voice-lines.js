@@ -1,0 +1,16 @@
+export const MP_VOICE_LINES = {
+  waiting: ['ATALAIA', 'Área de aquecimento. Aguardando reforços.'],
+  start: ['ATALAIA', 'Martelo, operação iniciada. Elimine a equipe inimiga.'],
+  win: ['ATALAIA', 'Vitória confirmada. Bom trabalho, equipe.'],
+  loss: ['ATALAIA', 'Operação encerrada. Reagrupar para a próxima partida.'],
+  draw: ['ATALAIA', 'Empate. Preparem-se para uma nova operação.'],
+  ready: ['ATALAIA', 'Sequência confirmada. Colosso disponível. Pressione B para assumir o controle.'],
+  pilot: ['CORVO-1', 'Colosso em operação. Blindagem e canhão prontos.'],
+  destroyed: ['ATALAIA', 'Colosso destruído. Conquiste outra sequência para solicitar reforço.'],
+  enemyRobot: ['ATALAIA', 'Atenção, Colosso inimigo no campo de batalha!'],
+  friendlyRobot: ['ATALAIA', 'Colosso aliado em operação. Avancem com ele.'],
+  kill: ['ECO', 'Alvo neutralizado.'],
+  death: ['ATALAIA', 'Operador abatido. Preparando retorno.'],
+  respawn: ['ECO', 'De volta à operação.'],
+  reload: ['ECO', 'Recarregando!'],
+};

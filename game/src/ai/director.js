@@ -287,6 +287,7 @@ export class Director {
     this.flares = this.flares || [];
     this.flares.push({ fl, em, vy: -0.6 });
     G.hud.subtitle('HOSTIL', 'Sinalizador! Iluminem a área!', 2, true);
+    G.audio.speak('Sinalizador! Iluminem a área!','HOSTIL',{radio:false,pos:e.pos,channel:'hostile',maxDelay:1000});
     G.audio.explosion(e.pos, 0.15);
   }
   // ---------- alarmes ----------

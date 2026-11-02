@@ -11,7 +11,7 @@ const MAP = { x0: -285, z0: -95, w: 560, h: 345, ppm: 2 };
 export class Dialog {
   constructor(G) { this.G = G; this.queue = []; this.cur = null; this.t = 0; }
   say(speaker, text, o = {}) {
-    const line = { speaker, text, pri: o.priority ?? 1, dur: o.dur ?? Math.max(1.8, Math.min(6.5, text.length * 0.058 + 0.8)), short: o.short };
+    const line = { speaker, text, pri: o.priority ?? 1, dur: o.dur ?? Math.max(1.8, Math.min(6.5, text.length * 0.058 + 0.8)), short: o.short, radio: o.radio, pos: o.pos };
     if (this.cur && line.pri > this.cur.pri) { this.queue.unshift(line); this._next(); return; }
     if (o.short && (this.cur || this.queue.length > 1)) return;
     if (this.queue.length > 5) this.queue.shift();
@@ -20,17 +20,24 @@ export class Dialog {
   }
   clear() { this.queue = []; this.cur = null; this.t = 0; this.G.hud.subtitle(null); this.G.audio.stopSpeech(); }
   _next() {
+    this.G.audio.stopSpeech('dialogue');
     this.cur = this.queue.shift() || null;
     if (!this.cur) { this.G.hud.subtitle(null); return; }
-    this.t = this.cur.dur;
-    this.G.hud.subtitle(this.cur.speaker, this.cur.text, this.cur.dur + 0.3);
-    if (RADIO.has(this.cur.speaker)) this.G.audio.squelch();
-    this.G.audio.speak(this.cur.text, this.cur.speaker);
+    const line=this.cur, ally=this.G.allies?.byName?.[line.speaker];
+    const near=ally&&this.G.player?.pos&&ally.pos.distanceTo(this.G.player.pos)<12;
+    line.radio = line.radio ?? (near ? false : RADIO.has(line.speaker)||line.speaker==='BARQUEIRO');
+    line.pos = line.pos || (near ? ally.pos.clone() : null);
+    this.t = Math.max(line.dur,this.G.audio.speechDuration?.(line.text,line.speaker)||0)+.4;
+    this.G.hud.subtitle(line.speaker,line.text,this.t+.3);
+    if (line.radio) this.G.audio.squelch();
+    this.G.audio.speak(line.text,line.speaker,{radio:line.radio,pos:line.pos,onStart:duration=>{
+      if(this.cur!==line)return;this.t=duration+.18;this.G.hud.subtitle(line.speaker,line.text,this.t+.3);
+    },onEnd:()=>{if(this.cur===line)this.t=Math.min(this.t,.18);}});
   }
   update(dt) {
     if (!this.cur) return;
     this.t -= dt;
-    if (this.t <= 0) { if (RADIO.has(this.cur.speaker)) this.G.audio.squelch(true); this._next(); }
+    if (this.t <= 0) { if (this.cur.radio) this.G.audio.squelch(true); this._next(); }
   }
   get busy() { return !!this.cur || this.queue.length > 0; }
 }

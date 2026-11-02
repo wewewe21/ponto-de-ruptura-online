@@ -30,7 +30,7 @@ const DIFF = {
   regular: { acc: 1.0, dmg: 1.0, detect: 1.0, dmgTaken: 1, tokens: 3 },
   veterano: { acc: 1.25, dmg: 1.55, detect: 1.3, dmgTaken: 1, tokens: 4 },
 };
-const DEFAULTS = { sens: 1.0, fov: 74, master: 0.85, music: 0.55, tts: false, diff: 'regular', scale: 1, shadows: true, invertY: false, quality: 'alta' };
+const DEFAULTS = { sens: 1.0, fov: 74, master: 0.85, music: 0.55, voices: true, diff: 'regular', scale: 1, shadows: true, invertY: false, quality: 'alta' };
 function loadSettings() {
   try { return { ...DEFAULTS, ...JSON.parse(localStorage.getItem('pdr-settings') || '{}') }; } catch (e) { return { ...DEFAULTS }; }
 }
@@ -128,6 +128,7 @@ async function boot() {
   G.allies = new Allies(G);
   G.support = new Support(G);
   progress('Interface', 85); await tick();
+  await G.audio.loadVoices();
   G.hud = new HUD(G);
   G.dialog = new Dialog(G);
   G.mission = new Mission(G);
@@ -173,7 +174,7 @@ function resize() {
 function show(id) { for (const s of ['title', 'briefing', 'pause', 'death', 'victory', 'settings', 'controls', 'chapters']) $(s).hidden = s !== id; }
 function startMission(stepId) {
   G.weather.clearMatchWeather();
-  G.audio.init(); G.audio.setVolumes(); G.audio.tts = G.settings.tts;
+  G.audio.init(); G.audio.setVolumes(); G.audio.tts = G.settings.voices;
   resetStats();
   G.mission.timers = [];
   G.dialog.clear();
@@ -327,7 +328,7 @@ function applyQuality() {
 function fillSettings() {
   const s = G.settings;
   $('set-sens').value = s.sens; $('set-fov').value = s.fov; $('set-master').value = s.master; $('set-music').value = s.music;
-  $('set-tts').checked = s.tts; $('set-diff').value = s.diff; $('set-scale').value = s.scale; $('set-shadows').checked = s.shadows; $('set-invert').checked = s.invertY; $('set-quality').value = s.quality || 'alta';
+  $('set-tts').checked = s.voices; $('set-diff').value = s.diff; $('set-scale').value = s.scale; $('set-shadows').checked = s.shadows; $('set-invert').checked = s.invertY; $('set-quality').value = s.quality || 'alta';
   updateSettingLabels();
 }
 function updateSettingLabels() {
@@ -338,14 +339,14 @@ function updateSettingLabels() {
 function readSettings() {
   const s = G.settings;
   s.sens = +$('set-sens').value; s.fov = +$('set-fov').value; s.master = +$('set-master').value; s.music = +$('set-music').value;
-  s.tts = $('set-tts').checked; s.diff = $('set-diff').value; s.invertY = $('set-invert').checked; s.quality = $('set-quality').value;
+  s.voices = $('set-tts').checked; s.diff = $('set-diff').value; s.invertY = $('set-invert').checked; s.quality = $('set-quality').value;
   applyQuality();
   const sc = +$('set-scale').value, sh = $('set-shadows').checked;
   const needResize = sc !== s.scale;
   s.scale = sc;
   if (sh !== s.shadows) { s.shadows = sh; G.renderer.shadowMap.enabled = sh; G.moon.castShadow = sh; G.scene.traverse((m) => { if (m.material) m.material.needsUpdate = true; }); }
   G.diff = DIFF[s.diff];
-  G.audio.vol.master = s.master; G.audio.vol.music = s.music; G.audio.setVolumes(); G.audio.tts = s.tts;
+  G.audio.vol.master = s.master; G.audio.vol.music = s.music; G.audio.setVolumes(); G.audio.tts = s.voices; if(!s.voices)G.audio.stopSpeech();
   if (needResize) resize();
   updateSettingLabels();
   saveSettings();

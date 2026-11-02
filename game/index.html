@@ -282,6 +282,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
   <div class="mp-room-info"><b id="mp-room-title"></b><span id="mp-weather"></span><small id="mp-connection">CONECTANDO</small></div>
   <div id="mp-feed"></div><div id="mp-crosshair"><i></i><i></i><i></i><i></i><span></span></div>
   <div id="mp-toast" hidden></div>
+  <div id="mp-voice-line" role="status" hidden></div>
   <div class="mp-player-info"><span id="mp-team" data-team="alpha">MARTELO</span><div class="mp-health"><small>INTEGRIDADE</small><strong id="mp-hp">100 / 100</strong><div><i id="mp-health-fill"></i></div></div><small><b id="mp-points">0</b> PONTOS · TAB PLACAR</small></div>
   <div class="mp-streak"><div><small id="mp-streak-label">8 ABATES SEGUIDOS · CONQUISTE O COLOSSO</small><strong id="mp-streak-count">0 / 8</strong></div><div class="mp-streak-track"><i id="mp-streak-fill"></i></div><button id="mp-robot" hidden>[B] CONTROLAR COLOSSO</button></div>
   <div class="mp-weapon"><small id="mp-weapon-label">CARABINA SD-9</small><strong id="mp-ammo">30</strong><span id="mp-reload-label">[R] RECARREGAR</span></div>
@@ -374,7 +375,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
       <label class="chk">Qualidade gráfica<select id="set-quality"><option value="alta">Alta (bloom + oclusão)</option><option value="media">Média (bloom)</option><option value="baixa">Baixa</option></select></label>
       <label class="chk">Sombras<input type="checkbox" id="set-shadows"></label>
       <label class="chk">Inverter eixo Y<input type="checkbox" id="set-invert"></label>
-      <label class="chk">Vozes do rádio (TTS)<input type="checkbox" id="set-tts"></label>
+      <label class="chk">Vozes dos personagens (português Brasil)<input type="checkbox" id="set-tts"></label>
       <label class="chk">Dificuldade<select id="set-diff"><option value="recruta">Recruta</option><option value="regular">Regular</option><option value="veterano">Veterano</option></select></label>
     </form>
     <button class="btn" data-back>VOLTAR</button>

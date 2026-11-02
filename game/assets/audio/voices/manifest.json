@@ -1,0 +1,2874 @@
+{
+  "version": 1,
+  "language": "pt-BR",
+  "engine": "Kokoro-82M ONNX int8 / ComfyUI CPU",
+  "workflow": "tools/workflows/pdr-voices-api.json",
+  "cast": {
+    "TROVÃO": {
+      "voice_a": "pm_santa",
+      "voice_b": "pm_alex",
+      "blend": 0.22,
+      "speed": 1.08,
+      "pitch_semitones": -1.3
+    },
+    "FAÍSCA": {
+      "voice_a": "pf_dora",
+      "voice_b": "pf_dora",
+      "blend": 0,
+      "speed": 1.13,
+      "pitch_semitones": 0.4
+    },
+    "ATALAIA": {
+      "voice_a": "pm_alex",
+      "voice_b": "pm_santa",
+      "blend": 0.12,
+      "speed": 1.03,
+      "pitch_semitones": 0.1
+    },
+    "CORUJA": {
+      "voice_a": "pm_alex",
+      "voice_b": "pm_santa",
+      "blend": 0.52,
+      "speed": 1.01,
+      "pitch_semitones": -1.9
+    },
+    "BARQUEIRO": {
+      "voice_a": "pm_santa",
+      "voice_b": "pm_alex",
+      "blend": 0,
+      "speed": 0.96,
+      "pitch_semitones": -2.3
+    },
+    "CORVO-1": {
+      "voice_a": "pm_alex",
+      "voice_b": "pm_santa",
+      "blend": 0.35,
+      "speed": 1.13,
+      "pitch_semitones": 1.25
+    },
+    "HOSTIL": {
+      "voice_a": "pm_santa",
+      "voice_b": "pm_alex",
+      "blend": 0.65,
+      "speed": 1.16,
+      "pitch_semitones": 0.7
+    },
+    "ECO": {
+      "voice_a": "pm_alex",
+      "voice_b": "pm_santa",
+      "blend": 0.08,
+      "speed": 1.09,
+      "pitch_semitones": -0.65
+    }
+  },
+  "lines": {
+    "ATALAIA|Atenção, Colosso inimigo no campo de batalha!": {
+      "id": "0342ad56197e4b52",
+      "speaker": "ATALAIA",
+      "text": "Atenção, Colosso inimigo no campo de batalha!",
+      "sources": [
+        "src/multiplayer/voice-lines.js:10"
+      ],
+      "url": "assets/audio/voices/0342ad56197e4b52.mp3",
+      "duration": 2.861167,
+      "bytes": 47784,
+      "voice": {
+        "voice_a": "pm_alex",
+        "voice_b": "pm_santa",
+        "blend": 0.12,
+        "speed": 1.03,
+        "pitch_semitones": 0.1
+      }
+    },
+    "ATALAIA|Movimento a leste da crista. Reforços a caminho de vocês.": {
+      "id": "2ccdd68cfcc50085",
+      "speaker": "ATALAIA",
+      "text": "Movimento a leste da crista. Reforços a caminho de vocês.",
+      "sources": [
+        "src/game/mission.js:415"
+      ],
+      "url": "assets/audio/voices/2ccdd68cfcc50085.mp3",
+      "duration": 3.645958,
+      "bytes": 60084,
+      "voice": {
+        "voice_a": "pm_alex",
+        "voice_b": "pm_santa",
+        "blend": 0.12,
+        "speed": 1.03,
+        "pitch_semitones": 0.1
+      }
+    },
+    "ATALAIA|Martelo, operação iniciada. Elimine a equipe inimiga.": {
+      "id": "2d5702e0eb7e9281",
+      "speaker": "ATALAIA",
+      "text": "Martelo, operação iniciada. Elimine a equipe inimiga.",
+      "sources": [
+        "src/multiplayer/voice-lines.js:3"
+      ],
+      "url": "assets/audio/voices/2d5702e0eb7e9281.mp3",
+      "duration": 3.327792,
+      "bytes": 55088,
+      "voice": {
+        "voice_a": "pm_alex",
+        "voice_b": "pm_santa",
+        "blend": 0.12,
+        "speed": 1.03,
+        "pitch_semitones": 0.1
+      }
+    },
+    "ATALAIA|Martelo, radar com contato vindo de cima... algo enorme, em queda livre sobre o pátio!": {
+      "id": "3a07983727e5587c",
+      "speaker": "ATALAIA",
+      "text": "Martelo, radar com contato vindo de cima... algo enorme, em queda livre sobre o pátio!",
+      "sources": [
+        "src/ai/boss.js:131"
+      ],
+      "url": "assets/audio/voices/3a07983727e5587c.mp3",
+      "duration": 4.876167,
+      "bytes": 80076,
+      "voice": {
+        "voice_a": "pm_alex",
+        "voice_b": "pm_santa",
+        "blend": 0.12,
+        "speed": 1.03,
+        "pitch_semitones": 0.1
+      }
+    },
+    "ATALAIA|Comportas de fundo abertas. A galeria vai inundar. Corram!": {
+      "id": "3d4ab91bbdf45d00",
+      "speaker": "ATALAIA",
+      "text": "Comportas de fundo abertas. A galeria vai inundar. Corram!",
+      "sources": [
+        "src/game/mission.js:484"
+      ],
+      "url": "assets/audio/voices/3d4ab91bbdf45d00.mp3",
+      "duration": 3.476292,
+      "bytes": 57387,
+      "voice": {
+        "voice_a": "pm_alex",
+        "voice_b": "pm_santa",
+        "blend": 0.12,
+        "speed": 1.03,
+        "pitch_semitones": 0.1
+      }
+    },
+    "ATALAIA|Operador abatido. Preparando retorno.": {
+      "id": "45e884b8beb99730",
+      "speaker": "ATALAIA",
+      "text": "Operador abatido. Preparando retorno.",
+      "sources": [
+        "src/multiplayer/voice-lines.js:13"
+      ],
+      "url": "assets/audio/voices/45e884b8beb99730.mp3",
+      "duration": 2.564208,
+      "bytes": 42774,
+      "voice": {
+        "voice_a": "pm_alex",
+        "voice_b": "pm_santa",
+        "blend": 0.12,
+        "speed": 1.03,
+        "pitch_semitones": 0.1
+      }
+    },
+    "ATALAIA|Comunicação total. Bom trabalho, Mar... espera. Tem um sinal saindo do bloqueador.": {
+      "id": "5d56aae43a3acce2",
+      "speaker": "ATALAIA",
+      "text": "Comunicação total. Bom trabalho, Mar... espera. Tem um sinal saindo do bloqueador.",
+      "sources": [
+        "src/game/mission.js:742"
+      ],
+      "url": "assets/audio/voices/5d56aae43a3acce2.mp3",
+      "duration": 4.706458,
+      "bytes": 77389,
+      "voice": {
+        "voice_a": "pm_alex",
+        "voice_b": "pm_santa",
+        "blend": 0.12,
+        "speed": 1.03,
+        "pitch_semitones": 0.1
+      }
+    },
+    "ATALAIA|Interferência... repita. ...Recebido.": {
+      "id": "67abced0ae6283a9",
+      "speaker": "ATALAIA",
+      "text": "Interferência... repita. ...Recebido.",
+      "sources": [
+        "src/game/support.js:41"
+      ],
+      "url": "assets/audio/voices/67abced0ae6283a9.mp3",
+      "duration": 2.330917,
+      "bytes": 39323,
+      "voice": {
+        "voice_a": "pm_alex",
+        "voice_b": "pm_santa",
+        "blend": 0.12,
+        "speed": 1.03,
+        "pitch_semitones": 0.1
+      }
+    },
+    "ATALAIA|Colosso destruído. Conquiste outra sequência para solicitar reforço.": {
+      "id": "68b4e27d11c20390",
+      "speaker": "ATALAIA",
+      "text": "Colosso destruído. Conquiste outra sequência para solicitar reforço.",
+      "sources": [
+        "src/multiplayer/voice-lines.js:9"
+      ],
+      "url": "assets/audio/voices/68b4e27d11c20390.mp3",
+      "duration": 4.388333,
+      "bytes": 72004,
+      "voice": {
+        "voice_a": "pm_alex",
+        "voice_b": "pm_santa",
+        "blend": 0.12,
+        "speed": 1.03,
+        "pitch_semitones": 0.1
+      }
+    },
+    "ATALAIA|Drone no ar. Marcando hostis.": {
+      "id": "6efa9cd141029d76",
+      "speaker": "ATALAIA",
+      "text": "Drone no ar. Marcando hostis.",
+      "sources": [
+        "src/game/support.js:44"
+      ],
+      "url": "assets/audio/voices/6efa9cd141029d76.mp3",
+      "duration": 1.970333,
+      "bytes": 33550,
+      "voice": {
+        "voice_a": "pm_alex",
+        "voice_b": "pm_santa",
+        "blend": 0.12,
+        "speed": 1.03,
+        "pitch_semitones": 0.1
+      }
+    },
+    "ATALAIA|Sequência confirmada. Colosso disponível. Pressione B para assumir o controle.": {
+      "id": "7081bcf0cfd1d33e",
+      "speaker": "ATALAIA",
+      "text": "Sequência confirmada. Colosso disponível. Pressione B para assumir o controle.",
+      "sources": [
+        "src/multiplayer/voice-lines.js:7"
+      ],
+      "url": "assets/audio/voices/7081bcf0cfd1d33e.mp3",
+      "duration": 4.876167,
+      "bytes": 80073,
+      "voice": {
+        "voice_a": "pm_alex",
+        "voice_b": "pm_santa",
+        "blend": 0.12,
+        "speed": 1.03,
+        "pitch_semitones": 0.1
+      }
+    },
+    "ATALAIA|Corvo-1 a três minutos. Segurem!": {
+      "id": "7261d7ba56a98023",
+      "speaker": "ATALAIA",
+      "text": "Corvo-1 a três minutos. Segurem!",
+      "sources": [
+        "src/game/mission.js:626"
+      ],
+      "url": "assets/audio/voices/7261d7ba56a98023.mp3",
+      "duration": 2.330917,
+      "bytes": 39318,
+      "voice": {
+        "voice_a": "pm_alex",
+        "voice_b": "pm_santa",
+        "blend": 0.12,
+        "speed": 1.03,
+        "pitch_semitones": 0.1
+      }
+    },
+    "ATALAIA|Negativo, Eco. Alvo coberto, o morteiro não alcança.": {
+      "id": "738d302949ad4795",
+      "speaker": "ATALAIA",
+      "text": "Negativo, Eco. Alvo coberto, o morteiro não alcança.",
+      "sources": [
+        "src/game/support.js:50"
+      ],
+      "url": "assets/audio/voices/738d302949ad4795.mp3",
+      "duration": 3.349,
+      "bytes": 55471,
+      "voice": {
+        "voice_a": "pm_alex",
+        "voice_b": "pm_santa",
+        "blend": 0.12,
+        "speed": 1.03,
+        "pitch_semitones": 0.1
+      }
+    },
+    "ATALAIA|Confirmo, comportas fechando. Corvo-1, buscar Martelo no heliponto.": {
+      "id": "7744bec1657e6ef2",
+      "speaker": "ATALAIA",
+      "text": "Confirmo, comportas fechando. Corvo-1, buscar Martelo no heliponto.",
+      "sources": [
+        "src/game/mission.js:575"
+      ],
+      "url": "assets/audio/voices/7744bec1657e6ef2.mp3",
+      "duration": 4.133792,
+      "bytes": 68148,
+      "voice": {
+        "voice_a": "pm_alex",
+        "voice_b": "pm_santa",
+        "blend": 0.12,
+        "speed": 1.03,
+        "pitch_semitones": 0.1
+      }
+    },
+    "ATALAIA|Vitória confirmada. Bom trabalho, equipe.": {
+      "id": "7ffa29c174656531",
+      "speaker": "ATALAIA",
+      "text": "Vitória confirmada. Bom trabalho, equipe.",
+      "sources": [
+        "src/multiplayer/voice-lines.js:4"
+      ],
+      "url": "assets/audio/voices/7ffa29c174656531.mp3",
+      "duration": 2.670292,
+      "bytes": 44703,
+      "voice": {
+        "voice_a": "pm_alex",
+        "voice_b": "pm_santa",
+        "blend": 0.12,
+        "speed": 1.03,
+        "pitch_semitones": 0.1
+      }
+    },
+    "ATALAIA|Perigo próximo! Fogo em quatro. Abriguem-se!": {
+      "id": "81b79a6c44537e13",
+      "speaker": "ATALAIA",
+      "text": "Perigo próximo! Fogo em quatro. Abriguem-se!",
+      "sources": [
+        "src/game/support.js:53"
+      ],
+      "url": "assets/audio/voices/81b79a6c44537e13.mp3",
+      "duration": 2.713958,
+      "bytes": 45474,
+      "voice": {
+        "voice_a": "pm_alex",
+        "voice_b": "pm_santa",
+        "blend": 0.12,
+        "speed": 1.03,
+        "pitch_semitones": 0.1
+      }
+    },
+    "ATALAIA|Martelo, estou captando tráfego de rádio deles. Reforços saindo da casa de máquinas.": {
+      "id": "8a6746f3edf56ae3",
+      "speaker": "ATALAIA",
+      "text": "Martelo, estou captando tráfego de rádio deles. Reforços saindo da casa de máquinas.",
+      "sources": [
+        "src/game/mission.js:292"
+      ],
+      "url": "assets/audio/voices/8a6746f3edf56ae3.mp3",
+      "duration": 5.257958,
+      "bytes": 86233,
+      "voice": {
+        "voice_a": "pm_alex",
+        "voice_b": "pm_santa",
+        "blend": 0.12,
+        "speed": 1.03,
+        "pitch_semitones": 0.1
+      }
+    },
+    "ATALAIA|Coordenadas recebidas. Fogo em quatro.": {
+      "id": "8d47cca4ebbdb3fe",
+      "speaker": "ATALAIA",
+      "text": "Coordenadas recebidas. Fogo em quatro.",
+      "sources": [
+        "src/game/support.js:53"
+      ],
+      "url": "assets/audio/voices/8d47cca4ebbdb3fe.mp3",
+      "duration": 2.627833,
+      "bytes": 43927,
+      "voice": {
+        "voice_a": "pm_alex",
+        "voice_b": "pm_santa",
+        "blend": 0.12,
+        "speed": 1.03,
+        "pitch_semitones": 0.1
+      }
+    },
+    "ATALAIA|Colosso aliado em operação. Avancem com ele.": {
+      "id": "93913e35127f45b1",
+      "speaker": "ATALAIA",
+      "text": "Colosso aliado em operação. Avancem com ele.",
+      "sources": [
+        "src/multiplayer/voice-lines.js:11"
+      ],
+      "url": "assets/audio/voices/93913e35127f45b1.mp3",
+      "duration": 2.946,
+      "bytes": 48935,
+      "voice": {
+        "voice_a": "pm_alex",
+        "voice_b": "pm_santa",
+        "blend": 0.12,
+        "speed": 1.03,
+        "pitch_semitones": 0.1
+      }
+    },
+    "ATALAIA|Era um gatilho!": {
+      "id": "95f9e9b122e11594",
+      "speaker": "ATALAIA",
+      "text": "Era um gatilho!",
+      "sources": [
+        "src/game/mission.js:743"
+      ],
+      "url": "assets/audio/voices/95f9e9b122e11594.mp3",
+      "duration": 1.291583,
+      "bytes": 22400,
+      "voice": {
+        "voice_a": "pm_alex",
+        "voice_b": "pm_santa",
+        "blend": 0.12,
+        "speed": 1.03,
+        "pitch_semitones": 0.1
+      }
+    },
+    "ATALAIA|...Negativo, Coruja. Queremos ele vivo.": {
+      "id": "c76bc8b61bdab4fc",
+      "speaker": "ATALAIA",
+      "text": "...Negativo, Coruja. Queremos ele vivo.",
+      "sources": [
+        "src/game/mission.js:933"
+      ],
+      "url": "assets/audio/voices/c76bc8b61bdab4fc.mp3",
+      "duration": 2.564208,
+      "bytes": 42776,
+      "voice": {
+        "voice_a": "pm_alex",
+        "voice_b": "pm_santa",
+        "blend": 0.12,
+        "speed": 1.03,
+        "pitch_semitones": 0.1
+      }
+    },
+    "ATALAIA|Operação encerrada. Reagrupar para a próxima partida.": {
+      "id": "c7e17f11ae4f925f",
+      "speaker": "ATALAIA",
+      "text": "Operação encerrada. Reagrupar para a próxima partida.",
+      "sources": [
+        "src/multiplayer/voice-lines.js:5"
+      ],
+      "url": "assets/audio/voices/c7e17f11ae4f925f.mp3",
+      "duration": 3.349,
+      "bytes": 55477,
+      "voice": {
+        "voice_a": "pm_alex",
+        "voice_b": "pm_santa",
+        "blend": 0.12,
+        "speed": 1.03,
+        "pitch_semitones": 0.1
+      }
+    },
+    "ATALAIA|Área de aquecimento. Aguardando reforços.": {
+      "id": "d65340ce3311bfb4",
+      "speaker": "ATALAIA",
+      "text": "Área de aquecimento. Aguardando reforços.",
+      "sources": [
+        "src/multiplayer/voice-lines.js:2"
+      ],
+      "url": "assets/audio/voices/d65340ce3311bfb4.mp3",
+      "duration": 2.733917,
+      "bytes": 45476,
+      "voice": {
+        "voice_a": "pm_alex",
+        "voice_b": "pm_santa",
+        "blend": 0.12,
+        "speed": 1.03,
+        "pitch_semitones": 0.1
+      }
+    },
+    "ATALAIA|Dois de três. Morteiros em posição, aguardando suas coordenadas.": {
+      "id": "d7e3d38ff072b3d3",
+      "speaker": "ATALAIA",
+      "text": "Dois de três. Morteiros em posição, aguardando suas coordenadas.",
+      "sources": [
+        "src/game/mission.js:422"
+      ],
+      "url": "assets/audio/voices/d7e3d38ff072b3d3.mp3",
+      "duration": 3.9005,
+      "bytes": 64320,
+      "voice": {
+        "voice_a": "pm_alex",
+        "voice_b": "pm_santa",
+        "blend": 0.12,
+        "speed": 1.03,
+        "pitch_semitones": 0.1
+      }
+    },
+    "ATALAIA|...Ouvido, Martelo. Vocês são tudo o que eu tenho.": {
+      "id": "e3014fe5a9e902e6",
+      "speaker": "ATALAIA",
+      "text": "...Ouvido, Martelo. Vocês são tudo o que eu tenho.",
+      "sources": [
+        "src/game/mission.js:236"
+      ],
+      "url": "assets/audio/voices/e3014fe5a9e902e6.mp3",
+      "duration": 2.649083,
+      "bytes": 44333,
+      "voice": {
+        "voice_a": "pm_alex",
+        "voice_b": "pm_santa",
+        "blend": 0.12,
+        "speed": 1.03,
+        "pitch_semitones": 0.1
+      }
+    },
+    "ATALAIA|...Martelo, estou recebendo vocês. Fraco, mas estou. Drone de reconhecimento disponível.": {
+      "id": "f9d359d39e1c1863",
+      "speaker": "ATALAIA",
+      "text": "...Martelo, estou recebendo vocês. Fraco, mas estou. Drone de reconhecimento disponível.",
+      "sources": [
+        "src/game/mission.js:312"
+      ],
+      "url": "assets/audio/voices/f9d359d39e1c1863.mp3",
+      "duration": 5.173125,
+      "bytes": 84691,
+      "voice": {
+        "voice_a": "pm_alex",
+        "voice_b": "pm_santa",
+        "blend": 0.12,
+        "speed": 1.03,
+        "pitch_semitones": 0.1
+      }
+    },
+    "ATALAIA|Empate. Preparem-se para uma nova operação.": {
+      "id": "fcb3dd40ad7b0aac",
+      "speaker": "ATALAIA",
+      "text": "Empate. Preparem-se para uma nova operação.",
+      "sources": [
+        "src/multiplayer/voice-lines.js:6"
+      ],
+      "url": "assets/audio/voices/fcb3dd40ad7b0aac.mp3",
+      "duration": 2.713958,
+      "bytes": 45478,
+      "voice": {
+        "voice_a": "pm_alex",
+        "voice_b": "pm_santa",
+        "blend": 0.12,
+        "speed": 1.03,
+        "pitch_semitones": 0.1
+      }
+    },
+    "BARQUEIRO|A vila dele está sessenta metros abaixo da água que vocês vieram proteger.": {
+      "id": "8402b0becc7e1aa1",
+      "speaker": "BARQUEIRO",
+      "text": "A vila dele está sessenta metros abaixo da água que vocês vieram proteger.",
+      "sources": [
+        "src/game/mission.js:353"
+      ],
+      "url": "assets/audio/voices/8402b0becc7e1aa1.mp3",
+      "duration": 5.509542,
+      "bytes": 90058,
+      "voice": {
+        "voice_a": "pm_santa",
+        "voice_b": "pm_alex",
+        "blend": 0,
+        "speed": 0.96,
+        "pitch_semitones": -2.3
+      }
+    },
+    "BARQUEIRO|Vocês salvaram as cidades esta noite. Mas o vale lembra.": {
+      "id": "8acbd358a44173a5",
+      "speaker": "BARQUEIRO",
+      "text": "Vocês salvaram as cidades esta noite. Mas o vale lembra.",
+      "sources": [
+        "src/game/mission.js:935"
+      ],
+      "url": "assets/audio/voices/8acbd358a44173a5.mp3",
+      "duration": 4.388792,
+      "bytes": 71982,
+      "voice": {
+        "voice_a": "pm_santa",
+        "voice_b": "pm_alex",
+        "blend": 0,
+        "speed": 0.96,
+        "pitch_semitones": -2.3
+      }
+    },
+    "BARQUEIRO|Vocês desligaram meu bloqueador. Eu desligo a represa.": {
+      "id": "c0b21a1b55bb95cf",
+      "speaker": "BARQUEIRO",
+      "text": "Vocês desligaram meu bloqueador. Eu desligo a represa.",
+      "sources": [
+        "src/game/mission.js:744"
+      ],
+      "url": "assets/audio/voices/c0b21a1b55bb95cf.mp3",
+      "duration": 4.023333,
+      "bytes": 66220,
+      "voice": {
+        "voice_a": "pm_santa",
+        "voice_b": "pm_alex",
+        "blend": 0,
+        "speed": 0.96,
+        "pitch_semitones": -2.3
+      }
+    },
+    "BARQUEIRO|Visitantes. Bem-vindos à minha represa. Meu pai ajudou a levantar estas paredes.": {
+      "id": "d1b1d59bf85529e1",
+      "speaker": "BARQUEIRO",
+      "text": "Visitantes. Bem-vindos à minha represa. Meu pai ajudou a levantar estas paredes.",
+      "sources": [
+        "src/game/mission.js:352"
+      ],
+      "url": "assets/audio/voices/d1b1d59bf85529e1.mp3",
+      "duration": 5.850667,
+      "bytes": 95430,
+      "voice": {
+        "voice_a": "pm_santa",
+        "voice_b": "pm_alex",
+        "blend": 0,
+        "speed": 0.96,
+        "pitch_semitones": -2.3
+      }
+    },
+    "CORUJA|Abatido.": {
+      "id": "0a237028e5f7c3ac",
+      "speaker": "CORUJA",
+      "text": "Abatido.",
+      "sources": [
+        "src/game/support.js:137"
+      ],
+      "url": "assets/audio/voices/0a237028e5f7c3ac.mp3",
+      "duration": 1.124958,
+      "bytes": 19706,
+      "voice": {
+        "voice_a": "pm_alex",
+        "voice_b": "pm_santa",
+        "blend": 0.52,
+        "speed": 1.01,
+        "pitch_semitones": -1.9
+      }
+    },
+    "CORUJA|Atirador na mira.": {
+      "id": "2e192a60dafa09e4",
+      "speaker": "CORUJA",
+      "text": "Atirador na mira.",
+      "sources": [
+        "src/game/support.js:148"
+      ],
+      "url": "assets/audio/voices/2e192a60dafa09e4.mp3",
+      "duration": 1.624917,
+      "bytes": 27779,
+      "voice": {
+        "voice_a": "pm_alex",
+        "voice_b": "pm_santa",
+        "blend": 0.52,
+        "speed": 1.01,
+        "pitch_semitones": -1.9
+      }
+    },
+    "CORUJA|Tenho o Barqueiro. Barco, quinhentos metros, no reservatório.": {
+      "id": "3e7da2be016b0237",
+      "speaker": "CORUJA",
+      "text": "Tenho o Barqueiro. Barco, quinhentos metros, no reservatório.",
+      "sources": [
+        "src/game/mission.js:932"
+      ],
+      "url": "assets/audio/voices/3e7da2be016b0237.mp3",
+      "duration": 3.862875,
+      "bytes": 63540,
+      "voice": {
+        "voice_a": "pm_alex",
+        "voice_b": "pm_santa",
+        "blend": 0.52,
+        "speed": 1.01,
+        "pitch_semitones": -1.9
+      }
+    },
+    "CORUJA|Sem visada nesse alvo.": {
+      "id": "5ee9fd6b5929b33b",
+      "speaker": "CORUJA",
+      "text": "Sem visada nesse alvo.",
+      "sources": [
+        "src/game/support.js:70"
+      ],
+      "url": "assets/audio/voices/5ee9fd6b5929b33b.mp3",
+      "duration": 1.910625,
+      "bytes": 32392,
+      "voice": {
+        "voice_a": "pm_alex",
+        "voice_b": "pm_santa",
+        "blend": 0.52,
+        "speed": 1.01,
+        "pitch_semitones": -1.9
+      }
+    },
+    "CORUJA|Alvo neutralizado.": {
+      "id": "652544443b4c0aa6",
+      "speaker": "CORUJA",
+      "text": "Alvo neutralizado.",
+      "sources": [
+        "src/game/support.js:137"
+      ],
+      "url": "assets/audio/voices/652544443b4c0aa6.mp3",
+      "duration": 1.743958,
+      "bytes": 29700,
+      "voice": {
+        "voice_a": "pm_alex",
+        "voice_b": "pm_santa",
+        "blend": 0.52,
+        "speed": 1.01,
+        "pitch_semitones": -1.9
+      }
+    },
+    "CORUJA|Coruja em posição na crista leste. Overwatch ativo. Me deem alvos.": {
+      "id": "7d72d5fb39b71155",
+      "speaker": "CORUJA",
+      "text": "Coruja em posição na crista leste. Overwatch ativo. Me deem alvos.",
+      "sources": [
+        "src/game/mission.js:759"
+      ],
+      "url": "assets/audio/voices/7d72d5fb39b71155.mp3",
+      "duration": 4.74375,
+      "bytes": 77758,
+      "voice": {
+        "voice_a": "pm_alex",
+        "voice_b": "pm_santa",
+        "blend": 0.52,
+        "speed": 1.01,
+        "pitch_semitones": -1.9
+      }
+    },
+    "CORUJA|Entendido.": {
+      "id": "ad87bf830bb311dd",
+      "speaker": "CORUJA",
+      "text": "Entendido.",
+      "sources": [
+        "src/game/mission.js:934"
+      ],
+      "url": "assets/audio/voices/ad87bf830bb311dd.mp3",
+      "duration": 1.339208,
+      "bytes": 23164,
+      "voice": {
+        "voice_a": "pm_alex",
+        "voice_b": "pm_santa",
+        "blend": 0.52,
+        "speed": 1.01,
+        "pitch_semitones": -1.9
+      }
+    },
+    "CORUJA|Sem alvo nesse ponto. Marca o hostil.": {
+      "id": "d44c1d73afce1f0f",
+      "speaker": "CORUJA",
+      "text": "Sem alvo nesse ponto. Marca o hostil.",
+      "sources": [
+        "src/game/support.js:68"
+      ],
+      "url": "assets/audio/voices/d44c1d73afce1f0f.mp3",
+      "duration": 2.648667,
+      "bytes": 44311,
+      "voice": {
+        "voice_a": "pm_alex",
+        "voice_b": "pm_santa",
+        "blend": 0.52,
+        "speed": 1.01,
+        "pitch_semitones": -1.9
+      }
+    },
+    "CORUJA|Pesado na mira. Derrubando.": {
+      "id": "d71009a15013f7ad",
+      "speaker": "CORUJA",
+      "text": "Pesado na mira. Derrubando.",
+      "sources": [
+        "src/game/support.js:148"
+      ],
+      "url": "assets/audio/voices/d71009a15013f7ad.mp3",
+      "duration": 2.101083,
+      "bytes": 35469,
+      "voice": {
+        "voice_a": "pm_alex",
+        "voice_b": "pm_santa",
+        "blend": 0.52,
+        "speed": 1.01,
+        "pitch_semitones": -1.9
+      }
+    },
+    "CORUJA|Alvo marcado. Enviando.": {
+      "id": "dd2eccede2d0b0a7",
+      "speaker": "CORUJA",
+      "text": "Alvo marcado. Enviando.",
+      "sources": [
+        "src/game/support.js:72"
+      ],
+      "url": "assets/audio/voices/dd2eccede2d0b0a7.mp3",
+      "duration": 1.910625,
+      "bytes": 32393,
+      "voice": {
+        "voice_a": "pm_alex",
+        "voice_b": "pm_santa",
+        "blend": 0.52,
+        "speed": 1.01,
+        "pitch_semitones": -1.9
+      }
+    },
+    "CORUJA|Três hostis no topo da escada. Mantenham a cabeça baixa. Eu cuido do que der.": {
+      "id": "f53405b13a8bee9c",
+      "speaker": "CORUJA",
+      "text": "Três hostis no topo da escada. Mantenham a cabeça baixa. Eu cuido do que der.",
+      "sources": [
+        "src/game/mission.js:505"
+      ],
+      "url": "assets/audio/voices/f53405b13a8bee9c.mp3",
+      "duration": 5.434167,
+      "bytes": 88905,
+      "voice": {
+        "voice_a": "pm_alex",
+        "voice_b": "pm_santa",
+        "blend": 0.52,
+        "speed": 1.01,
+        "pitch_semitones": -1.9
+      }
+    },
+    "CORVO-1|No chão! Embarquem, embarquem!": {
+      "id": "3d1afa27d6b41390",
+      "speaker": "CORVO-1",
+      "text": "No chão! Embarquem, embarquem!",
+      "sources": [
+        "src/game/mission.js:901"
+      ],
+      "url": "assets/audio/voices/3d1afa27d6b41390.mp3",
+      "duration": 1.772333,
+      "bytes": 30101,
+      "voice": {
+        "voice_a": "pm_alex",
+        "voice_b": "pm_santa",
+        "blend": 0.35,
+        "speed": 1.13,
+        "pitch_semitones": 1.25
+      }
+    },
+    "CORVO-1|Martelo-1 em solo. Boa caçada, pessoal.": {
+      "id": "4491d5497f493165",
+      "speaker": "CORVO-1",
+      "text": "Martelo-1 em solo. Boa caçada, pessoal.",
+      "sources": [
+        "src/game/mission.js:231"
+      ],
+      "url": "assets/audio/voices/4491d5497f493165.mp3",
+      "duration": 2.36775,
+      "bytes": 39710,
+      "voice": {
+        "voice_a": "pm_alex",
+        "voice_b": "pm_santa",
+        "blend": 0.35,
+        "speed": 1.13,
+        "pitch_semitones": 1.25
+      }
+    },
+    "CORVO-1|Colosso em operação. Blindagem e canhão prontos.": {
+      "id": "6282e87af0fc1760",
+      "speaker": "CORVO-1",
+      "text": "Colosso em operação. Blindagem e canhão prontos.",
+      "sources": [
+        "src/multiplayer/voice-lines.js:8"
+      ],
+      "url": "assets/audio/voices/6282e87af0fc1760.mp3",
+      "duration": 2.705167,
+      "bytes": 45105,
+      "voice": {
+        "voice_a": "pm_alex",
+        "voice_b": "pm_santa",
+        "blend": 0.35,
+        "speed": 1.13,
+        "pitch_semitones": 1.25
+      }
+    },
+    "CORVO-1|Táxi chegou, quem vai? Heliponto, trinta segundos, não esperem convite!": {
+      "id": "f80d54bb5733e5c5",
+      "speaker": "CORVO-1",
+      "text": "Táxi chegou, quem vai? Heliponto, trinta segundos, não esperem convite!",
+      "sources": [
+        "src/game/mission.js:887"
+      ],
+      "url": "assets/audio/voices/f80d54bb5733e5c5.mp3",
+      "duration": 3.73725,
+      "bytes": 61635,
+      "voice": {
+        "voice_a": "pm_alex",
+        "voice_b": "pm_santa",
+        "blend": 0.35,
+        "speed": 1.13,
+        "pitch_semitones": 1.25
+      }
+    },
+    "ECO|De volta à operação.": {
+      "id": "1608eb092c7dac98",
+      "speaker": "ECO",
+      "text": "De volta à operação.",
+      "sources": [
+        "src/multiplayer/voice-lines.js:14"
+      ],
+      "url": "assets/audio/voices/1608eb092c7dac98.mp3",
+      "duration": 1.586875,
+      "bytes": 27414,
+      "voice": {
+        "voice_a": "pm_alex",
+        "voice_b": "pm_santa",
+        "blend": 0.08,
+        "speed": 1.09,
+        "pitch_semitones": -0.65
+      }
+    },
+    "ECO|Recarregando!": {
+      "id": "457633e8445d00e2",
+      "speaker": "ECO",
+      "text": "Recarregando!",
+      "sources": [
+        "src/multiplayer/voice-lines.js:15"
+      ],
+      "url": "assets/audio/voices/457633e8445d00e2.mp3",
+      "duration": 1.166042,
+      "bytes": 20480,
+      "voice": {
+        "voice_a": "pm_alex",
+        "voice_b": "pm_santa",
+        "blend": 0.08,
+        "speed": 1.09,
+        "pitch_semitones": -0.65
+      }
+    },
+    "ECO|Alvo neutralizado.": {
+      "id": "b4f8b0195a882172",
+      "speaker": "ECO",
+      "text": "Alvo neutralizado.",
+      "sources": [
+        "src/multiplayer/voice-lines.js:12"
+      ],
+      "url": "assets/audio/voices/b4f8b0195a882172.mp3",
+      "duration": 1.498292,
+      "bytes": 25861,
+      "voice": {
+        "voice_a": "pm_alex",
+        "voice_b": "pm_santa",
+        "blend": 0.08,
+        "speed": 1.09,
+        "pitch_semitones": -0.65
+      }
+    },
+    "ECO|...A gente também.": {
+      "id": "d03d965bdf2a28a9",
+      "speaker": "ECO",
+      "text": "...A gente também.",
+      "sources": [
+        "src/game/mission.js:936"
+      ],
+      "url": "assets/audio/voices/d03d965bdf2a28a9.mp3",
+      "duration": 1.476125,
+      "bytes": 25482,
+      "voice": {
+        "voice_a": "pm_alex",
+        "voice_b": "pm_santa",
+        "blend": 0.08,
+        "speed": 1.09,
+        "pitch_semitones": -0.65
+      }
+    },
+    "FAÍSCA|GRANADA!": {
+      "id": "2195b75ab111d2f8",
+      "speaker": "FAÍSCA",
+      "text": "GRANADA!",
+      "sources": [
+        "src/ai/ally.js:11"
+      ],
+      "url": "assets/audio/voices/2195b75ab111d2f8.mp3",
+      "duration": 0.917167,
+      "bytes": 16631,
+      "voice": {
+        "voice_a": "pf_dora",
+        "voice_b": "pf_dora",
+        "blend": 0,
+        "speed": 1.13,
+        "pitch_semitones": 0.4
+      }
+    },
+    "FAÍSCA|Um já foi. Faltam dois e um banho quente.": {
+      "id": "231d7cde1d9bae0d",
+      "speaker": "FAÍSCA",
+      "text": "Um já foi. Faltam dois e um banho quente.",
+      "sources": [
+        "src/game/mission.js:313"
+      ],
+      "url": "assets/audio/voices/231d7cde1d9bae0d.mp3",
+      "duration": 2.293,
+      "bytes": 38557,
+      "voice": {
+        "voice_a": "pf_dora",
+        "voice_b": "pf_dora",
+        "blend": 0,
+        "speed": 1.13,
+        "pitch_semitones": 0.4
+      }
+    },
+    "FAÍSCA|Tá subindo! Tá subindo!": {
+      "id": "26a5fcd9c3f9a4c1",
+      "speaker": "FAÍSCA",
+      "text": "Tá subindo! Tá subindo!",
+      "sources": [
+        "src/game/mission.js:491"
+      ],
+      "url": "assets/audio/voices/26a5fcd9c3f9a4c1.mp3",
+      "duration": 1.542542,
+      "bytes": 26640,
+      "voice": {
+        "voice_a": "pf_dora",
+        "voice_b": "pf_dora",
+        "blend": 0,
+        "speed": 1.13,
+        "pitch_semitones": 0.4
+      }
+    },
+    "FAÍSCA|Eu odeio elevador. Eu odeio água. Hoje é meu dia.": {
+      "id": "29d6b71f9983162d",
+      "speaker": "FAÍSCA",
+      "text": "Eu odeio elevador. Eu odeio água. Hoje é meu dia.",
+      "sources": [
+        "src/game/mission.js:780"
+      ],
+      "url": "assets/audio/voices/29d6b71f9983162d.mp3",
+      "duration": 2.814167,
+      "bytes": 47018,
+      "voice": {
+        "voice_a": "pf_dora",
+        "voice_b": "pf_dora",
+        "blend": 0,
+        "speed": 1.13,
+        "pitch_semitones": 0.4
+      }
+    },
+    "FAÍSCA|RPG! Na turbina! Pro chão!": {
+      "id": "3ad96dfb69521ba5",
+      "speaker": "FAÍSCA",
+      "text": "RPG! Na turbina! Pro chão!",
+      "sources": [
+        "src/game/mission.js:697"
+      ],
+      "url": "assets/audio/voices/3ad96dfb69521ba5.mp3",
+      "duration": 1.959458,
+      "bytes": 33183,
+      "voice": {
+        "voice_a": "pf_dora",
+        "voice_b": "pf_dora",
+        "blend": 0,
+        "speed": 1.13,
+        "pitch_semitones": 0.4
+      }
+    },
+    "FAÍSCA|Carga posicionada. Três, dois...": {
+      "id": "406e45364c9fc492",
+      "speaker": "FAÍSCA",
+      "text": "Carga posicionada. Três, dois...",
+      "sources": [
+        "src/game/mission.js:372"
+      ],
+      "url": "assets/audio/voices/406e45364c9fc492.mp3",
+      "duration": 2.022,
+      "bytes": 34324,
+      "voice": {
+        "voice_a": "pf_dora",
+        "voice_b": "pf_dora",
+        "blend": 0,
+        "speed": 1.13,
+        "pitch_semitones": 0.4
+      }
+    },
+    "FAÍSCA|Martelo-2 foi atingido! Tá caindo!": {
+      "id": "606d6797407ec517",
+      "speaker": "FAÍSCA",
+      "text": "Martelo-2 foi atingido! Tá caindo!",
+      "sources": [
+        "src/game/mission.js:234"
+      ],
+      "url": "assets/audio/voices/606d6797407ec517.mp3",
+      "duration": 2.272167,
+      "bytes": 38166,
+      "voice": {
+        "voice_a": "pf_dora",
+        "voice_b": "pf_dora",
+        "blend": 0,
+        "speed": 1.13,
+        "pitch_semitones": 0.4
+      }
+    },
+    "FAÍSCA|Tô no sistema. Sobrescrevendo... isso leva uns minutos. Me mantém viva!": {
+      "id": "6515944ac28fe030",
+      "speaker": "FAÍSCA",
+      "text": "Tô no sistema. Sobrescrevendo... isso leva uns minutos. Me mantém viva!",
+      "sources": [
+        "src/game/mission.js:796"
+      ],
+      "url": "assets/audio/voices/6515944ac28fe030.mp3",
+      "duration": 3.814792,
+      "bytes": 62784,
+      "voice": {
+        "voice_a": "pf_dora",
+        "voice_b": "pf_dora",
+        "blend": 0,
+        "speed": 1.13,
+        "pitch_semitones": 0.4
+      }
+    },
+    "FAÍSCA|Acho que acabou. Por enquanto.": {
+      "id": "68cbab0e0175a934",
+      "speaker": "FAÍSCA",
+      "text": "Acho que acabou. Por enquanto.",
+      "sources": [
+        "src/ai/ally.js:14"
+      ],
+      "url": "assets/audio/voices/68cbab0e0175a934.mp3",
+      "duration": 1.771875,
+      "bytes": 30093,
+      "voice": {
+        "voice_a": "pf_dora",
+        "voice_b": "pf_dora",
+        "blend": 0,
+        "speed": 1.13,
+        "pitch_semitones": 0.4
+      }
+    },
+    "FAÍSCA|Barcos no cais norte! Escudos! Usa a flash!": {
+      "id": "6e187f7774aa1ce1",
+      "speaker": "FAÍSCA",
+      "text": "Barcos no cais norte! Escudos! Usa a flash!",
+      "sources": [
+        "src/game/mission.js:607"
+      ],
+      "url": "assets/audio/voices/6e187f7774aa1ce1.mp3",
+      "duration": 3.085167,
+      "bytes": 51235,
+      "voice": {
+        "voice_a": "pf_dora",
+        "voice_b": "pf_dora",
+        "blend": 0,
+        "speed": 1.13,
+        "pitch_semitones": 0.4
+      }
+    },
+    "FAÍSCA|Bela!": {
+      "id": "6e604250cd47a0e3",
+      "speaker": "FAÍSCA",
+      "text": "Bela!",
+      "sources": [
+        "src/ai/ally.js:16"
+      ],
+      "url": "assets/audio/voices/6e604250cd47a0e3.mp3",
+      "duration": 0.708375,
+      "bytes": 13172,
+      "voice": {
+        "voice_a": "pf_dora",
+        "voice_b": "pf_dora",
+        "blend": 0,
+        "speed": 1.13,
+        "pitch_semitones": 0.4
+      }
+    },
+    "FAÍSCA|Joga uma flash antes de entrar. Eu gosto de surpresa.": {
+      "id": "75e99cb9879e5f53",
+      "speaker": "FAÍSCA",
+      "text": "Joga uma flash antes de entrar. Eu gosto de surpresa.",
+      "sources": [
+        "src/game/mission.js:537"
+      ],
+      "url": "assets/audio/voices/75e99cb9879e5f53.mp3",
+      "duration": 3.543792,
+      "bytes": 58541,
+      "voice": {
+        "voice_a": "pf_dora",
+        "voice_b": "pf_dora",
+        "blend": 0,
+        "speed": 1.13,
+        "pitch_semitones": 0.4
+      }
+    },
+    "FAÍSCA|Pesado! Esse aí não cai fácil!": {
+      "id": "7707a5e078ba9bc8",
+      "speaker": "FAÍSCA",
+      "text": "Pesado! Esse aí não cai fácil!",
+      "sources": [
+        "src/ai/ally.js:9"
+      ],
+      "url": "assets/audio/voices/7707a5e078ba9bc8.mp3",
+      "duration": 1.876083,
+      "bytes": 32028,
+      "voice": {
+        "voice_a": "pf_dora",
+        "voice_b": "pf_dora",
+        "blend": 0,
+        "speed": 1.13,
+        "pitch_semitones": 0.4
+      }
+    },
+    "FAÍSCA|Ninho de MG! Flanqueia ou explode!": {
+      "id": "93c99cee0f9d64bb",
+      "speaker": "FAÍSCA",
+      "text": "Ninho de MG! Flanqueia ou explode!",
+      "sources": [
+        "src/ai/ally.js:18"
+      ],
+      "url": "assets/audio/voices/93c99cee0f9d64bb.mp3",
+      "duration": 2.564,
+      "bytes": 42779,
+      "voice": {
+        "voice_a": "pf_dora",
+        "voice_b": "pf_dora",
+        "blend": 0,
+        "speed": 1.13,
+        "pitch_semitones": 0.4
+      }
+    },
+    "FAÍSCA|Comportas... travadas! TRAVADAS!": {
+      "id": "a03c6969536c8945",
+      "speaker": "FAÍSCA",
+      "text": "Comportas... travadas! TRAVADAS!",
+      "sources": [
+        "src/game/mission.js:575"
+      ],
+      "url": "assets/audio/voices/a03c6969536c8945.mp3",
+      "duration": 2.063708,
+      "bytes": 34703,
+      "voice": {
+        "voice_a": "pf_dora",
+        "voice_b": "pf_dora",
+        "blend": 0,
+        "speed": 1.13,
+        "pitch_semitones": 0.4
+      }
+    },
+    "FAÍSCA|Escudo balístico! Joga uma flash!": {
+      "id": "a2e172028a0924fb",
+      "speaker": "FAÍSCA",
+      "text": "Escudo balístico! Joga uma flash!",
+      "sources": [
+        "src/ai/ally.js:10"
+      ],
+      "url": "assets/audio/voices/a2e172028a0924fb.mp3",
+      "duration": 2.626542,
+      "bytes": 43934,
+      "voice": {
+        "voice_a": "pf_dora",
+        "voice_b": "pf_dora",
+        "blend": 0,
+        "speed": 1.13,
+        "pitch_semitones": 0.4
+      }
+    },
+    "FAÍSCA|Cortaram a energia! NVG! O override tá na bateria!": {
+      "id": "a8745879d5c5c54e",
+      "speaker": "FAÍSCA",
+      "text": "Cortaram a energia! NVG! O override tá na bateria!",
+      "sources": [
+        "src/game/mission.js:614"
+      ],
+      "url": "assets/audio/voices/a8745879d5c5c54e.mp3",
+      "duration": 3.814792,
+      "bytes": 62779,
+      "voice": {
+        "voice_a": "pf_dora",
+        "voice_b": "pf_dora",
+        "blend": 0,
+        "speed": 1.13,
+        "pitch_semitones": 0.4
+      }
+    },
+    "FAÍSCA|Tá recarregando! Agora!": {
+      "id": "aae994b211925212",
+      "speaker": "FAÍSCA",
+      "text": "Tá recarregando! Agora!",
+      "sources": [
+        "src/ai/ally.js:17"
+      ],
+      "url": "assets/audio/voices/aae994b211925212.mp3",
+      "duration": 1.563417,
+      "bytes": 27019,
+      "voice": {
+        "voice_a": "pf_dora",
+        "voice_b": "pf_dora",
+        "blend": 0,
+        "speed": 1.13,
+        "pitch_semitones": 0.4
+      }
+    },
+    "FAÍSCA|Brecha na cerca a oeste, perto da mata. Ou a gente bate na porta da frente.": {
+      "id": "b8c04e4ba86d01d5",
+      "speaker": "FAÍSCA",
+      "text": "Brecha na cerca a oeste, perto da mata. Ou a gente bate na porta da frente.",
+      "sources": [
+        "src/game/mission.js:272"
+      ],
+      "url": "assets/audio/voices/b8c04e4ba86d01d5.mp3",
+      "duration": 4.377625,
+      "bytes": 71994,
+      "voice": {
+        "voice_a": "pf_dora",
+        "voice_b": "pf_dora",
+        "blend": 0,
+        "speed": 1.13,
+        "pitch_semitones": 0.4
+      }
+    },
+    "FAÍSCA|Esse já era!": {
+      "id": "ca870f6a05a0bece",
+      "speaker": "FAÍSCA",
+      "text": "Esse já era!",
+      "sources": [
+        "src/ai/ally.js:16"
+      ],
+      "url": "assets/audio/voices/ca870f6a05a0bece.mp3",
+      "duration": 1.04225,
+      "bytes": 18560,
+      "voice": {
+        "voice_a": "pf_dora",
+        "voice_b": "pf_dora",
+        "blend": 0,
+        "speed": 1.13,
+        "pitch_semitones": 0.4
+      }
+    },
+    "FAÍSCA|Tem um vindo pela esquerda!": {
+      "id": "d871382207638ed6",
+      "speaker": "FAÍSCA",
+      "text": "Tem um vindo pela esquerda!",
+      "sources": [
+        "src/ai/ally.js:12"
+      ],
+      "url": "assets/audio/voices/d871382207638ed6.mp3",
+      "duration": 1.605083,
+      "bytes": 27402,
+      "voice": {
+        "voice_a": "pf_dora",
+        "voice_b": "pf_dora",
+        "blend": 0,
+        "speed": 1.13,
+        "pitch_semitones": 0.4
+      }
+    },
+    "FAÍSCA|Atirador lá em cima! Abaixa!": {
+      "id": "d8e45e4d64911483",
+      "speaker": "FAÍSCA",
+      "text": "Atirador lá em cima! Abaixa!",
+      "sources": [
+        "src/ai/ally.js:8"
+      ],
+      "url": "assets/audio/voices/d8e45e4d64911483.mp3",
+      "duration": 1.876083,
+      "bytes": 32016,
+      "voice": {
+        "voice_a": "pf_dora",
+        "voice_b": "pf_dora",
+        "blend": 0,
+        "speed": 1.13,
+        "pitch_semitones": 0.4
+      }
+    },
+    "FAÍSCA|Limpo!": {
+      "id": "ddf29284b2f82eb2",
+      "speaker": "FAÍSCA",
+      "text": "Limpo!",
+      "sources": [
+        "src/ai/ally.js:14"
+      ],
+      "url": "assets/audio/voices/ddf29284b2f82eb2.mp3",
+      "duration": 0.732833,
+      "bytes": 13557,
+      "voice": {
+        "voice_a": "pf_dora",
+        "voice_b": "pf_dora",
+        "blend": 0,
+        "speed": 1.13,
+        "pitch_semitones": 0.4
+      }
+    },
+    "FAÍSCA|Ninho de metralhadora no meio! Flanqueia ou explode!": {
+      "id": "e142b57ed7e64c4a",
+      "speaker": "FAÍSCA",
+      "text": "Ninho de metralhadora no meio! Flanqueia ou explode!",
+      "sources": [
+        "src/game/mission.js:402"
+      ],
+      "url": "assets/audio/voices/e142b57ed7e64c4a.mp3",
+      "duration": 2.876708,
+      "bytes": 47779,
+      "voice": {
+        "voice_a": "pf_dora",
+        "voice_b": "pf_dora",
+        "blend": 0,
+        "speed": 1.13,
+        "pitch_semitones": 0.4
+      }
+    },
+    "FAÍSCA|Escopeta no chão! Pega, aqui embaixo é corpo a corpo!": {
+      "id": "e29209736dd5a244",
+      "speaker": "FAÍSCA",
+      "text": "Escopeta no chão! Pega, aqui embaixo é corpo a corpo!",
+      "sources": [
+        "src/game/mission.js:484"
+      ],
+      "url": "assets/audio/voices/e29209736dd5a244.mp3",
+      "duration": 2.855875,
+      "bytes": 47406,
+      "voice": {
+        "voice_a": "pf_dora",
+        "voice_b": "pf_dora",
+        "blend": 0,
+        "speed": 1.13,
+        "pitch_semitones": 0.4
+      }
+    },
+    "FAÍSCA|Trocando pente!": {
+      "id": "edd990a078943f45",
+      "speaker": "FAÍSCA",
+      "text": "Trocando pente!",
+      "sources": [
+        "src/ai/ally.js:15"
+      ],
+      "url": "assets/audio/voices/edd990a078943f45.mp3",
+      "duration": 1.167333,
+      "bytes": 20478,
+      "voice": {
+        "voice_a": "pf_dora",
+        "voice_b": "pf_dora",
+        "blend": 0,
+        "speed": 1.13,
+        "pitch_semitones": 0.4
+      }
+    },
+    "FAÍSCA|Pela direita, pela direita!": {
+      "id": "f1fd319d3692369c",
+      "speaker": "FAÍSCA",
+      "text": "Pela direita, pela direita!",
+      "sources": [
+        "src/ai/ally.js:13"
+      ],
+      "url": "assets/audio/voices/f1fd319d3692369c.mp3",
+      "duration": 1.813542,
+      "bytes": 30858,
+      "voice": {
+        "voice_a": "pf_dora",
+        "voice_b": "pf_dora",
+        "blend": 0,
+        "speed": 1.13,
+        "pitch_semitones": 0.4
+      }
+    },
+    "FAÍSCA|O corpo quase não sente balas. A cabeça, Eco! A cabeça!": {
+      "id": "ffd1b9be4a118bc4",
+      "speaker": "FAÍSCA",
+      "text": "O corpo quase não sente balas. A cabeça, Eco! A cabeça!",
+      "sources": [
+        "src/ai/boss.js:153"
+      ],
+      "url": "assets/audio/voices/ffd1b9be4a118bc4.mp3",
+      "duration": 3.272792,
+      "bytes": 54325,
+      "voice": {
+        "voice_a": "pf_dora",
+        "voice_b": "pf_dora",
+        "blend": 0,
+        "speed": 1.13,
+        "pitch_semitones": 0.4
+      }
+    },
+    "HOSTIL|Granada saindo!": {
+      "id": "02602e1005863385",
+      "speaker": "HOSTIL",
+      "text": "Granada saindo!",
+      "sources": [
+        "src/ai/enemy.js:22"
+      ],
+      "url": "assets/audio/voices/02602e1005863385.mp3",
+      "duration": 1.210875,
+      "bytes": 21248,
+      "voice": {
+        "voice_a": "pm_santa",
+        "voice_b": "pm_alex",
+        "blend": 0.65,
+        "speed": 1.16,
+        "pitch_semitones": 0.7
+      }
+    },
+    "HOSTIL|Nada aqui.": {
+      "id": "0e5fb85db017cdb0",
+      "speaker": "HOSTIL",
+      "text": "Nada aqui.",
+      "sources": [
+        "src/ai/enemy.js:24"
+      ],
+      "url": "assets/audio/voices/0e5fb85db017cdb0.mp3",
+      "duration": 0.862583,
+      "bytes": 15483,
+      "voice": {
+        "voice_a": "pm_santa",
+        "voice_b": "pm_alex",
+        "blend": 0.65,
+        "speed": 1.16,
+        "pitch_semitones": 0.7
+      }
+    },
+    "HOSTIL|Me cobre, recarregando!": {
+      "id": "19482fe09bfc0d3e",
+      "speaker": "HOSTIL",
+      "text": "Me cobre, recarregando!",
+      "sources": [
+        "src/ai/enemy.js:22"
+      ],
+      "url": "assets/audio/voices/19482fe09bfc0d3e.mp3",
+      "duration": 1.497708,
+      "bytes": 25864,
+      "voice": {
+        "voice_a": "pm_santa",
+        "voice_b": "pm_alex",
+        "blend": 0.65,
+        "speed": 1.16,
+        "pitch_semitones": 0.7
+      }
+    },
+    "HOSTIL|Ouviu isso?": {
+      "id": "237bc355fc0c9c22",
+      "speaker": "HOSTIL",
+      "text": "Ouviu isso?",
+      "sources": [
+        "src/ai/enemy.js:24"
+      ],
+      "url": "assets/audio/voices/237bc355fc0c9c22.mp3",
+      "duration": 1.006,
+      "bytes": 17788,
+      "voice": {
+        "voice_a": "pm_santa",
+        "voice_b": "pm_alex",
+        "blend": 0.65,
+        "speed": 1.16,
+        "pitch_semitones": 0.7
+      }
+    },
+    "HOSTIL|Meus olhos!": {
+      "id": "249e228a4000cd6a",
+      "speaker": "HOSTIL",
+      "text": "Meus olhos!",
+      "sources": [
+        "src/ai/enemy.js:25"
+      ],
+      "url": "assets/audio/voices/249e228a4000cd6a.mp3",
+      "duration": 0.883083,
+      "bytes": 15868,
+      "voice": {
+        "voice_a": "pm_santa",
+        "voice_b": "pm_alex",
+        "blend": 0.65,
+        "speed": 1.16,
+        "pitch_semitones": 0.7
+      }
+    },
+    "HOSTIL|O vale lembra, irmão. O vale lembra.": {
+      "id": "24beee8fb87e11d3",
+      "speaker": "HOSTIL",
+      "text": "O vale lembra, irmão. O vale lembra.",
+      "sources": [
+        "src/ai/enemy.js:19"
+      ],
+      "url": "assets/audio/voices/24beee8fb87e11d3.mp3",
+      "duration": 2.214792,
+      "bytes": 37402,
+      "voice": {
+        "voice_a": "pm_santa",
+        "voice_b": "pm_alex",
+        "blend": 0.65,
+        "speed": 1.16,
+        "pitch_semitones": 0.7
+      }
+    },
+    "HOSTIL|Flanqueando!": {
+      "id": "2981e119214f0d61",
+      "speaker": "HOSTIL",
+      "text": "Flanqueando!",
+      "sources": [
+        "src/ai/enemy.js:23"
+      ],
+      "url": "assets/audio/voices/2981e119214f0d61.mp3",
+      "duration": 0.965042,
+      "bytes": 17405,
+      "voice": {
+        "voice_a": "pm_santa",
+        "voice_b": "pm_alex",
+        "blend": 0.65,
+        "speed": 1.16,
+        "pitch_semitones": 0.7
+      }
+    },
+    "HOSTIL|Se abrirem as comportas, Sarnov some do mapa em uma hora.": {
+      "id": "33ab88f580cc379e",
+      "speaker": "HOSTIL",
+      "text": "Se abrirem as comportas, Sarnov some do mapa em uma hora.",
+      "sources": [
+        "src/ai/enemy.js:17"
+      ],
+      "url": "assets/audio/voices/33ab88f580cc379e.mp3",
+      "duration": 3.095792,
+      "bytes": 51242,
+      "voice": {
+        "voice_a": "pm_santa",
+        "voice_b": "pm_alex",
+        "blend": 0.65,
+        "speed": 1.16,
+        "pitch_semitones": 0.7
+      }
+    },
+    "HOSTIL|Corpo! Temos um corpo aqui!": {
+      "id": "3b0cef100fa8fa71",
+      "speaker": "HOSTIL",
+      "text": "Corpo! Temos um corpo aqui!",
+      "sources": [
+        "src/ai/enemy.js:25"
+      ],
+      "url": "assets/audio/voices/3b0cef100fa8fa71.mp3",
+      "duration": 1.579667,
+      "bytes": 27020,
+      "voice": {
+        "voice_a": "pm_santa",
+        "voice_b": "pm_alex",
+        "blend": 0.65,
+        "speed": 1.16,
+        "pitch_semitones": 0.7
+      }
+    },
+    "HOSTIL|Ali! Ele tá ali!": {
+      "id": "4082635191b0370d",
+      "speaker": "HOSTIL",
+      "text": "Ali! Ele tá ali!",
+      "sources": [
+        "src/ai/enemy.js:22"
+      ],
+      "url": "assets/audio/voices/4082635191b0370d.mp3",
+      "duration": 1.149417,
+      "bytes": 20102,
+      "voice": {
+        "voice_a": "pm_santa",
+        "voice_b": "pm_alex",
+        "blend": 0.65,
+        "speed": 1.16,
+        "pitch_semitones": 0.7
+      }
+    },
+    "HOSTIL|Contato!": {
+      "id": "64dcc5838efedd49",
+      "speaker": "HOSTIL",
+      "text": "Contato!",
+      "sources": [
+        "src/ai/enemy.js:22"
+      ],
+      "url": "assets/audio/voices/64dcc5838efedd49.mp3",
+      "duration": 0.862583,
+      "bytes": 15481,
+      "voice": {
+        "voice_a": "pm_santa",
+        "voice_b": "pm_alex",
+        "blend": 0.65,
+        "speed": 1.16,
+        "pitch_semitones": 0.7
+      }
+    },
+    "HOSTIL|Alarme! Mataram um dos nossos!": {
+      "id": "68093bba966b0949",
+      "speaker": "HOSTIL",
+      "text": "Alarme! Mataram um dos nossos!",
+      "sources": [
+        "src/ai/enemy.js:25"
+      ],
+      "url": "assets/audio/voices/68093bba966b0949.mp3",
+      "duration": 1.805042,
+      "bytes": 30863,
+      "voice": {
+        "voice_a": "pm_santa",
+        "voice_b": "pm_alex",
+        "blend": 0.65,
+        "speed": 1.16,
+        "pitch_semitones": 0.7
+      }
+    },
+    "HOSTIL|Não enxergo!": {
+      "id": "6cebb2c865c31e3c",
+      "speaker": "HOSTIL",
+      "text": "Não enxergo!",
+      "sources": [
+        "src/ai/enemy.js:25"
+      ],
+      "url": "assets/audio/voices/6cebb2c865c31e3c.mp3",
+      "duration": 1.0265,
+      "bytes": 18178,
+      "voice": {
+        "voice_a": "pm_santa",
+        "voice_b": "pm_alex",
+        "blend": 0.65,
+        "speed": 1.16,
+        "pitch_semitones": 0.7
+      }
+    },
+    "HOSTIL|Sinalizador! Iluminem a área!": {
+      "id": "794817cdcca58442",
+      "speaker": "HOSTIL",
+      "text": "Sinalizador! Iluminem a área!",
+      "sources": [
+        "src/ai/director.js:289"
+      ],
+      "url": "assets/audio/voices/794817cdcca58442.mp3",
+      "duration": 1.8665,
+      "bytes": 31635,
+      "voice": {
+        "voice_a": "pm_santa",
+        "voice_b": "pm_alex",
+        "blend": 0.65,
+        "speed": 1.16,
+        "pitch_semitones": 0.7
+      }
+    },
+    "HOSTIL|Procurem! Ele tá por aqui!": {
+      "id": "7add949433f7afd8",
+      "speaker": "HOSTIL",
+      "text": "Procurem! Ele tá por aqui!",
+      "sources": [
+        "src/ai/enemy.js:24"
+      ],
+      "url": "assets/audio/voices/7add949433f7afd8.mp3",
+      "duration": 1.641125,
+      "bytes": 28176,
+      "voice": {
+        "voice_a": "pm_santa",
+        "voice_b": "pm_alex",
+        "blend": 0.65,
+        "speed": 1.16,
+        "pitch_semitones": 0.7
+      }
+    },
+    "HOSTIL|Recuar! Recuar!": {
+      "id": "8ac317d16b265f9a",
+      "speaker": "HOSTIL",
+      "text": "Recuar! Recuar!",
+      "sources": [
+        "src/ai/enemy.js:23"
+      ],
+      "url": "assets/audio/voices/8ac317d16b265f9a.mp3",
+      "duration": 1.273958,
+      "bytes": 22400,
+      "voice": {
+        "voice_a": "pm_santa",
+        "voice_b": "pm_alex",
+        "blend": 0.65,
+        "speed": 1.16,
+        "pitch_semitones": 0.7
+      }
+    },
+    "HOSTIL|Liga o gerador de novo, tá um breu aqui.": {
+      "id": "8bad7347fa32105c",
+      "speaker": "HOSTIL",
+      "text": "Liga o gerador de novo, tá um breu aqui.",
+      "sources": [
+        "src/ai/enemy.js:19"
+      ],
+      "url": "assets/audio/voices/8bad7347fa32105c.mp3",
+      "duration": 2.113958,
+      "bytes": 35870,
+      "voice": {
+        "voice_a": "pm_santa",
+        "voice_b": "pm_alex",
+        "blend": 0.65,
+        "speed": 1.16,
+        "pitch_semitones": 0.7
+      }
+    },
+    "HOSTIL|Pagam bem. Mas não pagam pra morrer afogado.": {
+      "id": "91f3ba018ed6e58c",
+      "speaker": "HOSTIL",
+      "text": "Pagam bem. Mas não pagam pra morrer afogado.",
+      "sources": [
+        "src/ai/enemy.js:18"
+      ],
+      "url": "assets/audio/voices/91f3ba018ed6e58c.mp3",
+      "duration": 2.460667,
+      "bytes": 41250,
+      "voice": {
+        "voice_a": "pm_santa",
+        "voice_b": "pm_alex",
+        "blend": 0.65,
+        "speed": 1.16,
+        "pitch_semitones": 0.7
+      }
+    },
+    "HOSTIL|Deve ter sido o vento.": {
+      "id": "99397c37857e1c58",
+      "speaker": "HOSTIL",
+      "text": "Deve ter sido o vento.",
+      "sources": [
+        "src/ai/enemy.js:24"
+      ],
+      "url": "assets/audio/voices/99397c37857e1c58.mp3",
+      "duration": 1.43625,
+      "bytes": 24711,
+      "voice": {
+        "voice_a": "pm_santa",
+        "voice_b": "pm_alex",
+        "blend": 0.65,
+        "speed": 1.16,
+        "pitch_semitones": 0.7
+      }
+    },
+    "HOSTIL|Recarregando!": {
+      "id": "9a581a74aa23d508",
+      "speaker": "HOSTIL",
+      "text": "Recarregando!",
+      "sources": [
+        "src/ai/enemy.js:22"
+      ],
+      "url": "assets/audio/voices/9a581a74aa23d508.mp3",
+      "duration": 1.0265,
+      "bytes": 18174,
+      "voice": {
+        "voice_a": "pm_santa",
+        "voice_b": "pm_alex",
+        "blend": 0.65,
+        "speed": 1.16,
+        "pitch_semitones": 0.7
+      }
+    },
+    "HOSTIL|Granada!": {
+      "id": "9e68a308b118816a",
+      "speaker": "HOSTIL",
+      "text": "Granada!",
+      "sources": [
+        "src/ai/enemy.js:22"
+      ],
+      "url": "assets/audio/voices/9e68a308b118816a.mp3",
+      "duration": 0.862583,
+      "bytes": 15481,
+      "voice": {
+        "voice_a": "pm_santa",
+        "voice_b": "pm_alex",
+        "blend": 0.65,
+        "speed": 1.16,
+        "pitch_semitones": 0.7
+      }
+    },
+    "HOSTIL|Perdemos um!": {
+      "id": "9f503c2b69a9bf17",
+      "speaker": "HOSTIL",
+      "text": "Perdemos um!",
+      "sources": [
+        "src/ai/enemy.js:23"
+      ],
+      "url": "assets/audio/voices/9f503c2b69a9bf17.mp3",
+      "duration": 0.985958,
+      "bytes": 17789,
+      "voice": {
+        "voice_a": "pm_santa",
+        "voice_b": "pm_alex",
+        "blend": 0.65,
+        "speed": 1.16,
+        "pitch_semitones": 0.7
+      }
+    },
+    "HOSTIL|Alguém viu o helicóptero cair? Que estrondo.": {
+      "id": "9fa7d0ac64334540",
+      "speaker": "HOSTIL",
+      "text": "Alguém viu o helicóptero cair? Que estrondo.",
+      "sources": [
+        "src/ai/enemy.js:18"
+      ],
+      "url": "assets/audio/voices/9fa7d0ac64334540.mp3",
+      "duration": 2.27625,
+      "bytes": 38183,
+      "voice": {
+        "voice_a": "pm_santa",
+        "voice_b": "pm_alex",
+        "blend": 0.65,
+        "speed": 1.16,
+        "pitch_semitones": 0.7
+      }
+    },
+    "HOSTIL|Que barulho foi esse?": {
+      "id": "aa4dadd124eb7654",
+      "speaker": "HOSTIL",
+      "text": "Que barulho foi esse?",
+      "sources": [
+        "src/ai/enemy.js:24"
+      ],
+      "url": "assets/audio/voices/aa4dadd124eb7654.mp3",
+      "duration": 1.395292,
+      "bytes": 24326,
+      "voice": {
+        "voice_a": "pm_santa",
+        "voice_b": "pm_alex",
+        "blend": 0.65,
+        "speed": 1.16,
+        "pitch_semitones": 0.7
+      }
+    },
+    "HOSTIL|Essa chuva não para...": {
+      "id": "afd8c3ddda63054f",
+      "speaker": "HOSTIL",
+      "text": "Essa chuva não para...",
+      "sources": [
+        "src/ai/enemy.js:17"
+      ],
+      "url": "assets/audio/voices/afd8c3ddda63054f.mp3",
+      "duration": 1.333792,
+      "bytes": 23180,
+      "voice": {
+        "voice_a": "pm_santa",
+        "voice_b": "pm_alex",
+        "blend": 0.65,
+        "speed": 1.16,
+        "pitch_semitones": 0.7
+      }
+    },
+    "HOSTIL|Meu turno acaba às quatro. Se a represa ainda existir.": {
+      "id": "bd3d3e1946c2e746",
+      "speaker": "HOSTIL",
+      "text": "Meu turno acaba às quatro. Se a represa ainda existir.",
+      "sources": [
+        "src/ai/enemy.js:18"
+      ],
+      "url": "assets/audio/voices/bd3d3e1946c2e746.mp3",
+      "duration": 3.013833,
+      "bytes": 50092,
+      "voice": {
+        "voice_a": "pm_santa",
+        "voice_b": "pm_alex",
+        "blend": 0.65,
+        "speed": 1.16,
+        "pitch_semitones": 0.7
+      }
+    },
+    "HOSTIL|Vou pelo flanco!": {
+      "id": "c9bb89b832678acf",
+      "speaker": "HOSTIL",
+      "text": "Vou pelo flanco!",
+      "sources": [
+        "src/ai/enemy.js:23"
+      ],
+      "url": "assets/audio/voices/c9bb89b832678acf.mp3",
+      "duration": 1.190375,
+      "bytes": 20865,
+      "voice": {
+        "voice_a": "pm_santa",
+        "voice_b": "pm_alex",
+        "blend": 0.65,
+        "speed": 1.16,
+        "pitch_semitones": 0.7
+      }
+    },
+    "HOSTIL|Onde ele foi?": {
+      "id": "d99d8db274df3ffc",
+      "speaker": "HOSTIL",
+      "text": "Onde ele foi?",
+      "sources": [
+        "src/ai/enemy.js:24"
+      ],
+      "url": "assets/audio/voices/d99d8db274df3ffc.mp3",
+      "duration": 1.067458,
+      "bytes": 18942,
+      "voice": {
+        "voice_a": "pm_santa",
+        "voice_b": "pm_alex",
+        "blend": 0.65,
+        "speed": 1.16,
+        "pitch_semitones": 0.7
+      }
+    },
+    "HOSTIL|Homem abatido!": {
+      "id": "edf3581ace18b16b",
+      "speaker": "HOSTIL",
+      "text": "Homem abatido!",
+      "sources": [
+        "src/ai/enemy.js:23"
+      ],
+      "url": "assets/audio/voices/edf3581ace18b16b.mp3",
+      "duration": 1.149417,
+      "bytes": 20095,
+      "voice": {
+        "voice_a": "pm_santa",
+        "voice_b": "pm_alex",
+        "blend": 0.65,
+        "speed": 1.16,
+        "pitch_semitones": 0.7
+      }
+    },
+    "HOSTIL|Tô ferido, recuando!": {
+      "id": "f036bae5b2d017c5",
+      "speaker": "HOSTIL",
+      "text": "Tô ferido, recuando!",
+      "sources": [
+        "src/ai/enemy.js:23"
+      ],
+      "url": "assets/audio/voices/f036bae5b2d017c5.mp3",
+      "duration": 1.477208,
+      "bytes": 25482,
+      "voice": {
+        "voice_a": "pm_santa",
+        "voice_b": "pm_alex",
+        "blend": 0.65,
+        "speed": 1.16,
+        "pitch_semitones": 0.7
+      }
+    },
+    "HOSTIL|Dizem que o Barqueiro nasceu lá embaixo, na vila que afundou.": {
+      "id": "f5ff4ce068a55caa",
+      "speaker": "HOSTIL",
+      "text": "Dizem que o Barqueiro nasceu lá embaixo, na vila que afundou.",
+      "sources": [
+        "src/ai/enemy.js:17"
+      ],
+      "url": "assets/audio/voices/f5ff4ce068a55caa.mp3",
+      "duration": 3.177708,
+      "bytes": 52787,
+      "voice": {
+        "voice_a": "pm_santa",
+        "voice_b": "pm_alex",
+        "blend": 0.65,
+        "speed": 1.16,
+        "pitch_semitones": 0.7
+      }
+    },
+    "HOSTIL|Inimigo! Atirem!": {
+      "id": "f8470342d84ba31f",
+      "speaker": "HOSTIL",
+      "text": "Inimigo! Atirem!",
+      "sources": [
+        "src/ai/enemy.js:22"
+      ],
+      "url": "assets/audio/voices/f8470342d84ba31f.mp3",
+      "duration": 1.333792,
+      "bytes": 23169,
+      "voice": {
+        "voice_a": "pm_santa",
+        "voice_b": "pm_alex",
+        "blend": 0.65,
+        "speed": 1.16,
+        "pitch_semitones": 0.7
+      }
+    },
+    "TROVÃO|Caiu! Aquilo era um tanque com pernas... Eco, fôlego e vamos. O bloqueador.": {
+      "id": "00dd3e9cb69f27bc",
+      "speaker": "TROVÃO",
+      "text": "Caiu! Aquilo era um tanque com pernas... Eco, fôlego e vamos. O bloqueador.",
+      "sources": [
+        "src/game/mission.js:138"
+      ],
+      "url": "assets/audio/voices/00dd3e9cb69f27bc.mp3",
+      "duration": 4.379458,
+      "bytes": 72002,
+      "voice": {
+        "voice_a": "pm_santa",
+        "voice_b": "pm_alex",
+        "blend": 0.22,
+        "speed": 1.08,
+        "pitch_semitones": -1.3
+      }
+    },
+    "TROVÃO|Brilho de luneta! Atirador!": {
+      "id": "09f1c884c2237f0e",
+      "speaker": "TROVÃO",
+      "text": "Brilho de luneta! Atirador!",
+      "sources": [
+        "src/ai/ally.js:8"
+      ],
+      "url": "assets/audio/voices/09f1c884c2237f0e.mp3",
+      "duration": 2.07975,
+      "bytes": 35085,
+      "voice": {
+        "voice_a": "pm_santa",
+        "voice_b": "pm_alex",
+        "blend": 0.22,
+        "speed": 1.08,
+        "pitch_semitones": -1.3
+      }
+    },
+    "TROVÃO|Isso não é um helicóptero... TODOS PRA FORA DA ÁREA!": {
+      "id": "0c03c1c79782ab63",
+      "speaker": "TROVÃO",
+      "text": "Isso não é um helicóptero... TODOS PRA FORA DA ÁREA!",
+      "sources": [
+        "src/ai/boss.js:132"
+      ],
+      "url": "assets/audio/voices/0c03c1c79782ab63.mp3",
+      "duration": 3.160625,
+      "bytes": 52410,
+      "voice": {
+        "voice_a": "pm_santa",
+        "voice_b": "pm_alex",
+        "blend": 0.22,
+        "speed": 1.08,
+        "pitch_semitones": -1.3
+      }
+    },
+    "TROVÃO|Recarregando, cobre!": {
+      "id": "0e578259790a4cb6",
+      "speaker": "TROVÃO",
+      "text": "Recarregando, cobre!",
+      "sources": [
+        "src/ai/ally.js:15"
+      ],
+      "url": "assets/audio/voices/0e578259790a4cb6.mp3",
+      "duration": 1.619833,
+      "bytes": 27782,
+      "voice": {
+        "voice_a": "pm_santa",
+        "voice_b": "pm_alex",
+        "blend": 0.22,
+        "speed": 1.08,
+        "pitch_semitones": -1.3
+      }
+    },
+    "TROVÃO|Escudo! Flash ou flanco!": {
+      "id": "0e8a787c9f19ddc5",
+      "speaker": "TROVÃO",
+      "text": "Escudo! Flash ou flanco!",
+      "sources": [
+        "src/ai/ally.js:10"
+      ],
+      "url": "assets/audio/voices/0e8a787c9f19ddc5.mp3",
+      "duration": 2.401958,
+      "bytes": 40467,
+      "voice": {
+        "voice_a": "pm_santa",
+        "voice_b": "pm_alex",
+        "blend": 0.22,
+        "speed": 1.08,
+        "pitch_semitones": -1.3
+      }
+    },
+    "TROVÃO|Ele vai esmagar! Rolem pro lado!": {
+      "id": "166406692d4a10d0",
+      "speaker": "TROVÃO",
+      "text": "Ele vai esmagar! Rolem pro lado!",
+      "sources": [
+        "src/ai/boss.js:434"
+      ],
+      "url": "assets/audio/voices/166406692d4a10d0.mp3",
+      "duration": 2.28675,
+      "bytes": 38546,
+      "voice": {
+        "voice_a": "pm_santa",
+        "voice_b": "pm_alex",
+        "blend": 0.22,
+        "speed": 1.08,
+        "pitch_semitones": -1.3
+      }
+    },
+    "TROVÃO|Flanqueando pela esquerda!": {
+      "id": "1c57d9425084d8d0",
+      "speaker": "TROVÃO",
+      "text": "Flanqueando pela esquerda!",
+      "sources": [
+        "src/ai/ally.js:12"
+      ],
+      "url": "assets/audio/voices/1c57d9425084d8d0.mp3",
+      "duration": 1.780792,
+      "bytes": 30476,
+      "voice": {
+        "voice_a": "pm_santa",
+        "voice_b": "pm_alex",
+        "blend": 0.22,
+        "speed": 1.08,
+        "pitch_semitones": -1.3
+      }
+    },
+    "TROVÃO|Boa, Eco.": {
+      "id": "22f033e29d96f920",
+      "speaker": "TROVÃO",
+      "text": "Boa, Eco.",
+      "sources": [
+        "src/ai/ally.js:16"
+      ],
+      "url": "assets/audio/voices/22f033e29d96f920.mp3",
+      "duration": 1.067875,
+      "bytes": 18939,
+      "voice": {
+        "voice_a": "pm_santa",
+        "voice_b": "pm_alex",
+        "blend": 0.22,
+        "speed": 1.08,
+        "pitch_semitones": -1.3
+      }
+    },
+    "TROVÃO|Então vamos fazer valer. Eco, Faísca, comigo. Silêncio até a cerca.": {
+      "id": "3218a5f17db7bdc7",
+      "speaker": "TROVÃO",
+      "text": "Então vamos fazer valer. Eco, Faísca, comigo. Silêncio até a cerca.",
+      "sources": [
+        "src/game/mission.js:237"
+      ],
+      "url": "assets/audio/voices/3218a5f17db7bdc7.mp3",
+      "duration": 4.494458,
+      "bytes": 73929,
+      "voice": {
+        "voice_a": "pm_santa",
+        "voice_b": "pm_alex",
+        "blend": 0.22,
+        "speed": 1.08,
+        "pitch_semitones": -1.3
+      }
+    },
+    "TROVÃO|Elevador de serviço, dentro da torre. Desce pela galeria, Eco!": {
+      "id": "46652055eb7560b0",
+      "speaker": "TROVÃO",
+      "text": "Elevador de serviço, dentro da torre. Desce pela galeria, Eco!",
+      "sources": [
+        "src/game/mission.js:760"
+      ],
+      "url": "assets/audio/voices/46652055eb7560b0.mp3",
+      "duration": 4.0115,
+      "bytes": 66229,
+      "voice": {
+        "voice_a": "pm_santa",
+        "voice_b": "pm_alex",
+        "blend": 0.22,
+        "speed": 1.08,
+        "pitch_semitones": -1.3
+      }
+    },
+    "TROVÃO|Crista aberta, cento e quarenta metros de nada. De cobertura em cobertura!": {
+      "id": "483ad18c56e83ee7",
+      "speaker": "TROVÃO",
+      "text": "Crista aberta, cento e quarenta metros de nada. De cobertura em cobertura!",
+      "sources": [
+        "src/game/mission.js:402"
+      ],
+      "url": "assets/audio/voices/483ad18c56e83ee7.mp3",
+      "duration": 4.655417,
+      "bytes": 76220,
+      "voice": {
+        "voice_a": "pm_santa",
+        "voice_b": "pm_alex",
+        "blend": 0.22,
+        "speed": 1.08,
+        "pitch_semitones": -1.3
+      }
+    },
+    "TROVÃO|Atalaia, Martelo-2 abatido. Repito, Martelo-2 abatido.": {
+      "id": "4a2356b79e692221",
+      "speaker": "TROVÃO",
+      "text": "Atalaia, Martelo-2 abatido. Repito, Martelo-2 abatido.",
+      "sources": [
+        "src/game/mission.js:235"
+      ],
+      "url": "assets/audio/voices/4a2356b79e692221.mp3",
+      "duration": 4.310458,
+      "bytes": 70824,
+      "voice": {
+        "voice_a": "pm_santa",
+        "voice_b": "pm_alex",
+        "blend": 0.22,
+        "speed": 1.08,
+        "pitch_semitones": -1.3
+      }
+    },
+    "TROVÃO|Sala limpa. Eco, pluga o equipamento da Faísca no console mestre.": {
+      "id": "5318df411b064e48",
+      "speaker": "TROVÃO",
+      "text": "Sala limpa. Eco, pluga o equipamento da Faísca no console mestre.",
+      "sources": [
+        "src/game/mission.js:554"
+      ],
+      "url": "assets/audio/voices/5318df411b064e48.mp3",
+      "duration": 4.1955,
+      "bytes": 68920,
+      "voice": {
+        "voice_a": "pm_santa",
+        "voice_b": "pm_alex",
+        "blend": 0.22,
+        "speed": 1.08,
+        "pitch_semitones": -1.3
+      }
+    },
+    "TROVÃO|Vai, vai, vai! Pro heliponto!": {
+      "id": "59f0362f6393c680",
+      "speaker": "TROVÃO",
+      "text": "Vai, vai, vai! Pro heliponto!",
+      "sources": [
+        "src/game/mission.js:887"
+      ],
+      "url": "assets/audio/voices/59f0362f6393c680.mp3",
+      "duration": 1.964792,
+      "bytes": 33167,
+      "voice": {
+        "voice_a": "pm_santa",
+        "voice_b": "pm_alex",
+        "blend": 0.22,
+        "speed": 1.08,
+        "pitch_semitones": -1.3
+      }
+    },
+    "TROVÃO|Ele está enfurecido! Cuidado com os mísseis!": {
+      "id": "5ae468f31f7f3d4e",
+      "speaker": "TROVÃO",
+      "text": "Ele está enfurecido! Cuidado com os mísseis!",
+      "sources": [
+        "src/ai/boss.js:543"
+      ],
+      "url": "assets/audio/voices/5ae468f31f7f3d4e.mp3",
+      "duration": 2.930667,
+      "bytes": 48936,
+      "voice": {
+        "voice_a": "pm_santa",
+        "voice_b": "pm_alex",
+        "blend": 0.22,
+        "speed": 1.08,
+        "pitch_semitones": -1.3
+      }
+    },
+    "TROVÃO|Armas prontas. Pode ter comitê de recepção lá embaixo.": {
+      "id": "64a24b0597fc731a",
+      "speaker": "TROVÃO",
+      "text": "Armas prontas. Pode ter comitê de recepção lá embaixo.",
+      "sources": [
+        "src/game/mission.js:781"
+      ],
+      "url": "assets/audio/voices/64a24b0597fc731a.mp3",
+      "duration": 3.620542,
+      "bytes": 59708,
+      "voice": {
+        "voice_a": "pm_santa",
+        "voice_b": "pm_alex",
+        "blend": 0.22,
+        "speed": 1.08,
+        "pitch_semitones": -1.3
+      }
+    },
+    "TROVÃO|Porta trancada. Faísca!": {
+      "id": "688f509750938daf",
+      "speaker": "TROVÃO",
+      "text": "Porta trancada. Faísca!",
+      "sources": [
+        "src/game/mission.js:369"
+      ],
+      "url": "assets/audio/voices/688f509750938daf.mp3",
+      "duration": 1.895792,
+      "bytes": 32014,
+      "voice": {
+        "voice_a": "pm_santa",
+        "voice_b": "pm_alex",
+        "blend": 0.22,
+        "speed": 1.08,
+        "pitch_semitones": -1.3
+      }
+    },
+    "TROVÃO|Pesado chegando! Mira na cabeça!": {
+      "id": "6975eaa21abfdb0e",
+      "speaker": "TROVÃO",
+      "text": "Pesado chegando! Mira na cabeça!",
+      "sources": [
+        "src/ai/ally.js:9"
+      ],
+      "url": "assets/audio/voices/6975eaa21abfdb0e.mp3",
+      "duration": 2.355708,
+      "bytes": 39703,
+      "voice": {
+        "voice_a": "pm_santa",
+        "voice_b": "pm_alex",
+        "blend": 0.22,
+        "speed": 1.08,
+        "pitch_semitones": -1.3
+      }
+    },
+    "TROVÃO|Ele sabe que a gente está aqui. Acabou o silêncio!": {
+      "id": "7929dcebdb6c0230",
+      "speaker": "TROVÃO",
+      "text": "Ele sabe que a gente está aqui. Acabou o silêncio!",
+      "sources": [
+        "src/game/mission.js:354"
+      ],
+      "url": "assets/audio/voices/7929dcebdb6c0230.mp3",
+      "duration": 3.275583,
+      "bytes": 54318,
+      "voice": {
+        "voice_a": "pm_santa",
+        "voice_b": "pm_alex",
+        "blend": 0.22,
+        "speed": 1.08,
+        "pitch_semitones": -1.3
+      }
+    },
+    "TROVÃO|Holofotes nas torres. Fiquem no escuro, abaixados.": {
+      "id": "7be7e8beb5b68e92",
+      "speaker": "TROVÃO",
+      "text": "Holofotes nas torres. Fiquem no escuro, abaixados.",
+      "sources": [
+        "src/game/mission.js:272"
+      ],
+      "url": "assets/audio/voices/7be7e8beb5b68e92.mp3",
+      "duration": 3.551583,
+      "bytes": 58532,
+      "voice": {
+        "voice_a": "pm_santa",
+        "voice_b": "pm_alex",
+        "blend": 0.22,
+        "speed": 1.08,
+        "pitch_semitones": -1.3
+      }
+    },
+    "TROVÃO|Granada! Sai daí!": {
+      "id": "81cfe9fbec2566db",
+      "speaker": "TROVÃO",
+      "text": "Granada! Sai daí!",
+      "sources": [
+        "src/ai/ally.js:11"
+      ],
+      "url": "assets/audio/voices/81cfe9fbec2566db.mp3",
+      "duration": 1.527833,
+      "bytes": 26248,
+      "voice": {
+        "voice_a": "pm_santa",
+        "voice_b": "pm_alex",
+        "blend": 0.22,
+        "speed": 1.08,
+        "pitch_semitones": -1.3
+      }
+    },
+    "TROVÃO|Recebido, Corvo. Martelo-2, posição?": {
+      "id": "85c56395c6194502",
+      "speaker": "TROVÃO",
+      "text": "Recebido, Corvo. Martelo-2, posição?",
+      "sources": [
+        "src/game/mission.js:232"
+      ],
+      "url": "assets/audio/voices/85c56395c6194502.mp3",
+      "duration": 2.838667,
+      "bytes": 47392,
+      "voice": {
+        "voice_a": "pm_santa",
+        "voice_b": "pm_alex",
+        "blend": 0.22,
+        "speed": 1.08,
+        "pitch_semitones": -1.3
+      }
+    },
+    "TROVÃO|Técnica destruída! Boa!": {
+      "id": "8ee139037d65b500",
+      "speaker": "TROVÃO",
+      "text": "Técnica destruída! Boa!",
+      "sources": [
+        "src/game/mission.js:855"
+      ],
+      "url": "assets/audio/voices/8ee139037d65b500.mp3",
+      "duration": 1.873958,
+      "bytes": 32019,
+      "voice": {
+        "voice_a": "pm_santa",
+        "voice_b": "pm_alex",
+        "blend": 0.22,
+        "speed": 1.08,
+        "pitch_semitones": -1.3
+      }
+    },
+    "TROVÃO|Último bloqueador no topo da torre das comportas.": {
+      "id": "929953522b77a269",
+      "speaker": "TROVÃO",
+      "text": "Último bloqueador no topo da torre das comportas.",
+      "sources": [
+        "src/game/mission.js:422"
+      ],
+      "url": "assets/audio/voices/929953522b77a269.mp3",
+      "duration": 3.275583,
+      "bytes": 54312,
+      "voice": {
+        "voice_a": "pm_santa",
+        "voice_b": "pm_alex",
+        "blend": 0.22,
+        "speed": 1.08,
+        "pitch_semitones": -1.3
+      }
+    },
+    "TROVÃO|Atirador! No alto, cuidado com o reflexo!": {
+      "id": "96ad4049d44567dd",
+      "speaker": "TROVÃO",
+      "text": "Atirador! No alto, cuidado com o reflexo!",
+      "sources": [
+        "src/ai/ally.js:8"
+      ],
+      "url": "assets/audio/voices/96ad4049d44567dd.mp3",
+      "duration": 2.792667,
+      "bytes": 46619,
+      "voice": {
+        "voice_a": "pm_santa",
+        "voice_b": "pm_alex",
+        "blend": 0.22,
+        "speed": 1.08,
+        "pitch_semitones": -1.3
+      }
+    },
+    "TROVÃO|A ponte já era! As comportas estão abrindo!": {
+      "id": "9754cdba466ccaf9",
+      "speaker": "TROVÃO",
+      "text": "A ponte já era! As comportas estão abrindo!",
+      "sources": [
+        "src/game/mission.js:757"
+      ],
+      "url": "assets/audio/voices/9754cdba466ccaf9.mp3",
+      "duration": 2.977958,
+      "bytes": 49703,
+      "voice": {
+        "voice_a": "pm_santa",
+        "voice_b": "pm_alex",
+        "blend": 0.22,
+        "speed": 1.08,
+        "pitch_semitones": -1.3
+      }
+    },
+    "TROVÃO|Contato ao sul! Eles vêm com tudo!": {
+      "id": "99c552dc72090548",
+      "speaker": "TROVÃO",
+      "text": "Contato ao sul! Eles vêm com tudo!",
+      "sources": [
+        "src/game/mission.js:601"
+      ],
+      "url": "assets/audio/voices/99c552dc72090548.mp3",
+      "duration": 2.28675,
+      "bytes": 38553,
+      "voice": {
+        "voice_a": "pm_santa",
+        "voice_b": "pm_alex",
+        "blend": 0.22,
+        "speed": 1.08,
+        "pitch_semitones": -1.3
+      }
+    },
+    "TROVÃO|Sem energia no pátio. Óculos, Eco.": {
+      "id": "9aa34a09ab0d98de",
+      "speaker": "TROVÃO",
+      "text": "Sem energia no pátio. Óculos, Eco.",
+      "sources": [
+        "src/game/mission.js:305"
+      ],
+      "url": "assets/audio/voices/9aa34a09ab0d98de.mp3",
+      "duration": 2.539708,
+      "bytes": 42398,
+      "voice": {
+        "voice_a": "pm_santa",
+        "voice_b": "pm_alex",
+        "blend": 0.22,
+        "speed": 1.08,
+        "pitch_semitones": -1.3
+      }
+    },
+    "TROVÃO|Alvo pesado! Ele é blindado — mirem na cabeça, no visor vermelho! Foguetes se tiverem!": {
+      "id": "a5f7b73d3c381f23",
+      "speaker": "TROVÃO",
+      "text": "Alvo pesado! Ele é blindado — mirem na cabeça, no visor vermelho! Foguetes se tiverem!",
+      "sources": [
+        "src/ai/boss.js:152"
+      ],
+      "url": "assets/audio/voices/a5f7b73d3c381f23.mp3",
+      "duration": 5.299333,
+      "bytes": 86615,
+      "voice": {
+        "voice_a": "pm_santa",
+        "voice_b": "pm_alex",
+        "blend": 0.22,
+        "speed": 1.08,
+        "pitch_semitones": -1.3
+      }
+    },
+    "TROVÃO|Técnica entrando pela estrada sul! Tem um lança-foguetes no armário, derruba!": {
+      "id": "a8ef1386b72320e0",
+      "speaker": "TROVÃO",
+      "text": "Técnica entrando pela estrada sul! Tem um lança-foguetes no armário, derruba!",
+      "sources": [
+        "src/game/mission.js:618"
+      ],
+      "url": "assets/audio/voices/a8ef1386b72320e0.mp3",
+      "duration": 4.678417,
+      "bytes": 76622,
+      "voice": {
+        "voice_a": "pm_santa",
+        "voice_b": "pm_alex",
+        "blend": 0.22,
+        "speed": 1.08,
+        "pitch_semitones": -1.3
+      }
+    },
+    "TROVÃO|Blindado! Explosivo nele!": {
+      "id": "ab8d72f0411154bb",
+      "speaker": "TROVÃO",
+      "text": "Blindado! Explosivo nele!",
+      "sources": [
+        "src/ai/ally.js:9"
+      ],
+      "url": "assets/audio/voices/ab8d72f0411154bb.mp3",
+      "duration": 1.941792,
+      "bytes": 32779,
+      "voice": {
+        "voice_a": "pm_santa",
+        "voice_b": "pm_alex",
+        "blend": 0.22,
+        "speed": 1.08,
+        "pitch_semitones": -1.3
+      }
+    },
+    "TROVÃO|Ele vai pisar! Afastem!": {
+      "id": "b04162fdc788cb45",
+      "speaker": "TROVÃO",
+      "text": "Ele vai pisar! Afastem!",
+      "sources": [
+        "src/ai/boss.js:434"
+      ],
+      "url": "assets/audio/voices/b04162fdc788cb45.mp3",
+      "duration": 1.826792,
+      "bytes": 31241,
+      "voice": {
+        "voice_a": "pm_santa",
+        "voice_b": "pm_alex",
+        "blend": 0.22,
+        "speed": 1.08,
+        "pitch_semitones": -1.3
+      }
+    },
+    "TROVÃO|Travou o alvo! MÍSSEIS! Saiam da mira!": {
+      "id": "b578f61a1e98666f",
+      "speaker": "TROVÃO",
+      "text": "Travou o alvo! MÍSSEIS! Saiam da mira!",
+      "sources": [
+        "src/ai/boss.js:472"
+      ],
+      "url": "assets/audio/voices/b578f61a1e98666f.mp3",
+      "duration": 2.585708,
+      "bytes": 43165,
+      "voice": {
+        "voice_a": "pm_santa",
+        "voice_b": "pm_alex",
+        "blend": 0.22,
+        "speed": 1.08,
+        "pitch_semitones": -1.3
+      }
+    },
+    "TROVÃO|Área limpa. Avança.": {
+      "id": "bad085f1a167018f",
+      "speaker": "TROVÃO",
+      "text": "Área limpa. Avança.",
+      "sources": [
+        "src/ai/ally.js:14"
+      ],
+      "url": "assets/audio/voices/bad085f1a167018f.mp3",
+      "duration": 1.619833,
+      "bytes": 27791,
+      "voice": {
+        "voice_a": "pm_santa",
+        "voice_b": "pm_alex",
+        "blend": 0.22,
+        "speed": 1.08,
+        "pitch_semitones": -1.3
+      }
+    },
+    "TROVÃO|A gente segura aqui embaixo. Sobe, Eco!": {
+      "id": "bde23eddab1efebb",
+      "speaker": "TROVÃO",
+      "text": "A gente segura aqui embaixo. Sobe, Eco!",
+      "sources": [
+        "src/game/mission.js:443"
+      ],
+      "url": "assets/audio/voices/bde23eddab1efebb.mp3",
+      "duration": 2.654667,
+      "bytes": 44313,
+      "voice": {
+        "voice_a": "pm_santa",
+        "voice_b": "pm_alex",
+        "blend": 0.22,
+        "speed": 1.08,
+        "pitch_semitones": -1.3
+      }
+    },
+    "TROVÃO|Chuva é amiga. Esconde passo e engole tiro.": {
+      "id": "c6c769be62c43238",
+      "speaker": "TROVÃO",
+      "text": "Chuva é amiga. Esconde passo e engole tiro.",
+      "sources": [
+        "src/game/mission.js:238"
+      ],
+      "url": "assets/audio/voices/c6c769be62c43238.mp3",
+      "duration": 2.930667,
+      "bytes": 48930,
+      "voice": {
+        "voice_a": "pm_santa",
+        "voice_b": "pm_alex",
+        "blend": 0.22,
+        "speed": 1.08,
+        "pitch_semitones": -1.3
+      }
+    },
+    "TROVÃO|Metralhadora montada! Não fica na linha dela!": {
+      "id": "d4bd972d277b78d5",
+      "speaker": "TROVÃO",
+      "text": "Metralhadora montada! Não fica na linha dela!",
+      "sources": [
+        "src/ai/ally.js:18"
+      ],
+      "url": "assets/audio/voices/d4bd972d277b78d5.mp3",
+      "duration": 3.045625,
+      "bytes": 50468,
+      "voice": {
+        "voice_a": "pm_santa",
+        "voice_b": "pm_alex",
+        "blend": 0.22,
+        "speed": 1.08,
+        "pitch_semitones": -1.3
+      }
+    },
+    "TROVÃO|Limpo. Recarrega enquanto dá.": {
+      "id": "d729a7f0fd2c26ca",
+      "speaker": "TROVÃO",
+      "text": "Limpo. Recarrega enquanto dá.",
+      "sources": [
+        "src/ai/ally.js:14"
+      ],
+      "url": "assets/audio/voices/d729a7f0fd2c26ca.mp3",
+      "duration": 2.05675,
+      "bytes": 34708,
+      "voice": {
+        "voice_a": "pm_santa",
+        "voice_b": "pm_alex",
+        "blend": 0.22,
+        "speed": 1.08,
+        "pitch_semitones": -1.3
+      }
+    },
+    "TROVÃO|Alojamentos à direita, sala de controle depois do pátio.": {
+      "id": "da34209aef74ffad",
+      "speaker": "TROVÃO",
+      "text": "Alojamentos à direita, sala de controle depois do pátio.",
+      "sources": [
+        "src/game/mission.js:505"
+      ],
+      "url": "assets/audio/voices/da34209aef74ffad.mp3",
+      "duration": 3.850542,
+      "bytes": 63540,
+      "voice": {
+        "voice_a": "pm_santa",
+        "voice_b": "pm_alex",
+        "blend": 0.22,
+        "speed": 1.08,
+        "pitch_semitones": -1.3
+      }
+    },
+    "TROVÃO|Limpo.": {
+      "id": "dccb51b5d1ff5613",
+      "speaker": "TROVÃO",
+      "text": "Limpo.",
+      "sources": [
+        "src/ai/ally.js:14"
+      ],
+      "url": "assets/audio/voices/dccb51b5d1ff5613.mp3",
+      "duration": 0.860917,
+      "bytes": 15480,
+      "voice": {
+        "voice_a": "pm_santa",
+        "voice_b": "pm_alex",
+        "blend": 0.22,
+        "speed": 1.08,
+        "pitch_semitones": -1.3
+      }
+    },
+    "TROVÃO|Casa de máquinas, ao norte. A crista fica do outro lado.": {
+      "id": "e75cc23923038cb7",
+      "speaker": "TROVÃO",
+      "text": "Casa de máquinas, ao norte. A crista fica do outro lado.",
+      "sources": [
+        "src/game/mission.js:314"
+      ],
+      "url": "assets/audio/voices/e75cc23923038cb7.mp3",
+      "duration": 3.735542,
+      "bytes": 61615,
+      "voice": {
+        "voice_a": "pm_santa",
+        "voice_b": "pm_alex",
+        "blend": 0.22,
+        "speed": 1.08,
+        "pitch_semitones": -1.3
+      }
+    },
+    "TROVÃO|Alarme! Fomos vistos! Pro pátio, rápido!": {
+      "id": "eaeec7bc4073abf4",
+      "speaker": "TROVÃO",
+      "text": "Alarme! Fomos vistos! Pro pátio, rápido!",
+      "sources": [
+        "src/game/mission.js:260"
+      ],
+      "url": "assets/audio/voices/eaeec7bc4073abf4.mp3",
+      "duration": 2.677667,
+      "bytes": 44708,
+      "voice": {
+        "voice_a": "pm_santa",
+        "voice_b": "pm_alex",
+        "blend": 0.22,
+        "speed": 1.08,
+        "pitch_semitones": -1.3
+      }
+    },
+    "TROVÃO|Flanqueando pela direita!": {
+      "id": "ef778227c9ac792e",
+      "speaker": "TROVÃO",
+      "text": "Flanqueando pela direita!",
+      "sources": [
+        "src/ai/ally.js:13"
+      ],
+      "url": "assets/audio/voices/ef778227c9ac792e.mp3",
+      "duration": 1.826792,
+      "bytes": 31243,
+      "voice": {
+        "voice_a": "pm_santa",
+        "voice_b": "pm_alex",
+        "blend": 0.22,
+        "speed": 1.08,
+        "pitch_semitones": -1.3
+      }
+    },
+    "TROVÃO|Um a menos.": {
+      "id": "f5ee38f58624a011",
+      "speaker": "TROVÃO",
+      "text": "Um a menos.",
+      "sources": [
+        "src/ai/ally.js:16"
+      ],
+      "url": "assets/audio/voices/f5ee38f58624a011.mp3",
+      "duration": 1.090875,
+      "bytes": 19325,
+      "voice": {
+        "voice_a": "pm_santa",
+        "voice_b": "pm_alex",
+        "blend": 0.22,
+        "speed": 1.08,
+        "pitch_semitones": -1.3
+      }
+    },
+    "TROVÃO|Abatido.": {
+      "id": "f6e14fdd433a1a33",
+      "speaker": "TROVÃO",
+      "text": "Abatido.",
+      "sources": [
+        "src/ai/ally.js:16"
+      ],
+      "url": "assets/audio/voices/f6e14fdd433a1a33.mp3",
+      "duration": 1.044917,
+      "bytes": 18554,
+      "voice": {
+        "voice_a": "pm_santa",
+        "voice_b": "pm_alex",
+        "blend": 0.22,
+        "speed": 1.08,
+        "pitch_semitones": -1.3
+      }
+    },
+    "TROVÃO|Ele tá recarregando, avança!": {
+      "id": "fdf16ada3867ead4",
+      "speaker": "TROVÃO",
+      "text": "Ele tá recarregando, avança!",
+      "sources": [
+        "src/ai/ally.js:17"
+      ],
+      "url": "assets/audio/voices/fdf16ada3867ead4.mp3",
+      "duration": 2.17175,
+      "bytes": 36632,
+      "voice": {
+        "voice_a": "pm_santa",
+        "voice_b": "pm_alex",
+        "blend": 0.22,
+        "speed": 1.08,
+        "pitch_semitones": -1.3
+      }
+    }
+  }
+}
