@@ -210,3 +210,14 @@ test('shot events flag headshots and only confirm hits that really dealt damage'
   h.advance(300);aimAt(h.a,h.b,0.95);assert(h.room.shoot(h.a,h.now()));assert.equal(lastShot().dealt,true);assert.equal(lastShot().head,true);
   h.advance(300);h.b.protectedUntil=h.now()+1000;assert(h.room.shoot(h.a,h.now()));assert.equal(lastShot().hit,h.b.id);assert.equal(lastShot().dealt,false);assert.equal(lastShot().head,false);
 });
+test('hit volume is a body cylinder plus head sphere (no phantom hits on empty box corners) and rewinds targets for lag compensation',async()=>{
+  const h=await harness();h.b.protectedUntil=0;const a=h.a.body,b=h.b.body,eye=baseRules.human.eye;
+  const place=(dx)=>{b.x=a.x+dx;b.z=a.z-10;b.y=a.y;h.a.yaw=0;h.a.pitch=Math.atan2(b.y+1.0-(a.y+eye),10);h.advance(300);};
+  place(0.2);assert(h.room.shoot(h.a,h.now()));assert.equal(h.room.events.filter(e=>e.type==='shot').pop().dealt,true);   // dentro do corpo
+  place(0.36);assert(h.room.shoot(h.a,h.now()));assert.equal(h.room.events.filter(e=>e.type==='shot').pop().hit,null);        // canto vazio da caixa antiga
+  // compensação de lag: o alvo estava em x+0 há 200 ms e agora está 3 m ao lado
+  place(0);h.b.hist=[{t:h.now()-200,x:b.x,y:b.y,z:b.z,h:b.h},{t:h.now(),x:b.x+3,y:b.y,z:b.z,h:b.h}];b.x+=3;
+  h.a.view=undefined;assert(h.room.shoot(h.a,h.now()));assert.equal(h.room.events.filter(e=>e.type==='shot').pop().hit,null);
+  h.advance(300);h.b.hist=[{t:h.now()-200,x:b.x-3,y:b.y,z:b.z,h:b.h},{t:h.now(),x:b.x,y:b.y,z:b.z,h:b.h}];h.a.view=h.now()-200;
+  assert(h.room.shoot(h.a,h.now()));assert.equal(h.room.events.filter(e=>e.type==='shot').pop().hit,h.b.id);
+});

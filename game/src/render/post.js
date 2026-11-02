@@ -14,7 +14,7 @@ export class Post {
       tScene: { value: this.rt.texture }, uTime: { value: 0 }, uNVG: { value: 0 }, uGain: { value: 11 },
       uGlare: { value: 0 }, uDamage: { value: 0 }, uFlash: { value: 0 }, uLowHealth: { value: 0 },
       uExposure: { value: 1.0 }, uSuppress: { value: 0 }, uFade: { value: 0 }, uAspect: { value: size.x / size.y },
-      uUnder: { value: 0 }, uRes: { value: new THREE.Vector2(size.x, size.y) }, uScope: { value: 0 }, uLensR: { value: 0.29 }, uSat: { value: 1 },
+      uUnder: { value: 0 }, uRes: { value: new THREE.Vector2(size.x, size.y) }, uScope: { value: 0 }, uLensR: { value: 0.48 }, uSat: { value: 1 },
       tBloom: { value: null }, uFocus: { value: 0 }, tAO: { value: null }, uAOk: { value: 0.85 }, uBloom: { value: 0.32 }, uSharp: { value: 0.12 }, uGrade: { value: 1 }, uRain: { value: 0 },
     };
     this.mat = new THREE.ShaderMaterial({

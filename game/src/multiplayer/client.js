@@ -190,7 +190,7 @@ export class Multiplayer {
     const key = `${state.room.round}:${state.room.weather}`;
     if (this.weatherKey !== key) { this.weatherKey = key; this.G.weather.setMatchWeather(state.room.weather); }
     const teleport = this.firstSnapshot || !previous || self.robot !== previous.robot || self.dead !== previous.dead || this.round !== state.room.round;
-    this.round = state.room.round; this.seq = Math.max(this.seq, self.seq);
+    this.snapAt = state.serverTime || this.snapAt; this.round = state.room.round; this.seq = Math.max(this.seq, self.seq);
     this.pending = teleport || self.dead || state.room.phase === 'intermission' ? [] : this.pending.filter((x) => x.seq > self.seq);
     const body = this.G.player.body;
     Object.assign(body,{x:self.x,y:self.y,z:self.z,vy:self.vy||0,onGround:self.onGround, r:self.robot?this.rules.robot.radius:this.rules.human.radius,h:self.robot?this.rules.robot.height:this.rules.human.height});
@@ -227,7 +227,7 @@ export class Multiplayer {
   }
   command(enabled) {
     const I=this.G.input,P=this.G.player;
-    return {t:'input',seq:++this.seq,forward:enabled?Number(I.down('KeyW'))-Number(I.down('KeyS')):0,right:enabled?Number(I.down('KeyD'))-Number(I.down('KeyA')):0,yaw:P.yaw,pitch:P.pitch,
+    return {t:'input',seq:++this.seq,forward:enabled?Number(I.down('KeyW'))-Number(I.down('KeyS')):0,right:enabled?Number(I.down('KeyD'))-Number(I.down('KeyA')):0,yaw:P.yaw,pitch:P.pitch,view:this.snapAt?Math.round(this.snapAt-50):undefined,
       sprint:!!(enabled&&I.down('ShiftLeft')),crouch:!!(enabled&&this.crouch),jump:!!(enabled&&this.jumpQueued),shoot:!!(enabled&&I.mouse(0)),reload:!!(enabled&&this.reloadQueued),weapon:this.weapon,activateRobot:!!(enabled&&this.robotQueued&&this.robotView)};
   }
   update(dt) {
