@@ -165,6 +165,7 @@ function fallbackKnife() {
 
 const _dl = new THREE.Vector3();
 
+const SCOPE_DROP = 0.23, SCOPE_BACK = 0.06;   // quanto a arma desce / recua ao olhar pela lente da luneta
 export class ViewModel {
   constructor(T) {
     this.scene = new THREE.Scene();
@@ -376,8 +377,8 @@ export class ViewModel {
       py -= 0.12 * Math.min(1, t * 3);
       leftTarget = this.nade.position;
     } else this.nade.visible = false;
-    // visibilidade (luneta esconde arma)
-    g.group.visible = !(st.scoped) && g.group.visible;
+    // luneta: a arma desce para a parte de baixo da tela, como se a lente fosse a própria luneta dela
+    if (st.scopeW) { py -= smoothstep(0.7, 1, ads) * SCOPE_DROP; pz += smoothstep(0.7, 1, ads) * SCOPE_BACK; }
     this.rig.position.set(0, 0, 0);
     g.group.position.set(px, py, pz);
     g.group.rotation.set(rx, ry, rz);

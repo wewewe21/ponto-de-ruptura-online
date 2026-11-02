@@ -150,7 +150,7 @@ class Room {
     b.r=cfg.radius;b.h=cfg.height;b.step=0.6;p.ammo=cfg.mag;p.reloadUntil=0;p.lastShot=now;
     p.protectedUntil=0;this.emit('robot',{player:p.id,active:true});return true;
   }
-  kill(killer,victim,now=this.now()) {
+  kill(killer,victim,now=this.now(),head=false) {
     if(this.phase!=='playing'||victim.dead || (killer && killer.team === victim.team))return;
     const wasRobot=victim.robot;victim.hp=0;victim.dead=true;victim.deaths++;victim.respawnAt=now+this.rules.respawnSeconds*1000;
     victim.streak=0;victim.streakPoints=0;victim.robotReady=false;victim.queue=[];victim.input=null;victim.reloadUntil=0;
@@ -159,7 +159,7 @@ class Room {
       if(!killer.robot) {killer.streak++;killer.streakPoints+=this.rules.killPoints;
         if(killer.streak>=this.rules.robotStreak&&killer.streakPoints>=this.rules.robotPoints)killer.robotReady=true;}
     }
-    this.emit('kill',{killer:killer?.id||null,victim:victim.id,name:killer?.name||'Ambiente',victimName:victim.name,team:killer?.team||null});
+    this.emit('kill',{killer:killer?.id||null,victim:victim.id,name:killer?.name||'Ambiente',victimName:victim.name,team:killer?.team||null,head:!!head});
     if(wasRobot)this.emit('robot',{player:victim.id,active:false,destroyed:true});
     if(Math.max(this.scores.alpha,this.scores.bravo)>=this.rules.scoreLimit)this.endRound(now);
   }
@@ -171,16 +171,17 @@ class Room {
     const origin=[p.body.x,p.body.y+(p.robot?eye:Math.min(eye,p.body.h-0.15)),p.body.z];
     const dir=[-Math.sin(p.yaw)*Math.cos(p.pitch),Math.sin(p.pitch),-Math.cos(p.yaw)*Math.cos(p.pitch)];
     const wall=this.physics.raycast(...origin,...dir,cfg.range,{noWater:true});
-    let distance=wall?wall.t:cfg.range,victim=null;
+    let distance=wall?wall.t:cfg.range,victim=null,head=false;
     for(const other of this.players.values()) {
       if(other.id===p.id||other.dead||!other.connected)continue;
       const b=other.body;
       const t=rayBox(origin,dir,[b.x-b.r,b.y,b.z-b.r],[b.x+b.r,b.y+b.h,b.z+b.r],distance);
-      if(t!==null&&t<distance){distance=t;victim=other;}
+      if(t!==null&&t<distance){distance=t;victim=other;head=!other.robot&&origin[1]+dir[1]*t>=b.y+b.h-0.3;}
     }
     const end=origin.map((v,i)=>v+dir[i]*distance);
-    this.emit('shot',{player:p.id,origin,end,hit:victim?.id||null,robot:p.robot,weapon:p.robot?'ROBOT':p.weapon});
-    if(victim&&victim.team!==p.team&&now>=victim.protectedUntil){victim.hp=Math.max(0,victim.hp-cfg.damage);if(victim.hp===0)this.kill(p,victim,now);}
+    const dealt=!!victim&&victim.team!==p.team&&now>=victim.protectedUntil;   // só confirma acerto que realmente tirou vida
+    this.emit('shot',{player:p.id,origin,end,hit:victim?.id||null,dealt,head:dealt&&head,robot:p.robot,weapon:p.robot?'ROBOT':p.weapon});
+    if(dealt){victim.hp=Math.max(0,victim.hp-cfg.damage);if(victim.hp===0)this.kill(p,victim,now,head);}
     return true;
   }
   tick(dt=1/this.rules.tickRate,now=this.now()) {

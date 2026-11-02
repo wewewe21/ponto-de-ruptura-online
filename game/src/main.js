@@ -535,7 +535,8 @@ function scopeCamera() {
 function render() {
   if (G.multiplayer?.active) { G.multiplayer.render(); return; }
   const showVM = (G.state === 'playing' || G.state === 'paused') && !G.cinematic && !G.player.dead;
-  G.post.render(G.scene, G.camera, showVM ? G.vm.scene : null, G.vm.camera, scopeCamera());
+  const sc = scopeCamera(); document.body.classList.toggle('scoped', !!sc);   // some o HUD: foco só na lente
+  G.post.render(G.scene, G.camera, showVM ? G.vm.scene : null, G.vm.camera, sc);
 }
 
 boot().catch((e) => { console.error(e); $('load-text').textContent = 'Erro ao iniciar: ' + e.message; });

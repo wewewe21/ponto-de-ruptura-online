@@ -202,3 +202,11 @@ test('startup rejects an invalid manifest and room count is bounded',async t=>{
   const {app,url}=await appHarness(t,{rules:rules({maxRooms:2})});app.createRoom();assert.throws(()=>app.createRoom(),/Limite/);
   const response=await fetch(`${url}/api/rooms`);assert.equal((await response.json()).rooms.length,2);
 });
+test('shot events flag headshots and only confirm hits that really dealt damage',async()=>{
+  const h=await harness();h.b.protectedUntil=0;
+  const aimAt=(p,v,f)=>{p.yaw=Math.atan2(-(v.body.x-p.body.x),-(v.body.z-p.body.z));p.pitch=Math.atan2(v.body.y+v.body.h*f-(p.body.y+baseRules.human.eye),Math.hypot(v.body.x-p.body.x,v.body.z-p.body.z));};
+  const lastShot=()=>h.room.events.filter(e=>e.type==='shot').pop();
+  aimAt(h.a,h.b,0.55);assert(h.room.shoot(h.a,h.now()));assert.equal(lastShot().dealt,true);assert.equal(lastShot().head,false);
+  h.advance(300);aimAt(h.a,h.b,0.95);assert(h.room.shoot(h.a,h.now()));assert.equal(lastShot().dealt,true);assert.equal(lastShot().head,true);
+  h.advance(300);h.b.protectedUntil=h.now()+1000;assert(h.room.shoot(h.a,h.now()));assert.equal(lastShot().hit,h.b.id);assert.equal(lastShot().dealt,false);assert.equal(lastShot().head,false);
+});

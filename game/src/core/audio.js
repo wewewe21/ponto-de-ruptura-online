@@ -189,6 +189,9 @@ export class GameAudio {
   }
   hit(kind) {
     if (!this.ctx) return;
+    // online: confirmações mais fortes (acerto, headshot, abate); se o sample faltar, cai nos sons da campanha
+    const strong = { confirm: ['hit_confirm', 0.6, 0.5, 'hit'], headshot: ['hit_headshot', 1.0, 1.0, 'head'], killshot: ['hit_killshot', 0.9, 0.9, 'kill'] }[kind];
+    if (strong) { if (this._s(strong[0], this._out(null, strong[1]), { jitter: 0.03, maxDur: strong[2] })) return; kind = strong[3]; }
     if (this._s(kind === 'head' ? 'hit_head' : kind === 'kill' ? 'hit_kill' : kind === 'armor' ? 'hit_armor' : 'hit_body', this._out(null, kind === 'body' || !kind ? 0.22 : 0.35), { jitter: 0.03, maxDur: 0.5 })) return;
     const o = this._out(null, 0.6), t = this.t;
     if (kind === 'head') { this._tone(o, t, 0.12, 'triangle', 2800, 2400, 0.25); this._noise(o, t, 0.03, 'highpass', 5000, 0, 0.3); }

@@ -223,7 +223,7 @@ export class Multiplayer {
     if(previous&&!previous.robot&&self.robot)this.speakMatch('pilot',4);
     if(previous&&!previous.dead&&self.dead)this.speakMatch(self.robot?'destroyed':'death',4);
     if(previous?.dead&&!self.dead)this.speakMatch('respawn',1);
-    if(previous&&!self.robot&&!self.dead&&self.reloadUntil>this.now()&&!(previous.reloadUntil>this.now()))this.speakMatch('reload',0);
+    if(previous&&!self.robot&&!self.dead&&self.reloadUntil>this.now()&&!(previous.reloadUntil>this.now())){if(!this.G.weapons.def.scope)this.speakMatch('reload',0);}
   }
   command(enabled) {
     const I=this.G.input,P=this.G.player;
@@ -294,11 +294,11 @@ export class Multiplayer {
           if(e.robot)this.robotView?.kick();else this.G.vm.kick(e.weapon==='AX50'?1.8:1);
           this.G.player.pitch=Math.min(1.4,this.G.player.pitch+(e.robot?0.0035:e.weapon==='AX50'?0.012:0.006));
         }
-        if(e.hit){this.markHit(false);this.G.audio.hit('hit');}
+        if(e.dealt??e.hit){this.markHit(!!e.head);this.G.audio.hit(e.head?'headshot':'confirm');}
       }
     } else if(e.type==='kill') {
       this.feed.unshift({text:`${e.name||'Ambiente'}  ›  ${e.victimName||'Soldado'}`,time:this.now()});this.feed=this.feed.slice(0,4);
-      if(e.killer===this.id){this.toast('+100 · ALVO ELIMINADO');this.markHit(true);this.G.audio.hit('kill');this.speakMatch('kill',0);}
+      if(e.killer===this.id){this.toast('+100 · ALVO ELIMINADO');this.markHit(true);if(!e.head)this.G.audio.hit('killshot');this.speakMatch('kill',0);}
     } else if(e.type==='robot'&&e.active&&e.player!==this.id){
       const pilot=this.players.find(p=>p.id===e.player);if(pilot)this.speakMatch(pilot.team===this.self?.team?'friendlyRobot':'enemyRobot',3);
     }
@@ -349,6 +349,7 @@ export class Multiplayer {
     const G=this.G,view=this.self?.robot&&this.robotView;
     const W=G.weapons,sc=G.scopeCam,scoped=!view&&G.post.uniforms.uScope.value>0.5&&W.def.scope;
     if(scoped){sc.position.copy(G.camera.position);sc.quaternion.copy(G.camera.quaternion);sc.aspect=G.camera.aspect;sc.fov=G.settings.fov/(W.def.zoom||4);sc.updateProjectionMatrix();}
+    document.body.classList.toggle('scoped',!!scoped);
     G.post.render(G.scene,G.camera,this.self&&!this.self.dead?(view?view.scene:G.vm.scene):null,view?view.camera:G.vm.camera,scoped?sc:undefined);
   }
   leave() {

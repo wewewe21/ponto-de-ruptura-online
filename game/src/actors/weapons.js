@@ -482,7 +482,7 @@ export class Weapons {
       mouseDX: input.mouseDX, mouseDY: input.mouseDY, lean: p.leanT, time,
       reload: this.reload ? { t: this.reload.t, empty: this.reload.empty, shellPhase: this.reload.shellPhase } : null,
       swap: this.swap, melee: this.melee, meleeSeq: this.meleeSeq, grenade: this.grenade, grenadeHold: !!this.cooking,
-      pumpT: this.pumpT, slideT: this.slideT, scoped: d.scope && this.adsT > 0.92, loaded: d.rocket ? this.A.mag > 0 : true,
+      pumpT: this.pumpT, slideT: this.slideT, scoped: d.scope && this.adsT > 0.92, scopeW: !!d.scope, loaded: d.rocket ? this.A.mag > 0 : true,
     };
   }
 }

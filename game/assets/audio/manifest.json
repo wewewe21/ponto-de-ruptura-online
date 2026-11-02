@@ -782,5 +782,31 @@
   "files": [
    "assets/audio/music/mus_death_1.mp3"
   ]
+ },
+ "hit_confirm": {
+  "group": "sfx",
+  "dur": 0.5,
+  "files": [
+   "assets/audio/sfx/hit_confirm_1.mp3",
+   "assets/audio/sfx/hit_confirm_2.mp3",
+   "assets/audio/sfx/hit_confirm_3.mp3"
+  ]
+ },
+ "hit_headshot": {
+  "group": "sfx",
+  "dur": 1,
+  "files": [
+   "assets/audio/sfx/hit_headshot_1.mp3",
+   "assets/audio/sfx/hit_headshot_2.mp3",
+   "assets/audio/sfx/hit_headshot_3.mp3"
+  ]
+ },
+ "hit_killshot": {
+  "group": "sfx",
+  "dur": 0.9,
+  "files": [
+   "assets/audio/sfx/hit_killshot_1.mp3",
+   "assets/audio/sfx/hit_killshot_2.mp3"
+  ]
  }
 }

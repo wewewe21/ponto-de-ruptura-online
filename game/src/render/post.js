@@ -99,23 +99,23 @@ export class Post {
           col = mix(col, col * vec3(0.3, 0.55, 0.5), uUnder * 0.8);
           // luneta
           if (uScope > 0.5) {
-            vec2 sp = dir * vec2(uAspect, 1.0);
+            vec2 sp = dir * vec2(uAspect, 1.0) - vec2(0.0, 0.03);   // lente um pouco acima do centro: sobra espaço para a arma embaixo
             float r = length(sp);
-            float inLens = smoothstep(0.375, 0.37, r);
+            float inLens = smoothstep(0.35, 0.345, r);
             // fora da lente: a cena sem zoom continua visível, só um pouco mais escura perto do aro
             col *= mix(1.0, 0.8, smoothstep(0.38, 0.55, r));
             // aro da luneta (anel escuro fino com um brilho interno)
-            float rim = smoothstep(0.366, 0.372, r) * (1.0 - smoothstep(0.380, 0.388, r));
+            float rim = smoothstep(0.341, 0.347, r) * (1.0 - smoothstep(0.355, 0.363, r));
             col = mix(col, vec3(0.012, 0.013, 0.015), rim * 0.96);
-            col += vec3(0.05) * smoothstep(0.0035, 0.0, abs(r - 0.3615)) * inLens;
+            col += vec3(0.05) * smoothstep(0.0035, 0.0, abs(r - 0.3365)) * inLens;
             // vinheta suave dentro da lente
-            col *= mix(1.0, 0.86, smoothstep(0.26, 0.36, r) * inLens);
+            col *= mix(1.0, 0.86, smoothstep(0.24, 0.34, r) * inLens);
             // retículo: linhas finas nas laterais e embaixo, mais grossas perto do aro, ponto vermelho no centro
             float lw = 0.0009;
             float thk = lw * (1.0 + 3.0 * smoothstep(0.14, 0.30, abs(sp.x)));
             float hLine = step(abs(sp.y), thk) * step(0.028, abs(sp.x));
             float thkV = lw * (1.0 + 3.0 * smoothstep(0.14, 0.30, abs(sp.y)));
-            float vLine = step(abs(sp.x), thkV) * step(0.014, -sp.y) * step(-0.36, sp.y);
+            float vLine = step(abs(sp.x), thkV) * step(0.014, -sp.y) * step(-0.335, sp.y);
             col = mix(col, vec3(0.0), clamp(hLine + vLine, 0.0, 1.0) * inLens * 0.92);
             col = mix(col, vec3(1.0, 0.12, 0.08), smoothstep(0.0032, 0.0017, r) * inLens);
           }
@@ -198,7 +198,7 @@ export class Post {
     this.scopeBlit = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), new THREE.ShaderMaterial({
       uniforms: { tScope: { value: this.scopeRT.texture }, uAspect: this.uniforms.uAspect }, depthTest: false, depthWrite: false,
       vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }',
-      fragmentShader: 'precision highp float; varying vec2 vUv; uniform sampler2D tScope; uniform float uAspect; void main(){ vec2 sp = (vUv - 0.5) * vec2(uAspect, 1.0); if (length(sp) > 0.375) discard; gl_FragColor = vec4(texture2D(tScope, vUv).rgb, 1.0); }',
+      fragmentShader: 'precision highp float; varying vec2 vUv; uniform sampler2D tScope; uniform float uAspect; void main(){ vec2 sp = (vUv - 0.5) * vec2(uAspect, 1.0) - vec2(0.0, 0.03); if (length(sp) > 0.35) discard; gl_FragColor = vec4(texture2D(tScope, vUv - vec2(0.0, 0.03)).rgb, 1.0); }',
     }));
     this.scopeBlit.frustumCulled = false;
     this.scopeScene = new THREE.Scene(); this.scopeScene.add(this.scopeBlit);
