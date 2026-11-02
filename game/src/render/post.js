@@ -14,7 +14,7 @@ export class Post {
       tScene: { value: this.rt.texture }, uTime: { value: 0 }, uNVG: { value: 0 }, uGain: { value: 11 },
       uGlare: { value: 0 }, uDamage: { value: 0 }, uFlash: { value: 0 }, uLowHealth: { value: 0 },
       uExposure: { value: 1.0 }, uSuppress: { value: 0 }, uFade: { value: 0 }, uAspect: { value: size.x / size.y },
-      uUnder: { value: 0 }, uRes: { value: new THREE.Vector2(size.x, size.y) }, uScope: { value: 0 }, uSat: { value: 1 },
+      uUnder: { value: 0 }, uRes: { value: new THREE.Vector2(size.x, size.y) }, uScope: { value: 0 }, uLensR: { value: 0.29 }, uSat: { value: 1 },
       tBloom: { value: null }, uFocus: { value: 0 }, tAO: { value: null }, uAOk: { value: 0.85 }, uBloom: { value: 0.32 }, uSharp: { value: 0.12 }, uGrade: { value: 1 }, uRain: { value: 0 },
     };
     this.mat = new THREE.ShaderMaterial({
@@ -25,6 +25,7 @@ export class Post {
         varying vec2 vUv;
         uniform sampler2D tScene, tBloom, tAO; uniform vec2 uRes; uniform float uAOk;
         uniform float uBloom, uSharp, uGrade, uRain, uFocus;
+        uniform float uLensR;
         uniform float uTime, uNVG, uGain, uGlare, uDamage, uFlash, uLowHealth, uExposure, uSuppress, uFade, uAspect, uUnder, uScope, uSat;
         float hash(vec2 p){ return fract(sin(dot(p, vec2(12.9898,78.233))) * 43758.5453); }
         vec3 aces(vec3 x){ return clamp((x*(2.51*x+0.03))/(x*(2.43*x+0.59)+0.14), 0.0, 1.0); }
@@ -97,27 +98,21 @@ export class Post {
           col = mix(col, vec3(0.45, 0.0, 0.0), edge * clamp(uDamage * 0.8 + uLowHealth * 0.55 * (0.75 + 0.25 * sin(uTime * 6.0)), 0.0, 0.85));
           // água
           col = mix(col, col * vec3(0.3, 0.55, 0.5), uUnder * 0.8);
-          // luneta
+          // luneta: o aro vem do modelo da arma; aqui só o interior da lente (escurece na borda, retículo, ponto vermelho)
           if (uScope > 0.5) {
-            vec2 sp = dir * vec2(uAspect, 1.0) - vec2(0.0, 0.03);   // lente um pouco acima do centro: sobra espaço para a arma embaixo
-            float r = length(sp);
-            float inLens = smoothstep(0.35, 0.345, r);
-            // fora da lente: a cena sem zoom continua visível, só um pouco mais escura perto do aro
-            col *= mix(1.0, 0.8, smoothstep(0.38, 0.55, r));
-            // aro da luneta (anel escuro fino com um brilho interno)
-            float rim = smoothstep(0.341, 0.347, r) * (1.0 - smoothstep(0.355, 0.363, r));
-            col = mix(col, vec3(0.012, 0.013, 0.015), rim * 0.96);
-            col += vec3(0.05) * smoothstep(0.0035, 0.0, abs(r - 0.3365)) * inLens;
-            // vinheta suave dentro da lente
-            col *= mix(1.0, 0.86, smoothstep(0.24, 0.34, r) * inLens);
-            // retículo: linhas finas nas laterais e embaixo, mais grossas perto do aro, ponto vermelho no centro
+            vec2 sp = dir * vec2(uAspect, 1.0);
+            float r = length(sp), R = uLensR, s = R / 0.35;
+            float inLens = smoothstep(R, R - 0.004, r);
+            col *= 1.0 - inLens * 0.8 * smoothstep(R * 0.78, R, r);
+            col += vec3(0.04) * smoothstep(0.006, 0.0, abs(r - R * 0.93)) * inLens;
+            vec2 q = sp / s;
             float lw = 0.0009;
-            float thk = lw * (1.0 + 3.0 * smoothstep(0.14, 0.30, abs(sp.x)));
-            float hLine = step(abs(sp.y), thk) * step(0.028, abs(sp.x));
-            float thkV = lw * (1.0 + 3.0 * smoothstep(0.14, 0.30, abs(sp.y)));
-            float vLine = step(abs(sp.x), thkV) * step(0.014, -sp.y) * step(-0.335, sp.y);
+            float thk = lw * (1.0 + 3.0 * smoothstep(0.14, 0.30, abs(q.x)));
+            float hLine = step(abs(q.y), thk) * step(0.028, abs(q.x));
+            float thkV = lw * (1.0 + 3.0 * smoothstep(0.14, 0.30, abs(q.y)));
+            float vLine = step(abs(q.x), thkV) * step(0.014, -q.y);
             col = mix(col, vec3(0.0), clamp(hLine + vLine, 0.0, 1.0) * inLens * 0.92);
-            col = mix(col, vec3(1.0, 0.12, 0.08), smoothstep(0.0032, 0.0017, r) * inLens);
+            col = mix(col, vec3(1.0, 0.12, 0.08), smoothstep(0.0032, 0.0017, length(q)) * inLens);
           }
           // flash / fade
           col = mix(col, vec3(1.0), clamp(uFlash, 0.0, 1.0));
@@ -196,9 +191,18 @@ export class Post {
     // luneta: a cena é renderizada uma segunda vez, com zoom, e colada num círculo no centro; o resto da tela segue visível
     this.scopeRT = new THREE.WebGLRenderTarget(size.x, size.y, { type: THREE.HalfFloatType, samples: 2 });
     this.scopeBlit = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), new THREE.ShaderMaterial({
-      uniforms: { tScope: { value: this.scopeRT.texture }, uAspect: this.uniforms.uAspect }, depthTest: false, depthWrite: false,
+      uniforms: { tScope: { value: this.scopeRT.texture }, uAspect: this.uniforms.uAspect, uLensR: this.uniforms.uLensR }, depthTest: false, depthWrite: false,
       vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }',
-      fragmentShader: 'precision highp float; varying vec2 vUv; uniform sampler2D tScope; uniform float uAspect; void main(){ vec2 sp = (vUv - 0.5) * vec2(uAspect, 1.0) - vec2(0.0, 0.03); if (length(sp) > 0.35) discard; gl_FragColor = vec4(texture2D(tScope, vUv - vec2(0.0, 0.03)).rgb, 1.0); }',
+      fragmentShader: [
+        'precision highp float; varying vec2 vUv; uniform sampler2D tScope; uniform float uAspect, uLensR;',
+        'void main(){',
+        '  vec2 d = vUv - 0.5; float r = length(d * vec2(uAspect, 1.0)) / uLensR; if (r > 1.0) discard;',
+        '  float k = 0.16 * r * r;            // distorção de barril: a borda da lente comprime a imagem',
+        '  float ca = 0.03 * r * r;           // aberração cromática: vermelho e azul se separam perto da borda',
+        '  vec3 c = vec3(texture2D(tScope, 0.5 + d * (1.0 + k + ca)).r, texture2D(tScope, 0.5 + d * (1.0 + k)).g, texture2D(tScope, 0.5 + d * (1.0 + k - ca)).b);',
+        '  gl_FragColor = vec4(c, 1.0);',
+        '}',
+      ].join('\n'),
     }));
     this.scopeBlit.frustumCulled = false;
     this.scopeScene = new THREE.Scene(); this.scopeScene.add(this.scopeBlit);

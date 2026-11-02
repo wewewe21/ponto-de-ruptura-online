@@ -152,7 +152,7 @@ function buildArms(isPistol) {
 
 // posições da arma na tela (espaço da câmera do viewmodel; x direita, y cima, -z à frente): [x, y, z]
 export const HIP = { default: [0.13, -0.16, -0.78], P19: [0.1, -0.11, -0.8], MK5: [0.12, -0.15, -0.8], AX50: [0.1, -0.14, -0.98], VK12: [0.11, -0.14, -0.9], KNIFE: [0.14, -0.16, -0.7], RPL2: [0.15, -0.14, -0.62], BRK8: [0.14, -0.15, -0.78], LASER: [0.13, -0.14, -0.7] };
-export const ADS_DIST = { default: 0.38, P19: 0.34, MK5: 0.36, VK12: 0.36, RPL2: 0.24, AX50: 0.4 };
+export const ADS_DIST = { default: 0.38, P19: 0.34, MK5: 0.36, VK12: 0.36, RPL2: 0.24, AX50: 0.27 };
 
 function fallbackKnife() {
   const g = new THREE.Group();
@@ -165,7 +165,6 @@ function fallbackKnife() {
 
 const _dl = new THREE.Vector3();
 
-const SCOPE_DROP = 0.23, SCOPE_BACK = 0.06;   // quanto a arma desce / recua ao olhar pela lente da luneta
 export class ViewModel {
   constructor(T) {
     this.scene = new THREE.Scene();
@@ -377,8 +376,12 @@ export class ViewModel {
       py -= 0.12 * Math.min(1, t * 3);
       leftTarget = this.nade.position;
     } else this.nade.visible = false;
-    // luneta: a arma desce para a parte de baixo da tela, como se a lente fosse a própria luneta dela
-    if (st.scopeW) { py -= smoothstep(0.7, 1, ads) * SCOPE_DROP; pz += smoothstep(0.7, 1, ads) * SCOPE_BACK; }
+    // luneta: a câmera fica colada na ocular e a arma não balança (a lente fica sempre alinhada com o aro do modelo)
+    if (st.scopeW) {
+      const k = smoothstep(0.7, 1, ads);
+      px = lerp(px, adsPos[0], k); py = lerp(py, adsPos[1], k); pz = lerp(pz, adsPos[2], k);
+      rx *= 1 - k; ry *= 1 - k; rz *= 1 - k;
+    }
     this.rig.position.set(0, 0, 0);
     g.group.position.set(px, py, pz);
     g.group.rotation.set(rx, ry, rz);
