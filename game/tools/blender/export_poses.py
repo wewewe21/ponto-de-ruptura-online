@@ -58,7 +58,7 @@ def main():
         poles = {}
         for suf in ('.L', '.R'):
             pole = rig.pose.bones['pole' + suf]
-            elbow = rig.pose.bones['forearm' + suf].head
+            elbow = rig.pose.bones['Arm_2' + suf].head
             poles[suf] = {'elbow': list(to_game(Matrix.Translation(rig.matrix_world @ elbow), org).translation), 'ctrl': list(to_game(rig.matrix_world @ pole.matrix, org).translation)}
         result['stations'][gid] = {'gun': three(gun_g), 'bones': bones, 'pole': poles}
     with open(out_pose, 'w', encoding='utf8') as f:
@@ -75,7 +75,7 @@ def main():
             verts.append([round(p.x, 6), round(p.y, 6), round(p.z, 6)])
             w = sorted(((names[g.group], round(g.weight, 4)) for g in v.groups), key=lambda x: -x[1])[:4]
             weights.append(w)
-        uv = me.uv_layers['UVMap'].data
+        uv = me.uv_layers.active.data
         # um UV por vértice (a malha foi soldada por posição+uv, então é único)
         uvs = [None] * len(me.vertices)
         tris = []
