@@ -9,9 +9,14 @@ export const WEAPONS = {
   VK12: { id: 'VK12', name: 'DMR VK-12', short: 'VK-12', slot: 'primary', auto: false, rpm: 300, dmg: 70, dmgFar: 62, r0: 60, r1: 120, head: 2.5, limb: 0.85, mag: 10, reserve: 50, hip: 6, ads: 0.04, adsTime: 0.3, zoom: 4.2, scope: true, reloadT: 2.4, reloadE: 3.0, pen: 1.5, recoil: { up: 1.7, side: 0.35, freq: 1.1, phase: 0.2, rand: 0.4 }, sound: 'VK12', tracer: 1, range: 400, move: 0.92 },
   BRK8: { id: 'BRK8', name: 'ESCOPETA BRK-8', short: 'BRK-8', slot: 'primary', auto: false, rpm: 75, pellets: 9, dmg: 18, dmgFar: 6, r0: 8, r1: 25, head: 1.5, limb: 0.9, mag: 7, reserve: 28, hip: 5.0, ads: 3.2, pelletSpread: true, adsTime: 0.22, zoom: 1.2, shell: 0.5, reloadStart: 0.35, pen: 0.2, recoil: { up: 2.6, side: 0.5, freq: 1.7, phase: 0.5, rand: 0.4 }, sound: 'BRK8', tracer: 0, range: 60, move: 0.95, pump: true },
   P19: { id: 'P19', name: 'PISTOLA P-19', short: 'P-19', slot: 'secondary', auto: false, rpm: 450, dmg: 30, dmgFar: 22, r0: 15, r1: 35, head: 2.5, limb: 0.8, mag: 15, reserve: 60, hip: 2.5, ads: 0.3, adsTime: 0.15, zoom: 1.2, reloadT: 1.4, reloadE: 1.8, pen: 0.3, recoil: { up: 1.0, side: 0.3, freq: 1.3, phase: 0.8, rand: 0.4 }, sound: 'P19', tracer: 0, range: 120, move: 1.05 },
+  MK5: { id: 'MK5', name: 'SUBMETRALHADORA MK-5', short: 'MK-5', slot: 'primary', auto: true, rpm: 900, dmg: 21, dmgFar: 12, r0: 12, r1: 32, head: 2.6, limb: 0.8, mag: 32, reserve: 192, hip: 2.4, ads: 0.5, adsTime: 0.14, zoom: 1.25, reloadT: 1.8, reloadE: 2.3, pen: 0.2, sup: true, recoil: { up: 0.26, side: 0.2, freq: 0.7, phase: 0.4, rand: 0.3 }, sound: 'SD9', tracer: 0, range: 120, move: 1.05 },
+  AX50: { id: 'AX50', name: 'SNIPER AX-50', short: 'AX-50', slot: 'primary', auto: false, rpm: 46, dmg: 135, dmgFar: 120, r0: 120, r1: 300, head: 2.5, limb: 0.9, mag: 5, reserve: 25, hip: 9, ads: 0.0, adsTime: 0.38, zoom: 8, scope: true, reloadT: 2.8, reloadE: 3.4, pen: 2.5, recoil: { up: 2.4, side: 0.4, freq: 1, phase: 0.2, rand: 0.3 }, sound: 'VK12', tracer: 1, range: 600, move: 0.88, bolt: true },
   RPL2: { id: 'RPL2', name: 'LANÇA-FOGUETES RPL-2', short: 'RPL-2', slot: 'primary', auto: false, rpm: 30, mag: 1, reserve: 3, rocket: true, hip: 4, ads: 0.8, adsTime: 0.35, zoom: 1.3, reloadT: 3.5, reloadE: 3.5, recoil: { up: 4, side: 0.5, freq: 1, phase: 0, rand: 0.3 }, sound: 'RPL2', range: 300, move: 0.8 },
+  KNIFE: { id: 'KNIFE', name: 'FACA TÁTICA', short: 'FACA', slot: 'melee', melee: true, adsTime: 0.2, zoom: 1, move: 1.08, mag: 0, reserve: 0 },
   LASER: { id: 'LASER', name: 'DESIGNADOR A LASER', short: 'LASER', slot: 'special', laser: true, adsTime: 0.25, zoom: 2.2, move: 1.0, mag: 0, reserve: 0 },
 };
+// primárias que o jogador pode alternar (Digit1 repetido); o lança-foguetes é item de missão
+export const ARSENAL = ['SD9', 'MK5', 'KR7', 'VK12', 'AX50', 'BRK8'];
 const RES = { wood: 0.5, metal: 0.8, glass: 0.1, sand: 1.4, concrete: 9 };
 const _v = new THREE.Vector3(), _v2 = new THREE.Vector3(), _q = new THREE.Quaternion();
 
@@ -22,15 +27,15 @@ export class Weapons {
     this.projectiles = [];
   }
   reset(state) {
-    this.slots = state ? { ...state.slots } : { primary: 'SD9', secondary: 'P19', special: 'LASER' };
+    this.slots = state ? { melee: 'KNIFE', ...state.slots } : { primary: 'SD9', secondary: 'P19', melee: 'KNIFE', special: 'LASER' };
     this.ammo = state ? JSON.parse(JSON.stringify(state.ammo)) : {
-      SD9: { mag: 30, reserve: 150 }, P19: { mag: 15, reserve: 60 }, KR7: { mag: 30, reserve: 90 }, VK12: { mag: 10, reserve: 30 }, BRK8: { mag: 7, reserve: 21 }, RPL2: { mag: 1, reserve: 2 }, LASER: { mag: 0, reserve: 0 },
+      SD9: { mag: 30, reserve: 150 }, MK5: { mag: 32, reserve: 160 }, AX50: { mag: 5, reserve: 20 }, P19: { mag: 15, reserve: 60 }, KR7: { mag: 30, reserve: 90 }, VK12: { mag: 10, reserve: 30 }, BRK8: { mag: 7, reserve: 21 }, RPL2: { mag: 1, reserve: 2 }, LASER: { mag: 0, reserve: 0 },
     };
     this.nades = state ? { ...state.nades } : { frag: 3, flash: 2, smoke: 2 };
     this.tactical = state ? state.tactical : 'flash';
     this.cur = state ? state.cur : 'primary';
     this.adsT = 0; this.fireCd = 0; this.shotIdx = 0; this.bloom = 0; this.reload = null; this.swap = 0; this.swapTo = null;
-    this.melee = 0; this.grenade = 0; this.cooking = null; this.sprintFireDelay = 0; this.triggerHeld = false;
+    this.melee = 0; this.meleeSeq = 0; this.grenade = 0; this.cooking = null; this.sprintFireDelay = 0; this.triggerHeld = false;
     this.pumpT = 0; this.slideT = 0; this.recoilAccum = 0; this.recoilYawAccum = 0; this.lastShot = -9;
     this.laserBeam = 0;
   }
@@ -45,6 +50,15 @@ export class Weapons {
     if (slot === 'special' && !this.G.support.anyUnlocked()) { this.G.hud.toast('Designador sem enlace — desative um bloqueador'); return; }
     if (!this.slots[slot]) return;
     this.reload = null; this.swapTo = slot; this.swap = 0.0001; this.G.audio.mech('swap');
+  }
+  // alterna entre as primárias do arsenal (Digit1 repetido)
+  cyclePrimary() {
+    const list = ARSENAL, i = list.indexOf(this.slots.primary), next = list[(i + 1) % list.length];
+    if (next === this.slots.primary) return;
+    this.slots.primary = next;
+    if (!this.ammo[next]) this.ammo[next] = { mag: WEAPONS[next].mag, reserve: WEAPONS[next].reserve };
+    this.reload = null; this.swapTo = 'primary'; this.swap = 0.0001; this.G.audio.mech('swap');
+    this.G.hud.toast(WEAPONS[next].name);
   }
   pickup(id) {
     const def = WEAPONS[id];
@@ -96,16 +110,17 @@ export class Weapons {
       }
     }
     // ADS
-    const wantAds = canAct && input.mouse(2) && !p.sprinting && this.melee <= 0 && !(this.reload && this.def.id !== 'BRK8') && this.grenade <= 0;
+    const wantAds = canAct && input.mouse(2) && !p.sprinting && this.melee <= 0 && !(this.reload && this.def.id !== 'BRK8') && this.grenade <= 0 && !this.def.melee;
     const prevAds = this.adsT;
     this.adsT = clamp(this.adsT + (wantAds ? 1 : -1) * dt / (this.def.adsTime || 0.2), 0, 1);
     if (prevAds === 0 && this.adsT > 0) G.audio.mech('ads');
     if (p.sprinting) this.sprintFireDelay = 0.18; else this.sprintFireDelay = Math.max(0, this.sprintFireDelay - dt);
     if (!canAct) { this.triggerHeld = false; return; }
     // entradas
-    if (input.pressed('Digit1')) this.equip('primary');
+    if (input.pressed('Digit1')) { if (this.cur === 'primary' && !this.busy && this.swapTo === null) this.cyclePrimary(); else this.equip('primary'); }
     if (input.pressed('Digit2')) this.equip('secondary');
-    if (input.pressed('Digit4') || input.pressed('Digit3')) this.equip('special');
+    if (input.pressed('Digit3')) this.equip('melee');
+    if (input.pressed('Digit4')) this.equip('special');
     if (input.wheel && !this.busy && !(this.def.laser)) this.equip(this.cur === 'primary' ? 'secondary' : 'primary');
     else if (input.wheel && this.def.laser) G.support.cycle(input.wheel);
     if (input.pressed('KeyX')) { this.tactical = this.tactical === 'flash' ? 'smoke' : 'flash'; G.hud.toast(this.tactical === 'flash' ? 'Tática: ATORDOANTE' : 'Tática: FUMAÇA'); G.audio.mech('beep'); }
@@ -131,6 +146,8 @@ export class Weapons {
     const trig = input.mouse(0);
     if (d.laser) {
       if (input.mousePressed(0)) this.designate();
+    } else if (d.melee) {
+      if (input.mousePressed(0) && this.melee <= 0 && this.swap <= 0 && this.grenade <= 0) this.knife();
     } else if (trig && this.swap <= 0 && this.melee <= 0 && this.grenade <= 0 && this.sprintFireDelay <= 0) {
       if (this.reload && d.id === 'BRK8' && this.A.mag > 0) this.reload = null; // escopeta: interrompe recarga
       if (!this.reload && this.fireCd <= 0 && (d.auto || !this.triggerHeld)) {
@@ -422,7 +439,7 @@ export class Weapons {
   }
   knife() {
     const G = this.G, p = G.player;
-    this.melee = 1; this.reload = null;
+    this.melee = 1; this.meleeSeq++; this.reload = null;
     const t = G.director.meleeTarget(p.pos, G.camera.getWorldDirection(new THREE.Vector3()));
     if (t && t.unaware) {
       G.audio.mech('knife');
@@ -460,7 +477,7 @@ export class Weapons {
       id: d.id, adsT: this.adsT, sprintT: p.sprintT, crouch: p.stance !== 'stand' ? 1 : 0, speed: p.hSpeed, onGround: p.body.onGround,
       mouseDX: input.mouseDX, mouseDY: input.mouseDY, lean: p.leanT, time,
       reload: this.reload ? { t: this.reload.t, empty: this.reload.empty, shellPhase: this.reload.shellPhase } : null,
-      swap: this.swap, melee: this.melee, grenade: this.grenade, grenadeHold: !!this.cooking,
+      swap: this.swap, melee: this.melee, meleeSeq: this.meleeSeq, grenade: this.grenade, grenadeHold: !!this.cooking,
       pumpT: this.pumpT, slideT: this.slideT, scoped: d.scope && this.adsT > 0.92, loaded: d.rocket ? this.A.mag > 0 : true,
     };
   }
