@@ -147,6 +147,8 @@ export class HUD {
       const S = G.support.types[G.support.selected];
       $('w-mag').textContent = S ? S.charges : '-';
       $('w-res').textContent = S ? S.name : '';
+    } else if (d.melee) {
+      $('w-mag').textContent = '—'; $('w-res').textContent = ''; $('w-mag').classList.remove('low');
     } else {
       $('w-mag').textContent = A.mag;
       $('w-res').textContent = A.reserve;
@@ -178,7 +180,7 @@ export class HUD {
     $('sq-row-2').classList.toggle('dim', !G.support.types.sniper.unlocked);
     // mira
     const ch = $('crosshair');
-    const hide = W.adsT > 0.5 || p.sprintT > 0.5 || W.busy && W.reload == null && W.swap > 0 || d.laser && W.adsT > 0.5 || p.dead;
+    const hide = d.melee || W.adsT > 0.5 || p.sprintT > 0.5 || W.busy && W.reload == null && W.swap > 0 || d.laser && W.adsT > 0.5 || p.dead;
     ch.style.opacity = hide ? 0 : 1;
     const spread = W.spreadDeg();
     const gap = Math.tan((spread * Math.PI) / 180) / Math.tan((G.camera.fov * Math.PI) / 360) * (this.H / 2);

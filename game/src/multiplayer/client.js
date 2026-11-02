@@ -3,6 +3,7 @@ import { stepBody } from '../../shared/movement.js';
 import { applyWorldFlags } from '../world/level.js';
 import { RemoteAvatars } from './avatars.js';
 import { RobotView } from './robot-view.js';
+import { WEAPONS, ARSENAL as PRIMARIES } from '../actors/weapons.js';
 
 const $ = (id) => document.getElementById(id);
 const TEAM = { alpha: 'MARTELO', bravo: 'AFOGADOS' };
@@ -13,6 +14,7 @@ export class Multiplayer {
     this.G = G; this.active = false; this.connected = false; this.pending = []; this.seq = 0; this.acc = 0;
     this.players = []; this.offset = 0; this.feed = []; this.ping = 0; this.intentionalClose = true;
     this.renderPos = new THREE.Vector3(); this.robotView = null; this.weatherKey = null;
+    this.weapon = 'SD9'; this.lastPrimary = 'SD9'; this.weaponAt = 0;
     this.lastFire = 0; this.crouch = false; this.jumpQueued = false; this.reloadQueued = false; this.robotQueued = false;
     this.refreshController = null; this.refreshTimer = null;
     $('btn-online').onclick = () => this.openLobby();
@@ -134,7 +136,7 @@ export class Multiplayer {
     for (const ally of G.allies.list) { ally.model.root.visible = false; if (ally.model.gun) ally.model.gun.visible = false; }
     applyWorldFlags(G, {}); G.nvg = false; G.cinematic = false; G.player.zone = null;
     for (const key of ['uSuppress','uGlare','uFlash','uLowHealth','uUnder','uScope','uDamage','uFade']) G.post.uniforms[key].value = 0;
-    G.state = 'multiplayer'; G.hud.show(false); G.weapons.reset(); G.vm.set('SD9');
+    G.state = 'multiplayer'; G.hud.show(false); G.weapons.reset(); G.vm.set('SD9'); this.weapon = 'SD9'; this.lastPrimary = 'SD9'; this.applyWeapon('SD9', true);
     for (const id of ['title','briefing','pause','death','victory','settings','controls','chapters','mp-lobby','fullmap']) $(id).hidden = true;
     $('mp-hud').hidden = false; this.menu = true;
     this.avatars = new RemoteAvatars(G);
@@ -143,6 +145,25 @@ export class Multiplayer {
     this.robotViewPromise ||= RobotView.create(G).then((view) => { this.robotView = view; view.resize(G.camera.aspect); return view; }).catch((e) => { this.robotViewPromise = null; this.toast('Não foi possível carregar o Colosso. Atualize a página para tentar novamente.'); console.error(e); });
     const url = new URL(location.href); url.searchParams.set('sala', this.roomId); history.replaceState(null, '', url);
     G.input.lock();
+  }
+  // troca a arma na tela (o servidor valida e passa a usar o dano/cadência/munição dela)
+  applyWeapon(id, instant = false) {
+    const G=this.G,W=G.weapons; this.weapon=id; this.weaponAt=performance.now();
+    if (PRIMARIES.includes(id)) { this.lastPrimary=id; W.slots.primary=id; W.cur='primary'; }
+    else if (id==='P19') W.cur='secondary'; else if (id==='KNIFE') W.cur='melee'; else { W.slots.special=id; W.cur='special'; }
+    if (!W.ammo[id]) W.ammo[id]={mag:0,reserve:0};
+    W.swap=instant?0:0.9; W.swapTo=null; W.reload=null; G.vm.set(W.id);
+  }
+  selectWeapon(input) {
+    if (this.self.robot) return;
+    let want = null;
+    if (input.pressed('Digit1')) want = PRIMARIES.includes(this.weapon) ? PRIMARIES[(PRIMARIES.indexOf(this.weapon) + 1) % PRIMARIES.length] : this.lastPrimary;
+    else if (input.pressed('Digit2')) want = 'P19';
+    else if (input.pressed('Digit3')) want = 'KNIFE';
+    else if (input.pressed('Digit4')) want = 'AX50';
+    if (want && want !== this.weapon) {
+      this.applyWeapon(want); this.G.audio.mech('swap'); this.reloadQueued = false;
+    }
   }
   makeBoundary() {
     const a = this.rules.arena;
@@ -167,13 +188,14 @@ export class Multiplayer {
     if (!previous?.robotReady && self.robotReady) this.toast('COLOSSO DISPONÍVEL · pressione B para assumir o controle');
     if (previous?.robot && !self.robot) this.toast('Colosso destruído. Faça outra sequência para conquistá-lo novamente.');
     this.G.player.hp = self.hp; this.G.player.dead = self.dead;
+    if (!self.robot && self.weapon && self.weapon !== this.weapon && performance.now() - this.weaponAt > 1500) this.applyWeapon(self.weapon, true);
     this.avatars?.sync(state.players,this.id); this.firstSnapshot=false;
     this.updateScoreboard();
   }
   command(enabled) {
     const I=this.G.input,P=this.G.player;
     return {t:'input',seq:++this.seq,forward:enabled?Number(I.down('KeyW'))-Number(I.down('KeyS')):0,right:enabled?Number(I.down('KeyD'))-Number(I.down('KeyA')):0,yaw:P.yaw,pitch:P.pitch,
-      sprint:!!(enabled&&I.down('ShiftLeft')),crouch:!!(enabled&&this.crouch),jump:!!(enabled&&this.jumpQueued),shoot:!!(enabled&&I.mouse(0)),reload:!!(enabled&&this.reloadQueued),activateRobot:!!(enabled&&this.robotQueued&&this.robotView)};
+      sprint:!!(enabled&&I.down('ShiftLeft')),crouch:!!(enabled&&this.crouch),jump:!!(enabled&&this.jumpQueued),shoot:!!(enabled&&I.mouse(0)),reload:!!(enabled&&this.reloadQueued),weapon:this.weapon,activateRobot:!!(enabled&&this.robotQueued&&this.robotView)};
   }
   update(dt) {
     if (!this.self) return;
@@ -186,6 +208,7 @@ export class Multiplayer {
       if (I.pressed('KeyC')||I.pressed('ControlLeft')) this.crouch=!this.crouch;
       this.jumpQueued ||= I.pressed('Space'); this.reloadQueued ||= I.pressed('KeyR'); this.robotQueued ||= I.pressed('KeyB');
       if (I.pressed('KeyN')) G.nvg=!G.nvg;
+      this.selectWeapon(I);
     }
     this.acc+=dt;
     const fixed=1/this.rules.tickRate;
@@ -202,10 +225,12 @@ export class Multiplayer {
     this.renderPos.lerp(P.pos,1-Math.exp(-25*dt));if(this.renderPos.distanceTo(P.pos)>3)this.renderPos.copy(P.pos);
     G.camera.position.copy(this.renderPos);G.camera.position.y+=P.eyeH;
     G.camera.rotation.set(P.pitch,P.yaw,0,'YXZ');
-    const W=G.weapons;W.adsT=THREE.MathUtils.damp(W.adsT,enabled&&I.mouse(2)?1:0,12,dt);
-    const targetFov=G.settings.fov/(1+W.adsT*0.25);G.camera.fov=THREE.MathUtils.damp(G.camera.fov,targetFov,12,dt);G.camera.updateProjectionMatrix();
+    const W=G.weapons;W.adsT=THREE.MathUtils.damp(W.adsT,enabled&&I.mouse(2)&&(this.self.robot||!W.def.melee)?1:0,12,dt);
+    const zoom=this.self.robot?1.25:(W.def.zoom||1.25);W.swap=Math.max(0,W.swap-dt/0.3);W.melee=Math.max(0,W.melee-dt/0.55);
+    const targetFov=G.settings.fov/(1+W.adsT*(zoom-1));G.camera.fov=THREE.MathUtils.damp(G.camera.fov,targetFov,12,dt);G.camera.updateProjectionMatrix();
     const reloading=this.self.reloadUntil>now;
-    W.reload=reloading?{t:Math.max(0,1-(this.self.reloadUntil-now)/(cfg.reloadSeconds*1000)),empty:this.self.ammo===0}:null;
+    const reloadSecs=(this.self.robot?cfg:(this.rules.weapons&&this.rules.weapons[this.self.weapon])||cfg).reloadSeconds;
+    W.reload=reloading?{t:Math.max(0,1-(this.self.reloadUntil-now)/(reloadSecs*1000)),empty:this.self.ammo===0}:null;
     W.A.mag=this.self.ammo;
     if(this.self.robot)this.robotView?.update(dt,{adsT:W.adsT,speed,shooting:enabled&&I.mouse(0)&&now-this.lastFire<140,reloading,yaw:P.yaw,pitch:P.pitch});
     else G.vm.update(dt,W.vmState(I,G.time));
@@ -217,7 +242,7 @@ export class Multiplayer {
     G.audio.listener(G.camera);G.audio.setRain(G.weather.intensity,false);
     P.damagePulse=THREE.MathUtils.damp(P.damagePulse,0,3,dt);
     const U=G.post.uniforms;U.uTime.value=G.time;U.uNVG.value=G.nvg?1:0;U.uDamage.value=P.damagePulse;U.uLowHealth.value=!this.self.dead?Math.max(0,(cfg.hp*0.35-this.self.hp)/(cfg.hp*0.35)):0;
-    U.uFade.value=this.self.dead?0.3:0;U.uExposure.value=daylight?1:1.2;U.uFocus.value=W.adsT;U.uScope.value=0;U.uUnder.value=0;U.uFlash.value=0;
+    U.uFade.value=this.self.dead?0.3:0;U.uExposure.value=daylight?1:1.2;U.uFocus.value=W.def.scope&&!this.self.robot?0:W.adsT;U.uScope.value=!this.self.robot&&W.def.scope&&W.adsT>0.92?1:0;U.uUnder.value=0;U.uFlash.value=0;
     $('mp-scoreboard').hidden=!(I.down('Tab')||this.room.phase==='intermission');
     this.updateHud();
   }
@@ -227,10 +252,14 @@ export class Multiplayer {
     if(e.type==='shot') {
       const origin=new THREE.Vector3(...e.origin),end=new THREE.Vector3(...e.end);
       if(e.player===this.id) {
-        this.G.fx.tracer(origin,end,e.robot?0xff9c3d:0xffcf88,450,e.robot?9:4);
-        this.lastFire=this.now();this.G.audio.shot(e.robot?'KR7':'SD9');
-        if(e.robot)this.robotView?.kick();else this.G.vm.kick(1);
-        this.G.player.pitch=Math.min(1.4,this.G.player.pitch+(e.robot?0.0035:0.006));
+        const def=WEAPONS[e.weapon];this.lastFire=this.now();
+        if(e.weapon==='KNIFE'){ const W=this.G.weapons;W.melee=1;W.meleeSeq++;this.G.audio.mech('knife'); }
+        else {
+          this.G.fx.tracer(origin,end,e.robot?0xff9c3d:0xffcf88,450,e.robot?9:4);
+          this.G.audio.shot(e.robot?'KR7':(def?def.sound:'SD9'));
+          if(e.robot)this.robotView?.kick();else this.G.vm.kick(e.weapon==='AX50'?1.8:1);
+          this.G.player.pitch=Math.min(1.4,this.G.player.pitch+(e.robot?0.0035:e.weapon==='AX50'?0.012:0.006));
+        }
         if(e.hit){$('mp-crosshair').classList.add('hit');clearTimeout(this.hitTimer);this.hitTimer=setTimeout(()=>$('mp-crosshair').classList.remove('hit'),120);}
       }
     } else if(e.type==='kill') {
@@ -248,15 +277,15 @@ export class Multiplayer {
     $('mp-room-title').textContent=r.name;
     $('mp-weather').textContent=this.rules.weather.find(w=>w.id===r.weather)?.name||r.weather;
     $('mp-hp').textContent=`${s.hp} / ${s.maxHp}`;$('mp-health-fill').style.width=`${100*s.hp/s.maxHp}%`;
-    $('mp-ammo').textContent=s.ammo;$('mp-weapon-label').textContent=s.robot?'COLOSSO MX-9 · CANHÃO PESADO':'CARABINA SD-9';
-    $('mp-reload-label').textContent=s.reloadUntil>now?'RECARREGANDO…':s.ammo===0?'[R] RECARREGAR':'[R] RECARREGAR';
+    const wdef=WEAPONS[this.weapon];$('mp-ammo').textContent=!s.robot&&wdef&&wdef.melee?'—':s.ammo;$('mp-weapon-label').textContent=s.robot?'COLOSSO MX-9 · CANHÃO PESADO':(wdef?wdef.name:'CARABINA SD-9');
+    $('mp-reload-label').textContent=!s.robot&&wdef&&wdef.melee?'[1] [2] [3] [4] ARMAS':s.reloadUntil>now?'RECARREGANDO…':s.ammo===0?'[R] RECARREGAR':'[R] RECARREGAR';
     $('mp-points').textContent=s.points;$('mp-streak-count').textContent=`${s.streak} / ${this.rules.robotStreak}`;
     $('mp-streak-fill').style.width=`${Math.min(100,s.streak/this.rules.robotStreak*100)}%`;
     $('mp-robot').hidden=!s.robotReady;$('mp-robot').disabled=!this.robotView;
     $('mp-robot').textContent=this.robotView?'[B] CONTROLAR COLOSSO':'PREPARANDO COLOSSO…';
     $('mp-streak-label').textContent=s.robot?'COLOSSO ATIVO':s.robotReady?'RECOMPENSA CONQUISTADA':'8 ABATES SEGUIDOS · CONQUISTE O COLOSSO';
     $('mp-robot-frame').hidden=!s.robot;
-    $('mp-crosshair').hidden=s.dead||r.phase==='intermission';
+    $('mp-crosshair').hidden=s.dead||r.phase==='intermission'||(!s.robot&&this.G.weapons.adsT>0.5);
     $('mp-feed').replaceChildren(...this.feed.filter(x=>now-x.time<7000).map(x=>{const p=document.createElement('div');p.textContent=x.text;return p;}));
     $('mp-toast').hidden=!(now<this.toastUntil);
     $('mp-waiting').hidden=r.phase!=='waiting';

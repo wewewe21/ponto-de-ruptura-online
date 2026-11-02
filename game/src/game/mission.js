@@ -480,7 +480,7 @@ export class Mission {
             { pos: V(55, -22, -4.4), squad: 'g1' }, { pos: V(62.5, -22, -8), squad: 'g1', type: 'rifleman2' }, { pos: V(72, -22, -5.5), squad: 'g1' },
             { pos: V(77.5, -22, -2), squad: 'g2', type: 'shield' }, { pos: V(88, -22, -5), squad: 'g2', type: 'rifleman2' }, { pos: V(96, -22, 3), squad: 'g2' },
           ], k);
-          if (!D().pickups.some((p) => p.id === 'BRK8') && G.weapons.slots.primary !== 'BRK8') D().dropWeapon('BRK8', V(46, -22, -5.6));
+          if (!D().pickups.some((p) => p.id === 'MK5') && G.weapons.slots.primary !== 'MK5') D().dropWeapon('MK5', V(46, -22, -5.6));
           M.seq([[0.5, ['ATALAIA', 'Comportas de fundo abertas. A galeria vai inundar. Corram!', 3]], [4, ['FAÍSCA', 'Escopeta no chão! Pega, aqui embaixo é corpo a corpo!']]]);
           G.audio.setEnv('tunnel');
         },
@@ -556,7 +556,6 @@ export class Mission {
         interact() {
           const out = [];
           if (M.override < 0) out.push({ pos: P().masterConsole, r: 2.4, dy: 2, label: 'Segure <b>F</b> para conectar o override', hold: 2, act: () => M.startOverride() });
-          if (M.override >= 0 && !M.flags.rocketTaken) out.push({ pos: P().rocketLocker, r: 2.2, dy: 2, label: '<b>F</b> Pegar lança-foguetes RPL-2', act: () => { M.flags.rocketTaken = true; G.weapons.ammo.RPL2 = { mag: 1, reserve: 3 }; G.weapons.pickup('RPL2'); G.hud.toast('RPL-2 — use contra a técnica'); } });
           return out;
         },
         update(dt) {
@@ -724,7 +723,7 @@ export class Mission {
           G.audio.sfx('crane_fall', V(-130, 8, -9), { vol: 1.3, ref: 18 });
           cb.onLand = () => {
             this.flags.craneFallen = true;
-            if (!cb.col) cb.col = G.physics.add(-148, 0, -10, -112, 1.6, -8, { mat: 'metal', cover: 'low' });
+            if (!cb.cols.length) L.setCraneCol(true);
             G.fx.explosion(V(-130, 0.5, -9), 0.8);
             for (let i = 0; i < 40; i++) G.fx.norm.spawn(rand(-148, -112), 0.5, rand(-11, -7), rand(-2, 2), rand(1, 4), rand(-2, 2), rand(2, 4), rand(1, 2.5), 0.35, 0.33, 0.3, 0.6, -0.1, 0.6, 1);
             G.audio.explosion(V(-130, 1, -9), 1.2);

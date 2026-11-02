@@ -49,8 +49,8 @@ node server.js
 | Inclinar | Q / E |
 | Atirar / mirar | Mouse 1 / Mouse 2 |
 | Recarregar | R |
-| Primária / pistola / designador | 1 / 2 / 4 (ou roda) |
-| Alternar suporte (com o designador) | R ou roda |
+| Primárias (carabina, submetralhadora, fuzil, DMR) / pistola | 1 (repita para alternar) / 2 |
+| Faca na mão / sniper AX-50 | 3 / 4 (campanha e multiplayer) |
 | Granada (segure para cozinhar) / tática / alternar tática | G / T / X |
 | Faca / execução pelas costas | V |
 | Interagir | F |

@@ -400,7 +400,7 @@ export function buildLevel(G) {
     // rampa interna para o teto
     stairs(36, 44.4, -9.6, -7.9, 'x', 18, 12.5, 'metalDark', false);
     // escada externa (crista -> casa de máquinas)
-    stairs(45.2, 48, -7, 9.6, 'z', 12.5, 0);
+    stairs(45.2, 48, -7, 5.6, 'z', 12.5, 0);   // o pé da escada fica 4 m antes da borda da crista (antes ficava a 0,4 m dela e não dava para entrar)
     solid(45.2, 12, -12, 48, 12.5, -7, 'grate', { cover: null, mt: 'metal' });
     invis(48, 0, -12, 48.3, 16, 9.6); // corrimão externo
     railing(45.2, -12, 48, -12, 12.5);
@@ -553,7 +553,23 @@ export function buildLevel(G) {
       const hoist = new THREE.Mesh(new THREE.BoxGeometry(2.4, 1.8, 2.2), M.metalDark); hoist.position.set(-3, -1.4, 0); beam.add(hoist);
       beam.position.set(-130, 15, -9); beam.traverse((m) => { if (m.isMesh) m.castShadow = true; });
       scene.add(beam);
-      L.dyn.craneBeam = { group: beam, falling: false, t: 0, done: false };
+      L.dyn.craneBeam = { group: beam, falling: false, t: 0, done: false, cols: [] };
+      // Colisão da ponte rolante caída: segue a viga inclinada, fatia por fatia (um único bloco de 1,6 m de altura criava uma parede
+      // invisível embaixo da ponta que fica no alto). Onde a viga está acima de ~2 m dá para passar por baixo.
+      L.setCraneCol = (on) => {
+        const cb = L.dyn.craneBeam;
+        for (const c of cb.cols) physics.remove(c);
+        cb.cols = [];
+        if (!on) return;
+        cb.group.updateMatrixWorld(true);
+        const box = (cx, cy, cz, hx, hy, hz) => {
+          const b = new THREE.Box3();
+          for (const sx of [-1, 1]) for (const sy of [-1, 1]) for (const sz of [-1, 1]) b.expandByPoint(new THREE.Vector3(cx + sx * hx, cy + sy * hy, cz + sz * hz).applyMatrix4(cb.group.matrixWorld));
+          cb.cols.push(physics.add(b.min.x, b.min.y, b.min.z, b.max.x, b.max.y, b.max.z, { mat: 'metal', cover: b.max.y < 2 && b.min.y < 0.3 ? 'low' : null }));
+        };
+        for (let x = -18; x <= 18; x += 2) box(x, 0, 0, 1, 0.8, 0.7);       // viga: 38 x 1,6 x 1,4
+        box(-3, -1.4, 0, 1.2, 0.9, 1.1);                                     // talha
+      };
       for (const z of [-10.2, -7.8]) B.box(X0 + 0.6, 15.9, z - 0.3, X1 - 0.6, 16.4, z + 0.3, 'metalDark');
     }
     // consoles, caixotes e barris
@@ -1089,11 +1105,11 @@ export function applyWorldFlags(G, f) {
   if (f.craneFallen) {
     cb.falling = true; cb.done = true;
     cb.group.position.y = 0.8; cb.group.rotation.z = -0.22; cb.group.rotation.x = 0.1;
-    if (!cb.col) cb.col = P.add(-148, 0, -10, -112, 1.6, -8, { mat: 'metal', cover: 'low' });
+    if (!cb.cols.length) L.setCraneCol(true);
   } else {
     cb.falling = false; cb.done = false; cb.t = 0;
     cb.group.position.y = 15; cb.group.rotation.set(0, 0, 0);
-    if (cb.col) { P.remove(cb.col); cb.col = null; }
+    L.setCraneCol(false);
   }
   // alarme da casa de máquinas
   for (const v of L.fluorescents) v.enabled = !f.phAlarm;

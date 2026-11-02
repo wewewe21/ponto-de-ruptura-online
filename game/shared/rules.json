@@ -12,6 +12,16 @@
   "killPoints": 100,
   "robotStreak": 8,
   "robotPoints": 800,
+  "swapSeconds": 0.45,
+  "weapons": {
+    "SD9":   {"rpm":600, "damage":26, "mag":30, "reloadSeconds":2.1, "range":180},
+    "MK5":   {"rpm":850, "damage":19, "mag":32, "reloadSeconds":1.8, "range":90},
+    "KR7":   {"rpm":560, "damage":32, "mag":30, "reloadSeconds":2.2, "range":220},
+    "VK12":  {"rpm":300, "damage":52, "mag":10, "reloadSeconds":2.4, "range":300},
+    "P19":   {"rpm":450, "damage":24, "mag":15, "reloadSeconds":1.4, "range":120},
+    "AX50":  {"rpm":46,  "damage":100, "mag":5,  "reloadSeconds":3.0, "range":420},
+    "KNIFE": {"rpm":100, "damage":60, "mag":0,  "reloadSeconds":0,   "range":2.4, "melee":true}
+  },
   "human": {"hp":100,"radius":0.32,"height":1.8,"eye":1.65,"speed":4.2,"sprint":6.8,"mag":30,"reloadSeconds":2.1,"rpm":600,"damage":26,"range":180},
   "robot": {"hp":900,"radius":0.9,"height":4.8,"eye":4.1,"speed":2.8,"sprint":4.4,"mag":100,"reloadSeconds":3.5,"rpm":480,"damage":38,"range":220},
   "arena": {"minX":-250,"maxX":-145,"minZ":24,"maxZ":108},
