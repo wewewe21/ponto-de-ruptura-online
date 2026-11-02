@@ -236,7 +236,7 @@ export class Player {
     this.roll = damp(this.roll, -this.leanT * 0.17 + (this.slide > 0 ? 0.05 : 0), 10, dt);
     cam.rotation.set(this.pitch + (Math.random() - 0.5) * sh * 0.05, this.yaw + (Math.random() - 0.5) * sh * 0.05, this.roll + (Math.random() - 0.5) * sh * 0.02, 'YXZ');
     const baseFov = G.settings.fov;
-    const zoom = lerp(1, W.def.zoom || 1, W.adsT);
+    const zoom = W.def.scope ? 1 : lerp(1, W.def.zoom || 1, W.adsT);   // na luneta o zoom fica só na lente (câmera da luneta)
     const fov = baseFov / zoom + this.sprintT * 4 + (this.slide > 0 ? 6 : 0);
     if (Math.abs(cam.fov - fov) > 0.01) { cam.fov = damp(cam.fov, fov, 18, dt); cam.updateProjectionMatrix(); }
   }

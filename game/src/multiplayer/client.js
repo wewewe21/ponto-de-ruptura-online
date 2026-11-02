@@ -4,6 +4,8 @@ import { applyWorldFlags } from '../world/level.js';
 import { RemoteAvatars } from './avatars.js';
 import { RobotView } from './robot-view.js';
 import { WEAPONS, ARSENAL as PRIMARIES } from '../actors/weapons.js';
+import { codeLabel } from '../core/keybinds.js';
+const WHEEL_ORDER = ['SD9', 'MK5', 'KR7', 'VK12', 'P19', 'KNIFE', 'AX50'];
 import { MP_VOICE_LINES } from './voice-lines.js';
 
 const $ = (id) => document.getElementById(id);
@@ -148,6 +150,12 @@ export class Multiplayer {
     const url = new URL(location.href); url.searchParams.set('sala', this.roomId); history.replaceState(null, '', url);
     G.input.lock();
   }
+  // acerto: mira amarela + marcador em X (vermelho e maior na eliminação)
+  markHit(kill) {
+    const c=$('mp-crosshair'),h=$('mp-hitmarker');
+    c.classList.add('hit');h.classList.add('on');h.classList.toggle('kill',!!kill);
+    clearTimeout(this.hitTimer);this.hitTimer=setTimeout(()=>{c.classList.remove('hit');h.classList.remove('on','kill');},kill?420:170);
+  }
   // troca a arma na tela (o servidor valida e passa a usar o dano/cadência/munição dela)
   applyWeapon(id, instant = false) {
     const G=this.G,W=G.weapons; this.weapon=id; this.weaponAt=performance.now();
@@ -163,6 +171,7 @@ export class Multiplayer {
     else if (input.pressed('Digit2')) want = 'P19';
     else if (input.pressed('Digit3')) want = 'KNIFE';
     else if (input.pressed('Digit4')) want = 'AX50';
+    if (!want && input.wheel) { const n = WHEEL_ORDER.length, i = WHEEL_ORDER.indexOf(this.weapon); want = WHEEL_ORDER[(i + Math.sign(input.wheel) + n) % n]; }
     if (want && want !== this.weapon) {
       this.applyWeapon(want); this.G.audio.mech('swap'); this.reloadQueued = false;
     }
@@ -227,7 +236,8 @@ export class Multiplayer {
     G.time+=dt; this.menu=!I.locked;
     const enabled=this.connected&&I.locked&&!this.self.dead&&this.room.phase!=='intermission';
     if (enabled) {
-      const sens=0.0017*G.settings.sens*(I.mouse(2)?0.7:1);
+      const Wd=G.weapons.def,zm=this.self.robot?1.25:(Wd.zoom||1.25),adsK=G.weapons.adsT>0?THREE.MathUtils.lerp(1,1/zm*1.15,G.weapons.adsT):1;   // mesma sensibilidade do campo de visão normal, proporcional ao zoom
+      const sens=0.0017*G.settings.sens*adsK;
       P.yaw-=I.mouseDX*sens; P.pitch=Math.max(-1.4,Math.min(1.4,P.pitch-I.mouseDY*sens*(G.settings.invertY?-1:1)));
       if (I.pressed('KeyC')||I.pressed('ControlLeft')) this.crouch=!this.crouch;
       this.jumpQueued ||= I.pressed('Space'); this.reloadQueued ||= I.pressed('KeyR'); this.robotQueued ||= I.pressed('KeyB');
@@ -251,7 +261,7 @@ export class Multiplayer {
     G.camera.rotation.set(P.pitch,P.yaw,0,'YXZ');
     const W=G.weapons;W.adsT=THREE.MathUtils.damp(W.adsT,enabled&&I.mouse(2)&&(this.self.robot||!W.def.melee)?1:0,12,dt);
     const zoom=this.self.robot?1.25:(W.def.zoom||1.25);W.swap=Math.max(0,W.swap-dt/0.3);W.melee=Math.max(0,W.melee-dt/0.55);
-    const targetFov=G.settings.fov/(1+W.adsT*(zoom-1));G.camera.fov=THREE.MathUtils.damp(G.camera.fov,targetFov,12,dt);G.camera.updateProjectionMatrix();
+    const targetFov=G.settings.fov/(W.def.scope&&!this.self.robot?1:(1+W.adsT*(zoom-1)));   // luneta: o zoom fica só na lenteG.camera.fov=THREE.MathUtils.damp(G.camera.fov,targetFov,12,dt);G.camera.updateProjectionMatrix();
     const reloading=this.self.reloadUntil>now;
     const reloadSecs=(this.self.robot?cfg:(this.rules.weapons&&this.rules.weapons[this.self.weapon])||cfg).reloadSeconds;
     W.reload=reloading?{t:Math.max(0,1-(this.self.reloadUntil-now)/(reloadSecs*1000)),empty:this.self.ammo===0}:null;
@@ -284,11 +294,11 @@ export class Multiplayer {
           if(e.robot)this.robotView?.kick();else this.G.vm.kick(e.weapon==='AX50'?1.8:1);
           this.G.player.pitch=Math.min(1.4,this.G.player.pitch+(e.robot?0.0035:e.weapon==='AX50'?0.012:0.006));
         }
-        if(e.hit){$('mp-crosshair').classList.add('hit');clearTimeout(this.hitTimer);this.hitTimer=setTimeout(()=>$('mp-crosshair').classList.remove('hit'),120);}
+        if(e.hit){this.markHit(false);this.G.audio.hit('hit');}
       }
     } else if(e.type==='kill') {
       this.feed.unshift({text:`${e.name||'Ambiente'}  ›  ${e.victimName||'Soldado'}`,time:this.now()});this.feed=this.feed.slice(0,4);
-      if(e.killer===this.id){this.toast('+100 · ALVO ELIMINADO');this.speakMatch('kill',0);}
+      if(e.killer===this.id){this.toast('+100 · ALVO ELIMINADO');this.markHit(true);this.G.audio.hit('kill');this.speakMatch('kill',0);}
     } else if(e.type==='robot'&&e.active&&e.player!==this.id){
       const pilot=this.players.find(p=>p.id===e.player);if(pilot)this.speakMatch(pilot.team===this.self?.team?'friendlyRobot':'enemyRobot',3);
     }
@@ -304,11 +314,11 @@ export class Multiplayer {
     $('mp-weather').textContent=this.rules.weather.find(w=>w.id===r.weather)?.name||r.weather;
     $('mp-hp').textContent=`${s.hp} / ${s.maxHp}`;$('mp-health-fill').style.width=`${100*s.hp/s.maxHp}%`;
     const wdef=WEAPONS[this.weapon];$('mp-ammo').textContent=!s.robot&&wdef&&wdef.melee?'—':s.ammo;$('mp-weapon-label').textContent=s.robot?'COLOSSO MX-9 · CANHÃO PESADO':(wdef?wdef.name:'CARABINA SD-9');
-    $('mp-reload-label').textContent=!s.robot&&wdef&&wdef.melee?'[1] [2] [3] [4] ARMAS':s.reloadUntil>now?'RECARREGANDO…':s.ammo===0?'[R] RECARREGAR':'[R] RECARREGAR';
+    $('mp-reload-label').textContent=!s.robot&&wdef&&wdef.melee?'[1] [2] [3] [4] ARMAS':s.reloadUntil>now?'RECARREGANDO…':`[${codeLabel(this.G.input.physical('KeyR'))}] RECARREGAR`;
     $('mp-points').textContent=s.points;$('mp-streak-count').textContent=`${s.streak} / ${this.rules.robotStreak}`;
     $('mp-streak-fill').style.width=`${Math.min(100,s.streak/this.rules.robotStreak*100)}%`;
     $('mp-robot').hidden=!s.robotReady;$('mp-robot').disabled=!this.robotView;
-    $('mp-robot').textContent=this.robotView?'[B] CONTROLAR COLOSSO':'PREPARANDO COLOSSO…';
+    $('mp-robot').textContent=this.robotView?`[${codeLabel(this.G.input.physical('KeyB'))}] CONTROLAR COLOSSO`:'PREPARANDO COLOSSO…';
     $('mp-streak-label').textContent=s.robot?'COLOSSO ATIVO':s.robotReady?'RECOMPENSA CONQUISTADA':'8 ABATES SEGUIDOS · CONQUISTE O COLOSSO';
     $('mp-robot-frame').hidden=!s.robot;
     $('mp-crosshair').hidden=s.dead||r.phase==='intermission'||(!s.robot&&this.G.weapons.adsT>0.5);
@@ -337,7 +347,9 @@ export class Multiplayer {
   resize() { this.robotView?.resize(this.G.camera.aspect); }
   render() {
     const G=this.G,view=this.self?.robot&&this.robotView;
-    G.post.render(G.scene,G.camera,this.self&&!this.self.dead?(view?view.scene:G.vm.scene):null,view?view.camera:G.vm.camera);
+    const W=G.weapons,sc=G.scopeCam,scoped=!view&&G.post.uniforms.uScope.value>0.5&&W.def.scope;
+    if(scoped){sc.position.copy(G.camera.position);sc.quaternion.copy(G.camera.quaternion);sc.aspect=G.camera.aspect;sc.fov=G.settings.fov/(W.def.zoom||4);sc.updateProjectionMatrix();}
+    G.post.render(G.scene,G.camera,this.self&&!this.self.dead?(view?view.scene:G.vm.scene):null,view?view.camera:G.vm.camera,scoped?sc:undefined);
   }
   leave() {
     this.G.audio?.stopSpeech?.();this.voiceUntil=0;this.voiceSerial=(this.voiceSerial||0)+1;

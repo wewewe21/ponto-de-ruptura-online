@@ -1,4 +1,5 @@
 // PONTO DE RUPTURA — Operação MURALHA. Bootstrap, loop principal, estados, menus e configurações.
+import { ACTIONS, codeLabel } from './core/keybinds.js';
 import * as THREE from 'three';
 import { Input } from './core/input.js';
 import { GameAudio } from './core/audio.js';
@@ -30,7 +31,7 @@ const DIFF = {
   regular: { acc: 1.0, dmg: 1.0, detect: 1.0, dmgTaken: 1, tokens: 3 },
   veterano: { acc: 1.25, dmg: 1.55, detect: 1.3, dmgTaken: 1, tokens: 4 },
 };
-const DEFAULTS = { sens: 1.0, fov: 74, master: 0.85, music: 0.55, voices: true, diff: 'regular', scale: 1, shadows: true, invertY: false, quality: 'alta' };
+const DEFAULTS = { keys: {}, sens: 1.0, fov: 74, master: 0.85, music: 0.55, voices: true, diff: 'regular', scale: 1, shadows: true, invertY: false, quality: 'alta' };
 function loadSettings() {
   try { return { ...DEFAULTS, ...JSON.parse(localStorage.getItem('pdr-settings') || '{}') }; } catch (e) { return { ...DEFAULTS }; }
 }
@@ -67,6 +68,7 @@ async function boot() {
   G.lightBase = { hemi: 2.0, moon: 0.58 };   // ambiente um pouco mais legível (as texturas PBR são mais escuras no escuro)
   G.camera = new THREE.PerspectiveCamera(G.settings.fov, innerWidth / innerHeight, 0.05, 2500);
   G.camera.rotation.order = 'YXZ';
+  G.scopeCam = new THREE.PerspectiveCamera(G.settings.fov, innerWidth / innerHeight, 0.05, 2500); G.scopeCam.rotation.order = 'YXZ';
   G.hemi = new THREE.HemisphereLight(0x3d4c63, 0x1a1b1d, 0.55);
   // mapa de ambiente noturno: céu carregado + brilho de sódio no horizonte (reflexos no concreto molhado)
   {
@@ -292,28 +294,67 @@ function setupUiSounds() {
 }
 function setupMenus() {
   setupUiSounds();
+  G.input.setBinds(G.settings.keys); renderKeybinds(); setSettingsTab('game');
   $('btn-start').onclick = () => { show('briefing'); drawBriefingMap(); };
   $('btn-go').onclick = () => startMission();
   $('btn-chapters').onclick = () => { renderChapters(); show('chapters'); };
-  $('btn-controls').onclick = () => show('controls');
-  $('btn-settings').onclick = () => { fillSettings(); show('settings'); G._settingsFrom = 'title'; };
+  $('btn-controls').onclick = () => { G._controlsFrom = 'title'; renderKeybinds(); show('controls'); };
+  $('btn-settings').onclick = () => { fillSettings(); setSettingsTab('game'); show('settings'); G._settingsFrom = 'title'; };
   $('btn-resume').onclick = resume;
-  $('btn-p-settings').onclick = () => { fillSettings(); show('settings'); G._settingsFrom = 'pause'; };
-  $('btn-p-controls').onclick = () => { show('controls'); G._controlsFrom = 'pause'; };
+  $('btn-p-settings').onclick = () => { fillSettings(); setSettingsTab('game'); show('settings'); G._settingsFrom = 'pause'; };
+  $('btn-p-controls').onclick = () => { G._controlsFrom = 'pause'; renderKeybinds(); show('controls'); };
+  $('mp-settings').onclick = () => { fillSettings(); G._settingsFrom = 'mp'; setSettingsTab('game'); show('settings'); };
+  $('mp-controls').onclick = () => { G._controlsFrom = 'mp'; renderKeybinds(); show('controls'); };
+  $('btn-set-controls').onclick = () => { G._controlsFrom = 'settings'; renderKeybinds(); show('controls'); };
+  $('btn-keys-reset').onclick = () => { G.input.capture = null; G.settings.keys = {}; G.input.setBinds({}); saveSettings(); renderKeybinds(); };
+  for (const t of document.querySelectorAll('#settings-tabs .tab')) t.onclick = () => setSettingsTab(t.dataset.tab);
   $('btn-p-restart').onclick = () => { show(null); G.state = 'playing'; G.audio.ctx && G.audio.ctx.resume(); G.mission.restore(); G.input.lock(); };
   $('btn-p-quit').onclick = () => { G.state = 'title'; G.hud.show(false); G.director.clearAll(); G.dialog.clear(); show('title'); };
   $('btn-respawn').onclick = respawn;
   $('btn-again').onclick = () => { show('title'); G.state = 'title'; };
   for (const b of document.querySelectorAll('[data-back]')) b.onclick = () => {
-    const from = b.closest('section').id === 'settings' ? G._settingsFrom : G._controlsFrom;
-    if (G.state === 'paused' && from === 'pause') show('pause'); else show('title');
-    G._controlsFrom = null;
+    const sec = b.closest('section').id, from = sec === 'settings' ? G._settingsFrom : G._controlsFrom;
+    G.input.capture = null;
+    if (from === 'mp') show(null);                       // volta para o jogo online (o menu da sala continua aberto)
+    else if (from === 'settings') show('settings');
+    else if (G.state === 'paused' && from === 'pause') show('pause'); else show('title');
+    if (sec === 'controls') G._controlsFrom = null;
   };
   $('settings-form').addEventListener('input', readSettings);
   addEventListener('keydown', (e) => {
     if (G.state === 'dead' && G.deadT > 1.2 && (e.code === 'Space' || e.code === 'Enter')) respawn();
     if (G.state === 'paused' && e.code === 'Escape') { /* o navegador já soltou o ponteiro */ }
   });
+}
+// ---------- teclas personalizáveis ----------
+function renderKeybinds() {
+  const box = $('keybinds'), keys = G.settings.keys || {};
+  box.innerHTML = '';
+  let group = '';
+  for (const a of ACTIONS) {
+    if (a.group !== group) { group = a.group; const h = document.createElement('h4'); h.textContent = group; box.appendChild(h); }
+    const row = document.createElement('div'); row.className = 'row';
+    const name = document.createElement('span'); name.textContent = a.label;
+    const btn = document.createElement('button'); btn.textContent = codeLabel(keys[a.id] || a.id); btn.className = keys[a.id] ? 'custom' : '';
+    btn.onclick = () => {
+      for (const o of box.querySelectorAll('button.wait')) { o.classList.remove('wait'); }
+      btn.classList.add('wait'); btn.textContent = 'APERTE UMA TECLA…';
+      G.input.capture = (code) => { if (code !== 'Escape') bindKey(a.id, code); renderKeybinds(); };
+    };
+    row.append(name, btn); box.appendChild(row);
+  }
+}
+// troca: se a tecla já era de outra ação, essa ação fica com a tecla antiga desta
+function bindKey(action, code) {
+  const cur = { ...(G.settings.keys || {}) }, phys = (id) => cur[id] || id, old = phys(action);
+  for (const a of ACTIONS) if (a.id !== action && phys(a.id) === code) cur[a.id] = old;
+  cur[action] = code;
+  for (const k of Object.keys(cur)) if (cur[k] === k) delete cur[k];
+  G.settings.keys = cur; G.input.setBinds(cur); saveSettings();
+}
+function setSettingsTab(name) {
+  for (const t of document.querySelectorAll('#settings-tabs .tab')) t.classList.toggle('on', t.dataset.tab === name);
+  for (const l of document.querySelectorAll('#settings-form label')) l.hidden = l.dataset.tab !== name;
 }
 function renderChapters() {
   $('chapter-list').innerHTML = CHAPTERS.map((c, i) => `<button class="chapter" data-ch="${c[0]}" style="--img:url(./assets/ui/ch/ch_${c[0]}.jpg)"><span class="num">${String(i + 1).padStart(2, '0')}</span><span class="t">${c[1]}</span><span class="d">${c[2]}</span></button>`).join('');
@@ -483,10 +524,18 @@ function update(dt) {
   G.hud.update(dt);
   if (!$('fullmap').hidden) G.hud.drawFullMap();
 }
+// câmera da luneta: mesma posição/orientação da câmera do jogador, com o zoom da arma (só usada quando a lente está ativa)
+function scopeCamera() {
+  const W = G.weapons, sc = G.scopeCam;
+  if (!G.post.uniforms.uScope.value || !W.def.scope) return null;
+  sc.position.copy(G.camera.position); sc.quaternion.copy(G.camera.quaternion);
+  sc.aspect = G.camera.aspect; sc.fov = G.settings.fov / (W.def.zoom || 4); sc.updateProjectionMatrix();
+  return sc;
+}
 function render() {
   if (G.multiplayer?.active) { G.multiplayer.render(); return; }
   const showVM = (G.state === 'playing' || G.state === 'paused') && !G.cinematic && !G.player.dead;
-  G.post.render(G.scene, G.camera, showVM ? G.vm.scene : null, G.vm.camera);
+  G.post.render(G.scene, G.camera, showVM ? G.vm.scene : null, G.vm.camera, scopeCamera());
 }
 
 boot().catch((e) => { console.error(e); $('load-text').textContent = 'Erro ao iniciar: ' + e.message; });

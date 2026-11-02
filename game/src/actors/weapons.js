@@ -9,11 +9,12 @@ export const WEAPONS = {
   VK12: { id: 'VK12', name: 'DMR VK-12', short: 'VK-12', slot: 'primary', auto: false, rpm: 300, dmg: 70, dmgFar: 62, r0: 60, r1: 120, head: 2.5, limb: 0.85, mag: 10, reserve: 50, hip: 6, ads: 0.04, adsTime: 0.3, zoom: 4.2, scope: true, reloadT: 2.4, reloadE: 3.0, pen: 1.5, recoil: { up: 1.7, side: 0.35, freq: 1.1, phase: 0.2, rand: 0.4 }, sound: 'VK12', tracer: 1, range: 400, move: 0.92 },
   P19: { id: 'P19', name: 'PISTOLA P-19', short: 'P-19', slot: 'secondary', auto: false, rpm: 450, dmg: 30, dmgFar: 22, r0: 15, r1: 35, head: 2.5, limb: 0.8, mag: 15, reserve: 60, hip: 2.5, ads: 0.3, adsTime: 0.15, zoom: 1.2, reloadT: 1.4, reloadE: 1.8, pen: 0.3, recoil: { up: 1.0, side: 0.3, freq: 1.3, phase: 0.8, rand: 0.4 }, sound: 'P19', tracer: 0, range: 120, move: 1.05 },
   MK5: { id: 'MK5', name: 'SUBMETRALHADORA MK-5', short: 'MK-5', slot: 'primary', auto: true, rpm: 900, dmg: 21, dmgFar: 12, r0: 12, r1: 32, head: 2.6, limb: 0.8, mag: 32, reserve: 192, hip: 2.4, ads: 0.5, adsTime: 0.14, zoom: 1.25, reloadT: 1.8, reloadE: 2.3, pen: 0.2, sup: true, recoil: { up: 0.26, side: 0.2, freq: 0.7, phase: 0.4, rand: 0.3 }, sound: 'SD9', tracer: 0, range: 120, move: 1.05 },
-  AX50: { id: 'AX50', name: 'SNIPER AX-50', short: 'AX-50', slot: 'primary', auto: false, rpm: 46, dmg: 135, dmgFar: 120, r0: 120, r1: 300, head: 2.5, limb: 0.9, mag: 5, reserve: 25, hip: 9, ads: 0.0, adsTime: 0.38, zoom: 8, scope: true, reloadT: 2.8, reloadE: 3.4, pen: 2.5, recoil: { up: 2.4, side: 0.4, freq: 1, phase: 0.2, rand: 0.3 }, sound: 'VK12', tracer: 1, range: 600, move: 0.88, bolt: true },
+  AX50: { id: 'AX50', name: 'SNIPER AX-50', short: 'AX-50', slot: 'primary', auto: false, rpm: 46, dmg: 135, dmgFar: 120, r0: 120, r1: 300, head: 2.5, limb: 0.9, mag: 5, reserve: 25, hip: 9, ads: 0.0, adsTime: 0.38, zoom: 4, scope: true, reloadT: 2.8, reloadE: 3.4, pen: 2.5, recoil: { up: 2.4, side: 0.4, freq: 1, phase: 0.2, rand: 0.3 }, sound: 'VK12', tracer: 1, range: 600, move: 0.88, bolt: true },
   KNIFE: { id: 'KNIFE', name: 'FACA TÁTICA', short: 'FACA', slot: 'melee', melee: true, adsTime: 0.2, zoom: 1, move: 1.08, mag: 0, reserve: 0 },
 };
 // primárias que o jogador pode alternar (Digit1 repetido); o lança-foguetes é item de missão
 export const ARSENAL = ['SD9', 'MK5', 'KR7', 'VK12'];   // a sniper fica no slot 4
+const WHEEL_ORDER = ['SD9', 'MK5', 'KR7', 'VK12', 'P19', 'KNIFE', 'AX50'];
 const RES = { wood: 0.5, metal: 0.8, glass: 0.1, sand: 1.4, concrete: 9 };
 const _v = new THREE.Vector3(), _v2 = new THREE.Vector3(), _q = new THREE.Quaternion();
 
@@ -46,6 +47,14 @@ export class Weapons {
     if (slot === this.cur && !this.swapTo) return;
     if (!this.slots[slot]) return;
     this.reload = null; this.swapTo = slot; this.swap = 0.0001; this.G.audio.mech('swap');
+  }
+  // roda do mouse: percorre todas as armas (primárias, pistola, faca, sniper)
+  cycleWheel(dir) {
+    const n = WHEEL_ORDER.length, i = WHEEL_ORDER.indexOf(this.id), next = WHEEL_ORDER[(i + dir + n) % n];
+    if (ARSENAL.includes(next)) {
+      this.slots.primary = next; if (!this.ammo[next]) this.ammo[next] = { mag: WEAPONS[next].mag, reserve: WEAPONS[next].reserve };
+      this.reload = null; this.swapTo = 'primary'; this.swap = 0.0001; this.G.audio.mech('swap'); this.G.hud.toast(WEAPONS[next].name);
+    } else { this.equip(next === 'P19' ? 'secondary' : next === 'KNIFE' ? 'melee' : 'special'); if (this.swapTo) this.G.hud.toast(WEAPONS[next].name); }
   }
   // alterna entre as primárias do arsenal (Digit1 repetido)
   cyclePrimary() {
@@ -117,8 +126,7 @@ export class Weapons {
     if (input.pressed('Digit2')) this.equip('secondary');
     if (input.pressed('Digit3')) this.equip('melee');
     if (input.pressed('Digit4')) this.equip('special');
-    if (input.wheel && !this.busy && !(this.def.laser)) this.equip(this.cur === 'primary' ? 'secondary' : 'primary');
-    else if (input.wheel && this.def.laser) G.support.cycle(input.wheel);
+    if (input.wheel && !this.busy && this.swapTo === null) this.cycleWheel(Math.sign(input.wheel));
     if (input.pressed('KeyX')) { this.tactical = this.tactical === 'flash' ? 'smoke' : 'flash'; G.hud.toast(this.tactical === 'flash' ? 'Tática: ATORDOANTE' : 'Tática: FUMAÇA'); G.audio.mech('beep'); }
     // recarga
     if (input.pressed('KeyR')) {

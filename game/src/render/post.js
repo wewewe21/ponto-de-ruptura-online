@@ -101,14 +101,23 @@ export class Post {
           if (uScope > 0.5) {
             vec2 sp = dir * vec2(uAspect, 1.0);
             float r = length(sp);
-            float ring = smoothstep(0.375, 0.37, r);
-            col *= ring;
-            col *= mix(1.0, 0.75, smoothstep(0.2, 0.37, r));
-            float lw = 0.0012;
-            float cross = (step(abs(sp.x), lw) * step(0.012, abs(sp.y))) + (step(abs(sp.y), lw) * step(0.012, abs(sp.x)));
-            float thick = (step(abs(sp.x), lw * 3.0) * step(0.18, abs(sp.y))) + (step(abs(sp.y), lw * 3.0) * step(0.18, abs(sp.x)));
-            col = mix(col, vec3(0.0), clamp(cross + thick, 0.0, 1.0) * ring);
-            col = mix(col, vec3(1.0, 0.15, 0.1), smoothstep(0.004, 0.002, r));
+            float inLens = smoothstep(0.375, 0.37, r);
+            // fora da lente: a cena sem zoom continua visível, só um pouco mais escura perto do aro
+            col *= mix(1.0, 0.8, smoothstep(0.38, 0.55, r));
+            // aro da luneta (anel escuro fino com um brilho interno)
+            float rim = smoothstep(0.366, 0.372, r) * (1.0 - smoothstep(0.380, 0.388, r));
+            col = mix(col, vec3(0.012, 0.013, 0.015), rim * 0.96);
+            col += vec3(0.05) * smoothstep(0.0035, 0.0, abs(r - 0.3615)) * inLens;
+            // vinheta suave dentro da lente
+            col *= mix(1.0, 0.86, smoothstep(0.26, 0.36, r) * inLens);
+            // retículo: linhas finas nas laterais e embaixo, mais grossas perto do aro, ponto vermelho no centro
+            float lw = 0.0009;
+            float thk = lw * (1.0 + 3.0 * smoothstep(0.14, 0.30, abs(sp.x)));
+            float hLine = step(abs(sp.y), thk) * step(0.028, abs(sp.x));
+            float thkV = lw * (1.0 + 3.0 * smoothstep(0.14, 0.30, abs(sp.y)));
+            float vLine = step(abs(sp.x), thkV) * step(0.014, -sp.y) * step(-0.36, sp.y);
+            col = mix(col, vec3(0.0), clamp(hLine + vLine, 0.0, 1.0) * inLens * 0.92);
+            col = mix(col, vec3(1.0, 0.12, 0.08), smoothstep(0.0032, 0.0017, r) * inLens);
           }
           // flash / fade
           col = mix(col, vec3(1.0), clamp(uFlash, 0.0, 1.0));
@@ -184,6 +193,15 @@ export class Post {
     this.scene = new THREE.Scene();
     this.scene.add(this.quad);
     this.cam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+    // luneta: a cena é renderizada uma segunda vez, com zoom, e colada num círculo no centro; o resto da tela segue visível
+    this.scopeRT = new THREE.WebGLRenderTarget(size.x, size.y, { type: THREE.HalfFloatType, samples: 2 });
+    this.scopeBlit = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), new THREE.ShaderMaterial({
+      uniforms: { tScope: { value: this.scopeRT.texture }, uAspect: this.uniforms.uAspect }, depthTest: false, depthWrite: false,
+      vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }',
+      fragmentShader: 'precision highp float; varying vec2 vUv; uniform sampler2D tScope; uniform float uAspect; void main(){ vec2 sp = (vUv - 0.5) * vec2(uAspect, 1.0); if (length(sp) > 0.375) discard; gl_FragColor = vec4(texture2D(tScope, vUv).rgb, 1.0); }',
+    }));
+    this.scopeBlit.frustumCulled = false;
+    this.scopeScene = new THREE.Scene(); this.scopeScene.add(this.scopeBlit);
   }
   _makeBloomTargets(W, H) {
     for (const t of [...this.bDown, ...this.bUp]) t.dispose();
@@ -238,20 +256,28 @@ export class Post {
   }
   resize(w, h, pixelRatio) {
     const W = Math.floor(w * pixelRatio * this.scale), H = Math.floor(h * pixelRatio * this.scale);
-    this.rt.setSize(W, H);
+    this.rt.setSize(W, H); this.scopeRT.setSize(W, H);
     this.uniforms.uAspect.value = w / h;
     this.uniforms.uRes.value.set(W, H);
     this._makeBloomTargets(W, H);
     if (this.whiteTex) this.whiteTex.needsUpdate = true;
   }
-  render(scene, camera, vmScene, vmCamera) {
-    const r = this.r;
+  _makeWhiteTex() {
+    this.whiteTex = new THREE.DataTexture(new Uint8Array([255, 255, 255, 255]), 1, 1); this.whiteTex.needsUpdate = true;   // sem isso a textura sobe preta e escurece a tela toda
+    return this.whiteTex;
+  }
+  render(scene, camera, vmScene, vmCamera, scopeCam) {
+    const r = this.r, scoped = !!scopeCam && this.uniforms.uScope.value > 0.5;
     r.setRenderTarget(this.rt);
     r.clear();
     r.render(scene, camera);
-    if (this.aoEnabled) this._ao(camera); else this.uniforms.tAO.value = this.whiteTex || (this.whiteTex = new THREE.DataTexture(new Uint8Array([255, 255, 255, 255]), 1, 1));
+    if (this.aoEnabled && !scoped) this._ao(camera); else this.uniforms.tAO.value = this.whiteTex || this._makeWhiteTex();
     r.setRenderTarget(this.rt);
     if (vmScene) { r.clearDepth(); r.render(vmScene, vmCamera); }
+    if (scoped) {
+      r.setRenderTarget(this.scopeRT); r.clear(); r.render(scene, scopeCam);
+      r.setRenderTarget(this.rt); r.render(this.scopeScene, this.cam);
+    }
     this.uniforms.uBloom.value = this.bloomEnabled ? 0.32 : 0.0;
     if (this.bloomEnabled) this._bloom();
     r.setRenderTarget(null);
