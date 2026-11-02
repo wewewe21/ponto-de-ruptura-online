@@ -11,3 +11,4 @@ node_modules/
 game/vendor/
 game/test-results/
 *.log
+__pycache__/
