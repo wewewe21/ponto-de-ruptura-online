@@ -1,6 +1,7 @@
 // Pipeline: cena (HDR) + viewmodel -> bloom (pirâmide de 5 níveis) -> passe final com nitidez, ACES, gradação de cor,
 // NVG, dano, supressão, flash, fade, luneta.
 import * as THREE from 'three';
+import { SCOPE_CLIP, SCOPE_RING } from './scopeclip.js';
 
 export class Post {
   constructor(renderer) {
@@ -26,6 +27,7 @@ export class Post {
         uniform sampler2D tScene, tBloom, tAO; uniform vec2 uRes; uniform float uAOk;
         uniform float uBloom, uSharp, uGrade, uRain, uFocus;
         uniform float uLensR;
+        const float RING = ${SCOPE_RING};
         uniform float uTime, uNVG, uGain, uGlare, uDamage, uFlash, uLowHealth, uExposure, uSuppress, uFade, uAspect, uUnder, uScope, uSat;
         float hash(vec2 p){ return fract(sin(dot(p, vec2(12.9898,78.233))) * 43758.5453); }
         vec3 aces(vec3 x){ return clamp((x*(2.51*x+0.03))/(x*(2.43*x+0.59)+0.14), 0.0, 1.0); }
@@ -63,6 +65,15 @@ export class Post {
             vec3 b = vec3(0.0);
             for (int k = 0; k < 8; k++) { float a = float(k) * 0.7853982; b += texture2D(tScene, uv + vec2(cos(a), sin(a)) * px * (1.0 + e * 3.5)).rgb; }
             col = mix(col, b * 0.125, e * uFocus * 0.9);
+          }
+          // luneta: o que está fora do aro fica desfocado
+          if (uScope > 0.5) {
+            float rr = length(dir * vec2(uAspect, 1.0)), o = smoothstep(uLensR + RING, uLensR + RING + 0.025, rr);
+            if (o > 0.0) {
+              vec2 px = (uRes.y / 720.0) / uRes; vec3 b = vec3(0.0);
+              for (int k = 0; k < 12; k++) { float a = float(k) * 0.5236; vec2 d = vec2(cos(a), sin(a)); b += texture2D(tScene, uv + d * px * 7.0).rgb + texture2D(tScene, uv + d * px * 16.0).rgb; }
+              col = mix(col, b / 24.0, o);
+            }
           }
           col *= mix(1.0, texture2D(tAO, uv).r, uAOk);
           col += texture2D(tBloom, uv).rgb * uBloom * (uNVG > 0.5 ? 0.35 : 1.0);
@@ -104,6 +115,9 @@ export class Post {
             float r = length(sp), R = uLensR, s = R / 0.35;
             float inLens = smoothstep(R, R - 0.004, r);
             col *= 1.0 - inLens * 0.8 * smoothstep(R * 0.78, R, r);
+            float Rc = R + RING;
+            col = mix(col, vec3(0.03, 0.0, 0.0), smoothstep(Rc - 0.006, Rc - 0.002, r) * (1.0 - smoothstep(Rc - 0.001, Rc + 0.001, r)));   // borda do aro cortado
+            col *= 1.0 - 0.3 * smoothstep(Rc, Rc + 0.35, r);
             col += vec3(0.04) * smoothstep(0.006, 0.0, abs(r - R * 0.93)) * inLens;
             vec2 q = sp / s;
             float lw = 0.0009;
@@ -277,7 +291,12 @@ export class Post {
     r.render(scene, camera);
     if (this.aoEnabled && !scoped) this._ao(camera); else this.uniforms.tAO.value = this.whiteTex || this._makeWhiteTex();
     r.setRenderTarget(this.rt);
-    if (vmScene) { r.clearDepth(); r.render(vmScene, vmCamera); }
+    if (vmScene) {
+      r.clearDepth();
+      SCOPE_CLIP.r.value = scoped ? this.uniforms.uLensR.value + SCOPE_RING : 0; SCOPE_CLIP.res.value.copy(this.uniforms.uRes.value);
+      r.render(vmScene, vmCamera);
+      SCOPE_CLIP.r.value = 0;
+    }
     if (scoped) {
       r.setRenderTarget(this.scopeRT); r.clear(); r.render(scene, scopeCam);
       r.setRenderTarget(this.rt); r.render(this.scopeScene, this.cam);

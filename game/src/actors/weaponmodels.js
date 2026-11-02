@@ -5,6 +5,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { splitMesh } from './gunmodel.js';
+import { clipToScope } from '../render/scopeclip.js';
 
 // file: arquivo em assets/models/weapons; flip: a boca do cano fica em +X no modelo; len: comprimento em metros
 // origin: ponto do modelo que vira a origem (linha do cano, perto do receptor); right/left: onde as mãos seguram
@@ -104,6 +105,7 @@ export function makeGlbGun(src, spec) {
   let mesh0 = null; src.traverse((o) => { if (o.isMesh && !mesh0) mesh0 = o; });
   const mat = mesh0.material.clone(); mat.envMapIntensity = 0.6;   // parafusos muito metálicos estouravam em pontos brancos
   if (mat.map) mat.map.colorSpace = THREE.SRGBColorSpace;
+  if (spec.scope) clipToScope(mat);   // aro da luneta cortado em faixa fina quando se olha pela lente
   // posição no espaço da arma de um ponto (x,y) do modelo
   const toGun = (x, y, lat = 0) => new THREE.Vector3(lat, (y - oy) * s, sign * (x - ox) * s);
   // peça: grupo no espaço da arma, posicionado no ponto pivô (px,py) do modelo
