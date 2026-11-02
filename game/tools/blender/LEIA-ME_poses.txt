@@ -1,0 +1,28 @@
+POSES DAS MAOS - COMO USAR
+==========================
+
+Cada arma tem uma ESTACAO (uma ao lado da outra no eixo X). Cada estacao ja vem com:
+  - a CAMERA do jogo (Camera_XXX): campo de visao 54 graus, e a posicao onde a arma aparece na tela;
+  - a ARMA (ARMA_XXX = o vazio com setas; o modelo fica dentro dele);
+  - os DOIS BRACOS com maos e dedos (Rig_XXX = armadura; Arms_XXX = a malha).
+
+COMO VER COMO O JOGADOR VE
+  - Linha do tempo: quadro 1 = SD9 (fuzil), 2 = MK5 (submetralhadora), 3 = P19 (pistola), 4 = VK12 (DMR),
+    5 = AX50 (SNIPER), 6 = KNIFE (faca), 7 = BRK8 (escopeta), 8 = RPL2 (lanca-foguetes), 9 = LASER (designador).
+    Mudar de quadro troca a camera. Ou: selecione Camera_XXX e aperte Ctrl+Numpad 0.
+  - O fuzil SD9 e o KR7 usam a MESMA pose. BRK8, RPL2 e LASER sao modelos simples (substitutos).
+
+COMO POSAR A MAO
+  1) Clique na armadura Rig_XXX e entre em Modo de Pose (Ctrl+Tab).
+  2) Pulso/posicao da mao: selecione o osso  ik_target.L  (mao ESQUERDA do soldado, que fica a esquerda da tela)
+     ou  ik_target.R  (mao direita). Mova (G) e gire (R): o braco acompanha sozinho (IK).
+  3) Cotovelo: osso  pole.L / pole.R  (mova para onde o cotovelo deve apontar).
+  4) Dedos: selecione index_1, index_2, middle_1 ... pinky_2 e thumb_1, thumb_2, thumb_3 (com .L ou .R) e gire (R X).
+     Todos giram em torno do eixo X do osso, para fechar/abrir.
+  5) Voce tambem pode mover/girar a ARMA (o vazio ARMA_XXX) para ajustar onde ela aparece na tela. Eu leio isso tambem.
+     NAO mova a camera nem a armadura inteira.
+
+QUANDO TERMINAR
+  - Salve o arquivo (Ctrl+S) e me avise. Eu leio as poses e adapto o jogo (mao parada, correr, recarregar etc.).
+  - Se quiser a mao mais perto/longe, maior/menor, ajuste so a posicao dos ossos: o tamanho dos bracos ja esta na
+    escala do jogo e e o que voce ve na camera.
