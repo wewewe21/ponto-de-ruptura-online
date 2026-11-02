@@ -122,16 +122,16 @@ export class FPArms {
       if (!par) { b.position.set(...j); this.root.add(b); } else { const pj = J[par]; b.position.set(j[0] - pj[0], j[1] - pj[1], j[2] - pj[2]); this.bones[par].add(b); }
     }
     this.root.updateMatrixWorld(true);
-    this.mat = S.mat.clone(); this.mat.color.setScalar(0.95); this.mat.envMapIntensity = 0.45; this.mat.metalness = 0.05; this.mat.roughness = 0.9;
+    this.mat = S.mat.clone(); this.mat.color.setScalar(0.8); this.mat.envMapIntensity = 0.2; this.mat.metalness = 0; this.mat.roughness = 1;
     this.mesh = new THREE.SkinnedMesh(geo, this.mat);
     this.mesh.frustumCulled = false;
     this.root.add(this.mesh);
     this.mesh.bind(new THREE.Skeleton(all), new THREE.Matrix4());
     // modelo olha +Z; a câmera do viewmodel olha -Z → gira 180°; ombros ~20 cm para os lados, 18 cm abaixo do olho
     this.root.rotation.y = Math.PI;
-    const arm = J.LeftArm, K = 1.9;      // braços maiores que o natural (as mãos são reduzidas a ~0,7): alcançam a empunhadura frontal
+    const arm = J.LeftArm, K = 1.5;      // braços maiores que o natural; os ombros ficam à frente e abaixo da câmera para as mãos alcançarem a arma sem mangas enormes
     this.root.scale.setScalar(K);
-    this.root.position.set(0, -0.2 - K * arm[1], 0.0 + K * arm[2]);
+    this.root.position.set(0, -0.55 - K * arm[1], K * arm[2] - 0.78);   // ombros bem abaixo da câmera: as pontas cortadas das mangas ficam fora da tela
     scene.add(this.root);
     this.visible = true;
     this.curl = { Left: [0.8, 0.8], Right: [1.0, 0.9] };   // ângulos atuais (rad) das duas juntas dos dedos
@@ -143,7 +143,7 @@ export class FPArms {
     g.updateWorldMatrix(true, true);
     this.root.updateMatrixWorld(true);
     const b = this.bones;
-    const hs = anchors.handScale ?? 0.7;   // mãos um pouco menores em armas compactas
+    const hs = anchors.handScale ?? 0.6;   // mãos um pouco menores em armas compactas
     b.RightHand.scale.setScalar(hs); b.LeftHand.scale.setScalar(hs);
     // o punho fica um pouco atrás da empunhadura (a mão se estende para a frente a partir dele)
     const rOff = anchors.rightWrist || _v.set(0, 0.0, 0.09), rT = g.localToWorld(anchors.rightHome.clone().add(rOff));

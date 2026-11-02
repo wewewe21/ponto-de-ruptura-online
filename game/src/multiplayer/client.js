@@ -256,7 +256,7 @@ export class Multiplayer {
     $('mp-robot').textContent=this.robotView?'[B] CONTROLAR COLOSSO':'PREPARANDO COLOSSO…';
     $('mp-streak-label').textContent=s.robot?'COLOSSO ATIVO':s.robotReady?'RECOMPENSA CONQUISTADA':'8 ABATES SEGUIDOS · CONQUISTE O COLOSSO';
     $('mp-robot-frame').hidden=!s.robot;
-    $('mp-crosshair').hidden=s.dead||r.phase==='intermission';
+    $('mp-crosshair').hidden=s.dead||r.phase==='intermission'||(!s.robot&&this.G.weapons.adsT>0.5);
     $('mp-feed').replaceChildren(...this.feed.filter(x=>now-x.time<7000).map(x=>{const p=document.createElement('div');p.textContent=x.text;return p;}));
     $('mp-toast').hidden=!(now<this.toastUntil);
     $('mp-waiting').hidden=r.phase!=='waiting';

@@ -150,14 +150,14 @@ function buildArms(isPistol) {
 }
 
 // posições da arma na tela (espaço da câmera do viewmodel; x direita, y cima, -z à frente): [x, y, z]
-export const HIP = { default: [0.12, -0.14, -0.66], P19: [0.08, -0.09, -0.72], MK5: [0.1, -0.12, -0.7], AX50: [0.08, -0.12, -0.9], VK12: [0.09, -0.12, -0.8], KNIFE: [0.12, -0.15, -0.6], RPL2: [0.14, -0.13, -0.5], BRK8: [0.14, -0.14, -0.62], LASER: [0.12, -0.13, -0.55] };
-export const ADS_DIST = { default: 0.3, P19: 0.3, VK12: 0.3, RPL2: 0.2, AX50: 0.4 };
+export const HIP = { default: [0.13, -0.16, -0.78], P19: [0.1, -0.11, -0.8], MK5: [0.12, -0.15, -0.8], AX50: [0.1, -0.14, -0.98], VK12: [0.11, -0.14, -0.9], KNIFE: [0.14, -0.16, -0.7], RPL2: [0.15, -0.14, -0.62], BRK8: [0.14, -0.15, -0.78], LASER: [0.13, -0.14, -0.7] };
+export const ADS_DIST = { default: 0.38, P19: 0.34, MK5: 0.36, VK12: 0.36, RPL2: 0.24, AX50: 0.4 };
 
 function fallbackKnife() {
   const g = new THREE.Group();
   box(g, 0.02, 0.03, 0.12, 0, 0, 0.04, C.poly);
   box(g, 0.006, 0.03, 0.17, 0, 0.0, -0.1, C.blade);
-  const out = { group: g, muzzle: new THREE.Object3D(), mag: null, extra: { knife: true }, sight: new THREE.Vector3(), rightHome: new THREE.Vector3(0, -0.005, 0.02), leftHome: new THREE.Vector3(-0.3, -0.3, 0.1), rightCurl: [1.35, 1.4], leftCurl: [0.2, 0.2], rightWrist: new THREE.Vector3(0, 0, 0.1) };
+  const out = { group: g, muzzle: new THREE.Object3D(), mag: null, extra: { knife: true }, sight: new THREE.Vector3(), rightHome: new THREE.Vector3(0, -0.005, 0.02), leftHome: new THREE.Vector3(-0.3, -0.7, 0.3), rightCurl: [1.35, 1.4], leftCurl: [0.2, 0.2], rightWrist: new THREE.Vector3(0, 0, 0.1) };
   g.add(out.muzzle);
   return out;
 }
@@ -371,9 +371,9 @@ export class ViewModel {
     if (g.extra.dot) g.extra.dot.visible = ads > 0.6;
     if (this.fp) {
       const vis = g.group.visible;
-      this.fp.setVisible(vis);
+      this.fp.setVisible(vis && ads < 0.6);   // ao mirar, só a arma: os antebraços ficariam enormes e borrados nas laterais
       g.arms.L.visible = g.arms.R.visible = false;
-      if (vis) {
+      if (vis && ads < 0.6) {
         g.group.updateMatrixWorld(true);
         const anchors = { rightHome: g.fpR, leftHome: g.leftHome, rightCurl: g.rightCurl, leftCurl: g.leftCurl, rightWrist: g.rightWrist, leftWrist: g.leftWrist, handScale: g.handScale };
         let over = g.arms.L.position;

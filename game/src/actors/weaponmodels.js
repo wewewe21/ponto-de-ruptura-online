@@ -11,27 +11,49 @@ import { splitMesh } from './gunmodel.js';
 // holo: onde montar a mira holográfica (null = a arma já tem a sua luneta); mag/slide: região (x,y do modelo) que forma a peça móvel
 export const GUN_SPECS = {
   MK5: {
-    file: 'smg', flip: false, len: 0.84, handScale: 0.7, rightWrist: [0, 0, 0.06], origin: [0.05, 0.355], muzzle: [-0.5, 0.355], right: [0.092, 0.22], left: [-0.08, 0.28],
+    file: 'smg', flip: false, len: 0.84, handScale: 0.6, rightWrist: [0, 0, 0.06], origin: [0.05, 0.355], muzzle: [-0.5, 0.355], right: [0.092, 0.22], left: [-0.08, 0.28],
     holo: [0.0, 0.392], riser: 0.022, mag: { x: [0.03, 0.16], y: [-1, 0.2], pivot: [0.095, 0.2] }, rightCurl: [1.0, 1.0], leftCurl: [0.8, 0.9],
   },
   P19: {
-    file: 'pistol', flip: false, len: 0.4, handScale: 0.56, rightWrist: [0, 0, 0.035], leftWrist: [0, 0, 0.05], origin: [0.1, 0.528], muzzle: [-0.5, 0.528], right: [0.37, 0.28], left: [0.28, 0.2], leftLat: -0.03,
+    file: 'pistol', flip: false, len: 0.4, handScale: 0.6, rightWrist: [0, 0, 0.035], leftWrist: [0, 0, 0.05], origin: [0.1, 0.528], muzzle: [-0.5, 0.528], right: [0.37, 0.28], left: [0.28, 0.2], leftLat: -0.03,
     holo: [0.08, 0.585], holoScale: 0.6, mag: { x: [0.25, 0.5], y: [-1, 0.12], pivot: [0.36, 0.12] }, slide: { y: [0.43, 1], travel: 0.045 },
     rightCurl: [1.0, 1.1], leftCurl: [0.9, 1.0],
   },
   AX50: {
-    file: 'sniper', flip: true, len: 1.0, handScale: 0.7, rightWrist: [0, 0, 0.07], origin: [-0.03, 0.17], muzzle: [0.5, 0.17], right: [-0.217, 0.095], left: [0.06, 0.15],
+    file: 'sniper', flip: true, len: 1.0, handScale: 0.6, rightWrist: [0, 0, 0.07], origin: [-0.03, 0.17], muzzle: [0.5, 0.17], right: [-0.217, 0.095], left: [0.06, 0.15],
     holo: null, scope: [-0.026, 0.221], rightCurl: [0.9, 1.0], leftCurl: [0.7, 0.8],
   },
   VK12: {
-    file: 'scifi', flip: true, len: 0.95, handScale: 0.7, rightWrist: [0, 0, 0.07], origin: [0.0, 0.171], muzzle: [0.5, 0.171], right: [-0.322, 0.072], left: [0.06, 0.1],
+    file: 'scifi', flip: true, len: 0.95, handScale: 0.6, rightWrist: [0, 0, 0.07], origin: [0.0, 0.171], muzzle: [0.5, 0.171], right: [-0.322, 0.072], left: [0.06, 0.1],
     holo: [-0.12, 0.31], mag: { x: [-0.14, -0.03], y: [-1, 0.12], pivot: [-0.085, 0.12] }, rightCurl: [1.0, 1.0], leftCurl: [0.8, 0.9],
   },
 };
 
+// Placas finas com faces duplicadas e opostas deixam normais zeradas (pontos brancos estourados com centro preto).
+// Repara só esses vértices com a normal de uma face válida.
+function repairNormals(geo) {
+  const p = geo.attributes.position, n = geo.attributes.normal, idx = geo.index;
+  if (!n) return;
+  const bad = new Set();
+  for (let i = 0; i < n.count; i++) if (!(n.getX(i) ** 2 + n.getY(i) ** 2 + n.getZ(i) ** 2 > 0.25)) bad.add(i);
+  if (!bad.size) return;
+  const a = new THREE.Vector3(), b = new THREE.Vector3(), c = new THREE.Vector3();
+  for (let i = 0, count = idx ? idx.count : p.count; i < count && bad.size; i += 3) {
+    const ids = [0, 1, 2].map((k) => (idx ? idx.getX(i + k) : i + k));
+    if (!ids.some((j) => bad.has(j))) continue;
+    a.fromBufferAttribute(p, ids[0]); b.fromBufferAttribute(p, ids[1]); c.fromBufferAttribute(p, ids[2]);
+    b.sub(a).cross(c.sub(a));
+    if (!(b.lengthSq() > 1e-14)) continue;
+    b.normalize();
+    for (const j of ids) if (bad.has(j)) { n.setXYZ(j, b.x, b.y, b.z); bad.delete(j); }
+  }
+  for (const j of bad) n.setXYZ(j, 0, 1, 0);
+  n.needsUpdate = true;
+}
+
 const cache = new Map();
 export function loadWeaponGLB(name) {
-  if (!cache.has(name)) cache.set(name, new GLTFLoader().loadAsync(`./assets/models/weapons/${name}.glb`).then((g) => g.scene));
+  if (!cache.has(name)) cache.set(name, new GLTFLoader().loadAsync(`./assets/models/weapons/${name}.glb`).then((g) => { g.scene.traverse((o) => { if (o.isMesh) repairNormals(o.geometry); }); return g.scene; }));
   return cache.get(name);
 }
 
@@ -80,7 +102,7 @@ export function makeGlbGun(src, spec) {
   const s = spec.len, sign = spec.flip ? -1 : 1, rotY = spec.flip ? Math.PI / 2 : -Math.PI / 2;
   const [ox, oy] = spec.origin;
   let mesh0 = null; src.traverse((o) => { if (o.isMesh && !mesh0) mesh0 = o; });
-  const mat = mesh0.material.clone(); mat.envMapIntensity = 1.1;
+  const mat = mesh0.material.clone(); mat.envMapIntensity = 0.6;   // parafusos muito metálicos estouravam em pontos brancos
   if (mat.map) mat.map.colorSpace = THREE.SRGBColorSpace;
   // posição no espaço da arma de um ponto (x,y) do modelo
   const toGun = (x, y, lat = 0) => new THREE.Vector3(lat, (y - oy) * s, sign * (x - ox) * s);
@@ -139,7 +161,7 @@ export function makeKnifeGun(src, len = 0.3) {
   holder.add(new THREE.Mesh(mesh0.geometry, mat));
   const out = {
     group: root, muzzle: new THREE.Object3D(), mag: null, extra: { isModel: true, knife: true }, sight: new THREE.Vector3(0, 0, 0),
-    rightHome: new THREE.Vector3(0, -0.005, 0.02), leftHome: new THREE.Vector3(-0.3, -0.3, 0.1), rightCurl: [1.35, 1.4], leftCurl: [0.2, 0.2],
+    rightHome: new THREE.Vector3(0, -0.005, 0.02), leftHome: new THREE.Vector3(-0.3, -0.7, 0.3), rightCurl: [1.35, 1.4], leftCurl: [0.2, 0.2],
     rightWrist: new THREE.Vector3(0, 0.0, 0.1),
   };
   root.add(out.muzzle);
