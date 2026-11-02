@@ -723,7 +723,7 @@ export class Mission {
           G.audio.sfx('crane_fall', V(-130, 8, -9), { vol: 1.3, ref: 18 });
           cb.onLand = () => {
             this.flags.craneFallen = true;
-            if (!cb.col) cb.col = G.physics.add(-148, 0, -10, -112, 1.6, -8, { mat: 'metal', cover: 'low' });
+            if (!cb.cols.length) L.setCraneCol(true);
             G.fx.explosion(V(-130, 0.5, -9), 0.8);
             for (let i = 0; i < 40; i++) G.fx.norm.spawn(rand(-148, -112), 0.5, rand(-11, -7), rand(-2, 2), rand(1, 4), rand(-2, 2), rand(2, 4), rand(1, 2.5), 0.35, 0.33, 0.3, 0.6, -0.1, 0.6, 1);
             G.audio.explosion(V(-130, 1, -9), 1.2);

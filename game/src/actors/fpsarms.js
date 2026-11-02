@@ -102,7 +102,7 @@ export class FPSArms {
   }
   _leftDelta(dG, gunMatrix, P, opts) {
     if (opts.leftTarget) { const Wp = _pos(P.Wp['Hand_1.L']); return new THREE.Matrix4().makeTranslation(opts.leftTarget.x - Wp.x, opts.leftTarget.y - Wp.y, opts.leftTarget.z - Wp.z); }
-    if (opts.leftStatic) return new THREE.Matrix4();
+    if (opts.leftStatic) { const e = opts.leftExtra; return e ? new THREE.Matrix4().makeTranslation(e.x, e.y, e.z) : new THREE.Matrix4(); }
     if (opts.leftDelta && opts.leftDelta.lengthSq() > 1e-8) {
       // translação no espaço da arma aplicada sobre a pose: G_agora · T(delta) · G_pose⁻¹
       const T = new THREE.Matrix4().makeTranslation(opts.leftDelta.x, opts.leftDelta.y, opts.leftDelta.z);

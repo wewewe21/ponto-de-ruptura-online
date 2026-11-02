@@ -30,7 +30,8 @@ function cylZ(parent, r, len, x, y, z, mat, seg = 12) {
   m.rotation.x = Math.PI / 2; m.position.set(x, y, z); parent.add(m); return m;
 }
 
-const RIFLE_RET = new THREE.Vector3(0, 0, 0.04);   // ajuste do retículo dentro da janela da mira do fuzil
+// janela da mira holográfica do modelo do fuzil (medida por raios na malha, em unidades do modelo): paredes laterais em x 0,05–0,10; barra de cima em y 0,392
+const RIFLE_WINDOW = { x: 0.077, y: 0.373, cx: 0.05, cy: 0.27 };
 
 function buildGun(id, T) {
   const g = new THREE.Group();
@@ -220,8 +221,9 @@ export class ViewModel {
         const gm = makeRifleGun(src, opt);
         this._flash(gm);
         // retículo vermelho dentro da janela da mira holográfica do próprio modelo
-        gm.sight.y += 0.0165;   // o centro real da janela fica 1,6 cm acima do ponto estimado do modelo
-        const ret = makeReticle(0.026); ret.position.copy(gm.sight).add(RIFLE_RET); gm.group.add(ret); gm.extra.ret = ret;
+        // o retículo fica no meio da profundidade da janela (assim, em qualquer ângulo, aparece dentro do vão) e é o ponto de mira
+        gm.sight.set(0, (RIFLE_WINDOW.y - RIFLE_WINDOW.cy) * opt.length, (RIFLE_WINDOW.x - RIFLE_WINDOW.cx) * opt.length);
+        const ret = makeReticle(0.026); ret.position.copy(gm.sight); gm.group.add(ret); gm.extra.ret = ret;
         this._install(id, gm);
       }
       return true;
@@ -296,7 +298,7 @@ export class ViewModel {
     // recarga
     const L = g.arms.L;
     L.position.copy(g.leftHome);
-    let leftTarget = null;
+    let leftTarget = null, leftExtra = null;
     if (g.mag) { g.mag.visible = st.id !== 'BRK8'; }
     if (g.extra.warhead) g.extra.warhead.visible = st.loaded !== false;
     if (st.reload && !quick) {
@@ -344,6 +346,14 @@ export class ViewModel {
       const t = st.melee > 0 ? 1 - st.melee : 1;
       const wind = smoothstep(0, 0.22, t) * (1 - smoothstep(0.22, 0.34, t));
       const hit = smoothstep(0.2, 0.5, t) * (1 - smoothstep(0.62, 1, t));
+      // a mão livre não fica parada: acompanha o balanço do corpo e a respiração, e faz contrapeso/guarda nos golpes
+      {
+        const slash = (st.meleeSeq || 0) % 2 === 0, k = st.melee > 0 ? 1 : 0;
+        leftExtra = new THREE.Vector3(
+          bx * 0.8 + S.swayX * 0.6 + k * (slash ? 0.11 * hit - 0.05 * wind : 0.03 * hit),
+          by * 0.8 + S.swayY * 0.6 + Math.sin(st.time * 1.6 + 1) * 0.004 + k * (slash ? 0.03 * hit : 0.05 * hit) - sp * 0.04,
+          k * (slash ? -0.06 * hit + 0.03 * wind : -0.1 * hit + 0.04 * wind));
+      }
       if (st.melee > 0) {
         if ((st.meleeSeq || 0) % 2 === 0) {            // corte da direita para a esquerda
           px += 0.1 * wind - 0.3 * hit; py += 0.05 * wind - 0.02 * hit; pz += 0.05 * wind - 0.14 * hit;
@@ -381,7 +391,7 @@ export class ViewModel {
         g.group.updateMatrixWorld(true);
         const opts = {};
         if (leftTarget) opts.leftTarget = leftTarget;
-        else if (g.extra.knife) opts.leftStatic = true;
+        else if (g.extra.knife) { opts.leftStatic = true; opts.leftExtra = leftExtra; }
         else if (st.reload) opts.leftDelta = _dl.copy(g.arms.L.position).sub(g.leftHome);
         this.fps.update(g.group.matrixWorld, key, opts);
       }
