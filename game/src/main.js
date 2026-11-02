@@ -116,7 +116,7 @@ async function boot() {
   G.fx = new FX(G);
   G.vm = new ViewModel(G.level.T);
   G.vm.scene.environment = G.scene.environment; G.vm.scene.environmentIntensity = 0.9;
-  progress('Carregando armas', 78); await G.vm.useRifleModel(); await G.vm.useWeaponModels();
+  progress('Carregando armas', 78); await G.vm.useRifleModel();
   progress('Carregando soldados', 82); try { await loadSoldierAssets(); } catch (e) { console.warn('Soldados 3D indisponíveis, usando o modelo simples.', e); }
   G.vm.useFPArms();
   G.director = new Director(G);

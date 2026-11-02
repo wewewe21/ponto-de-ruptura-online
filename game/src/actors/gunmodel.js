@@ -12,7 +12,7 @@ const SRC = {
   mag: { x0: -0.07, x1: 0.09, y1: 0.2 },      // região (centro do triângulo) que forma o carregador
 };
 
-export function splitMesh(mesh, inRegion) {
+function splitMesh(mesh, inRegion) {
   const g = mesh.geometry, pos = g.attributes.position, nor = g.attributes.normal, uv = g.attributes.uv;
   const idx = g.index ? g.index.array : null;
   const triCount = (idx ? idx.length : pos.count) / 3;

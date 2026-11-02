@@ -59,38 +59,20 @@ export function poseRobotArms(rig, gun, yaw = 0) {
 export function robotArmGeometry(mesh) {
   const original = mesh.geometry, index = original.index;
   const skin = original.attributes.skinIndex, weight = original.attributes.skinWeight;
-  const armBones = new Set(), sideBones = { Left: new Set(), Right: new Set() };
+  const armBones = new Set();
   for (const bone of mesh.skeleton.bones) {
-    if (/(Left|Right)ForeArm$/.test(bone.name)) bone.traverse((o) => { if (o.isBone) { const k = mesh.skeleton.bones.indexOf(o); armBones.add(k); sideBones[/Left/.test(bone.name) ? 'Left' : 'Right'].add(k); } });
+    if (/(Left|Right)ForeArm$/.test(bone.name)) bone.traverse((o) => { if (o.isBone) armBones.add(mesh.skeleton.bones.indexOf(o)); });
   }
   const strength = (i) => {
     let total = 0;
     for (let k = 0; k < 4; k++) if (armBones.has(skin.array[i * 4 + k])) total += weight.array[i * 4 + k];
     return total;
   };
-  // corte limpo: plano perpendicular ao antebraço, no meio dele (em vez de recortar por pesos, que deixava bordas rasgadas)
-  const bindPos = (re) => { const i = mesh.skeleton.bones.findIndex((x) => re.test(x.name)); if (i < 0) return new THREE.Vector3(); return new THREE.Vector3().setFromMatrixPosition(new THREE.Matrix4().copy(mesh.skeleton.boneInverses[i]).invert().premultiply(mesh.bindMatrixInverse)); };
-  const planes = {};
-  for (const side of ['Left', 'Right']) {
-    const e = bindPos(new RegExp(side + 'ForeArm$')), h = bindPos(new RegExp(side + 'Hand$'));
-    planes[side] = { n: h.clone().sub(e).normalize(), p: e.clone().addScaledVector(h.clone().sub(e), 0.5) };
+  const triangles = [], count = index ? index.count : original.attributes.position.count;
+  for (let i = 0; i < count; i += 3) {
+    const a = index ? index.getX(i) : i, b = index ? index.getX(i + 1) : i + 1, c = index ? index.getX(i + 2) : i + 2;
+    if (Math.min(strength(a), strength(b), strength(c)) >= 0.9) triangles.push(a, b, c);
   }
-  const pos = original.attributes.position, _v = new THREE.Vector3();
-  original.computeBoundingBox();
-  const shaped = original.boundingBox.getSize(new THREE.Vector3()).lengthSq() > 1e-6;   // sem posições reais (fixtures) só vale o filtro por pesos
-  const sideOf = (i) => { let l = 0, r = 0; for (let k = 0; k < 4; k++) { const j = skin.array[i * 4 + k], w = weight.array[i * 4 + k]; if (sideBones.Left.has(j)) l += w; else if (sideBones.Right.has(j)) r += w; } return l >= r ? 'Left' : 'Right'; };
-  const beyond = (i) => { if (!shaped) return true; _v.fromBufferAttribute(pos, i); const P = planes[sideOf(i)]; return _v.sub(P.p).dot(P.n) > 0; };
-  const count = index ? index.count : original.attributes.position.count;
-  const collect = (cut) => {
-    const out = [];
-    for (let i = 0; i < count; i += 3) {
-      const a = index ? index.getX(i) : i, b = index ? index.getX(i + 1) : i + 1, c = index ? index.getX(i + 2) : i + 2;
-      if (Math.min(strength(a), strength(b), strength(c)) >= 0.9 && (!cut || (beyond(a) && beyond(b) && beyond(c)))) out.push(a, b, c);
-    }
-    return out;
-  };
-  let triangles = collect(true);
-  if (!triangles.length) triangles = collect(false);   // o plano não encontrou malha junto aos ossos: volta ao filtro só por pesos
   if (!triangles.length) throw new Error('Colosso rig contains no arm skin');
   const geometry = original.clone();
   geometry.clearGroups(); geometry.setIndex(triangles);
@@ -107,10 +89,6 @@ export function disposeRobotAssets({ rig, gun }) {
   rig.model.removeFromParent(); gun.removeFromParent();
 }
 
-// enquadramento em primeira pessoa do Colosso (espaço da câmera): escala do corpo/arma e onde a arma fica na tela.
-// Os ombros do robô ficam bem afastados do olho; o corpo é ampliado e a arma segurada mais perto e mais central para que as duas mãos alcancem.
-export const ROBOT_LAYOUT = { body: 0.75, gun: 0.62, hip: [0.1, -0.74, -1.2], ads: [0, -0.52, -1.2], gripL: -0.25 };
-
 export class RobotView {
   static async create(G) { return new RobotView(G, cloneRobotAssets(await loadRobotAssets())); }
   constructor(G, assets) {
@@ -125,8 +103,9 @@ export class RobotView {
     this.rig.mesh.castShadow = false;
     this.rig.model.rotation.y = Math.PI;
     // The view scene is camera-relative. The world eye itself stays in main's movement code.
-    this.eye = G.rules?.robot?.eye ?? 4.1;
-    this._layout();
+    this.rig.model.scale.setScalar(0.6);
+    this.rig.model.position.y = -(G.rules?.robot?.eye ?? 4.1) * 0.6;
+    this.gun.scale.setScalar(0.75);
     this.anim = new BossAnimator(this.rig, assets.clips); this.anim.play('idle', { fade: 0 });
     this.time = 0; this.recoil = 0; this.flashT = 0; this.reloadT = 0; this.lastYaw = null; this.lastPitch = null;
     this.sway = new THREE.Vector2();
@@ -134,17 +113,11 @@ export class RobotView {
     this.flash.position.copy(this.gun.userData.anchors.muzzle); this.flash.scale.setScalar(0.65); this.gun.add(this.flash);
     this.update(0, {});
   }
-  _layout() {
-    const L = ROBOT_LAYOUT;
-    this.rig.model.scale.setScalar(L.body); this.rig.model.position.y = -this.eye * L.body;
-    this.gun.scale.setScalar(L.gun); this.gun.userData.anchors.gripL.z = L.gripL;
-  }
   kick() { this.recoil = Math.min(1.4, this.recoil + 0.85); this.flashT = 0.055; }
   resize(aspect) { this.camera.aspect = aspect; this.camera.updateProjectionMatrix(); }
   update(dt, { adsT = 0, speed = 0, shooting = false, reloading = false, yaw = 0, pitch = 0 } = {}) {
     dt = Math.min(Math.max(dt, 0), 0.1); this.time += dt;
-    this._layout();
-    const L = ROBOT_LAYOUT, ads = THREE.MathUtils.clamp(adsT, 0, 1), move = Math.min(speed / 4.4, 1);
+    const ads = THREE.MathUtils.clamp(adsT, 0, 1), move = Math.min(speed / 4.4, 1);
     this.recoil *= Math.exp(-12 * dt); this.flashT = Math.max(0, this.flashT - dt);
     this.flash.material.opacity = this.flashT > 0 ? 0.9 : 0;
     const turn = this.lastYaw === null ? 0 : THREE.MathUtils.euclideanModulo(yaw - this.lastYaw + Math.PI, Math.PI * 2) - Math.PI;
@@ -157,7 +130,7 @@ export class RobotView {
     this.reloadT = THREE.MathUtils.damp(this.reloadT, reloading ? 1 : 0, 9, dt);
     const reload = this.reloadT * (0.22 + Math.sin(this.time * 4) * 0.035);
     // First-person framing keeps the original heavy gun readable below the aim line.
-    this.gun.position.set(THREE.MathUtils.lerp(L.hip[0], L.ads[0], ads) + this.sway.x, THREE.MathUtils.lerp(L.hip[1], L.ads[1], ads) + bob - reload + this.sway.y, THREE.MathUtils.lerp(L.hip[2], L.ads[2], ads) + this.recoil * 0.1);
+    this.gun.position.set(THREE.MathUtils.lerp(0.42, 0, ads) + this.sway.x, THREE.MathUtils.lerp(-0.92, -0.55, ads) + bob - reload + this.sway.y, -1.55 + this.recoil * 0.1);
     this.gun.rotation.set(this.recoil * -0.035 + reload * 0.5, Math.PI, reload * -0.6);
     this.rig.model.updateMatrixWorld(true); poseRobotArms(this.rig, this.gun, Math.PI);
     // Shot flashes come from authoritative kick events; holding the trigger adds only servo vibration.
