@@ -4,8 +4,9 @@
 
 | Slot | Arma | Modelo |
 |---|---|---|
-| 1 (aperte **1** de novo para trocar) | SD-9, MK-5 (submetralhadora), KR-7, VK-12 (DMR), AX-50 (sniper) | `assets/models/rifle.glb`, `weapons/smg.glb`, `weapons/scifi.glb`, `weapons/sniper.glb` |
+| 1 (aperte **1** de novo para trocar) | SD-9, MK-5 (submetralhadora), KR-7, VK-12 (DMR) | `assets/models/rifle.glb`, `weapons/smg.glb`, `weapons/scifi.glb`, `weapons/sniper.glb` |
 | 2 | P-19 (pistola) | `weapons/pistol.glb` |
+| 4 | Sniper AX-50 (luneta, ferrolho) | `weapons/sniper.glb` |
 | 3 | Faca (clique = corte e estocada; **V** = golpe rápido/execução) | `weapons/knife.glb` |
 
 A escopeta BRK-8, o lança-foguetes RPL-2 e o designador a laser foram **removidos** por não terem modelo 3D (os inimigos com escudo e o alojamento agora entregam a MK-5; o lança-foguetes da sala de controle saiu). Para devolvê-los, crie o modelo, uma estação nova no Blender (abaixo) e a definição em `weapons.js`.
@@ -33,4 +34,4 @@ A escopeta BRK-8, o lança-foguetes RPL-2 e o designador a laser foram **removid
 2. Anote no modelo normalizado (comprimento 1 em X, base em y = 0): linha do cano (`origin`), boca (`muzzle`), onde fica a mira (`holo`); `flip: true` se a boca estiver em +X. Acrescente a ficha em `GUN_SPECS` (`weaponmodels.js`) e a definição em `WEAPONS` e `ARSENAL` (`weapons.js`).
 3. No Blender, acrescente uma estação em `game/tools/blender/build_pose_scene.py` (`GUNS` e `HIP`), gere a cena, posicione as mãos e exporte como acima (inclua o id na lista `WEAPONS` de `build_game_poses.cjs`).
 
-Observação: o deathmatch online usa só a SD-9 nas estatísticas do servidor (`shared/rules.json`); as armas novas valem na campanha.
+**Multiplayer:** as mesmas armas existem no deathmatch (teclas 1–4, 1 repetido troca a primária). O servidor decide dano, cadência, alcance, munição e recarga de cada arma (`shared/rules.json`, bloco `weapons`); munição e tempo entre tiros são guardados por arma, e a troca leva 0,45 s.
