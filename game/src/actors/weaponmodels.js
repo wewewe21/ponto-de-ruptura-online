@@ -11,20 +11,20 @@ import { splitMesh } from './gunmodel.js';
 // holo: onde montar a mira holográfica (null = a arma já tem a sua luneta); mag/slide: região (x,y do modelo) que forma a peça móvel
 export const GUN_SPECS = {
   MK5: {
-    file: 'smg', flip: false, len: 0.84, handScale: 0.6, rightWrist: [0, 0, 0.06], origin: [0.05, 0.355], muzzle: [-0.5, 0.355], right: [0.092, 0.22], left: [-0.08, 0.28],
+    file: 'smg', flip: false, len: 0.9, handScale: 0.6, rightWrist: [0, 0, 0.06], origin: [0.05, 0.355], muzzle: [-0.5, 0.355], right: [0.092, 0.22], left: [-0.08, 0.28],
     holo: [0.0, 0.392], riser: 0.022, mag: { x: [0.03, 0.16], y: [-1, 0.2], pivot: [0.095, 0.2] }, rightCurl: [1.0, 1.0], leftCurl: [0.8, 0.9],
   },
   P19: {
-    file: 'pistol', flip: false, len: 0.4, handScale: 0.6, rightWrist: [0, 0, 0.035], leftWrist: [0, 0, 0.05], origin: [0.1, 0.528], muzzle: [-0.5, 0.528], right: [0.37, 0.28], left: [0.28, 0.2], leftLat: -0.03,
+    file: 'pistol', flip: false, len: 0.36, handScale: 0.6, rightWrist: [0, 0, 0.035], leftWrist: [0, 0, 0.05], origin: [0.1, 0.528], muzzle: [-0.5, 0.528], right: [0.37, 0.28], left: [0.28, 0.2], leftLat: -0.03,
     holo: [0.08, 0.585], holoScale: 0.6, mag: { x: [0.25, 0.5], y: [-1, 0.12], pivot: [0.36, 0.12] }, slide: { y: [0.43, 1], travel: 0.045 },
     rightCurl: [1.0, 1.1], leftCurl: [0.9, 1.0],
   },
   AX50: {
-    file: 'sniper', flip: true, len: 1.0, handScale: 0.6, rightWrist: [0, 0, 0.07], origin: [-0.03, 0.17], muzzle: [0.5, 0.17], right: [-0.217, 0.095], left: [0.06, 0.15],
+    file: 'sniper', flip: true, len: 1.15, handScale: 0.6, rightWrist: [0, 0, 0.07], origin: [-0.03, 0.17], muzzle: [0.5, 0.17], right: [-0.217, 0.095], left: [0.06, 0.15],
     holo: null, scope: [-0.026, 0.221], rightCurl: [0.9, 1.0], leftCurl: [0.7, 0.8],
   },
   VK12: {
-    file: 'scifi', flip: true, len: 0.95, handScale: 0.6, rightWrist: [0, 0, 0.07], origin: [0.0, 0.171], muzzle: [0.5, 0.171], right: [-0.322, 0.072], left: [0.06, 0.1],
+    file: 'scifi', flip: true, len: 1.05, handScale: 0.6, rightWrist: [0, 0, 0.07], origin: [0.0, 0.171], muzzle: [0.5, 0.171], right: [-0.322, 0.072], left: [0.06, 0.1],
     holo: [-0.12, 0.31], mag: { x: [-0.14, -0.03], y: [-1, 0.12], pivot: [-0.085, 0.12] }, rightCurl: [1.0, 1.0], leftCurl: [0.8, 0.9],
   },
 };
@@ -151,7 +151,7 @@ export function makeGlbGun(src, spec) {
 }
 
 // faca: modelo na posição de "punho para a frente" (lâmina para -Z, gume para baixo). Origem no centro do cabo.
-export function makeKnifeGun(src, len = 0.3) {
+export function makeKnifeGun(src, len = 0.28) {
   let mesh0 = null; src.traverse((o) => { if (o.isMesh && !mesh0) mesh0 = o; });
   const mat = mesh0.material.clone(); mat.envMapIntensity = 1.1;
   if (mat.map) mat.map.colorSpace = THREE.SRGBColorSpace;

@@ -118,7 +118,7 @@ async function boot() {
   G.vm.scene.environment = G.scene.environment; G.vm.scene.environmentIntensity = 0.9;
   progress('Carregando armas', 78); await G.vm.useRifleModel(); await G.vm.useWeaponModels();
   progress('Carregando soldados', 82); try { await loadSoldierAssets(); } catch (e) { console.warn('Soldados 3D indisponíveis, usando o modelo simples.', e); }
-  G.vm.useFPArms();
+  await G.vm.useFPSArms();
   G.director = new Director(G);
   // o chefe carrega em segundo plano (FBX grande); a missão espera por ele se precisar
   G.bossReady = loadBossAssets().then((a) => { G.boss = new Boss(G, a); G.director.boss = G.boss; return G.boss; }).catch((e) => { console.warn('Chefe indisponível:', e); return null; });

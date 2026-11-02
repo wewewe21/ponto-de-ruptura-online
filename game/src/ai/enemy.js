@@ -9,7 +9,7 @@ export const ETYPES = {
   rifleman2: { hp: 100, style: 'enemy2', gun: 'AK', dmg: 9, rpm: 520, burst: [3, 7], pause: [0.45, 1.1], acc: 0.22, sight: 70, run: 4.3, walk: 1.5, pref: [10, 32], mag: 30, reloadT: 2.4, drop: 'KR7' },
   sniper: { hp: 90, style: 'sniper', gun: 'SNIPER', dmg: 35, rpm: 30, burst: [1, 1], pause: [3.0, 4.0], acc: 0.8, sight: 150, run: 3.5, walk: 1.4, pref: [40, 120], mag: 5, reloadT: 3, static: true, aimTime: 3.0, drop: 'VK12' },
   heavy: { hp: 300, armor: 0.5, style: 'heavy', gun: 'LMG', dmg: 7, rpm: 640, burst: [8, 16], pause: [0.7, 1.4], acc: 0.2, sight: 60, run: 1.9, walk: 1.25, pref: [8, 18], mag: 80, reloadT: 3.5, push: true, drop: 'ammo' },
-  shield: { hp: 120, style: 'shield', gun: 'PISTOL', dmg: 9, rpm: 260, burst: [2, 3], pause: [0.6, 1.2], acc: 0.28, sight: 45, run: 2.0, walk: 1.2, pref: [6, 10], mag: 15, reloadT: 2.0, shield: true, drop: 'BRK8' },
+  shield: { hp: 120, style: 'shield', gun: 'PISTOL', dmg: 9, rpm: 260, burst: [2, 3], pause: [0.6, 1.2], acc: 0.28, sight: 45, run: 2.0, walk: 1.2, pref: [6, 10], mag: 15, reloadT: 2.0, shield: true, drop: 'MK5' },
   gunner: { hp: 100, style: 'enemy', gun: 'MG', dmg: 9, rpm: 600, burst: [10, 20], pause: [0.8, 1.5], acc: 0.22, sight: 90, run: 4, walk: 1.5, pref: [10, 80], mag: 100, reloadT: 4, static: true, turret: true, drop: 'ammo' },
 };
 

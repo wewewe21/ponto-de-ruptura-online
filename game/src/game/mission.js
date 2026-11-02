@@ -480,7 +480,7 @@ export class Mission {
             { pos: V(55, -22, -4.4), squad: 'g1' }, { pos: V(62.5, -22, -8), squad: 'g1', type: 'rifleman2' }, { pos: V(72, -22, -5.5), squad: 'g1' },
             { pos: V(77.5, -22, -2), squad: 'g2', type: 'shield' }, { pos: V(88, -22, -5), squad: 'g2', type: 'rifleman2' }, { pos: V(96, -22, 3), squad: 'g2' },
           ], k);
-          if (!D().pickups.some((p) => p.id === 'BRK8') && G.weapons.slots.primary !== 'BRK8') D().dropWeapon('BRK8', V(46, -22, -5.6));
+          if (!D().pickups.some((p) => p.id === 'MK5') && G.weapons.slots.primary !== 'MK5') D().dropWeapon('MK5', V(46, -22, -5.6));
           M.seq([[0.5, ['ATALAIA', 'Comportas de fundo abertas. A galeria vai inundar. Corram!', 3]], [4, ['FAÍSCA', 'Escopeta no chão! Pega, aqui embaixo é corpo a corpo!']]]);
           G.audio.setEnv('tunnel');
         },
@@ -556,7 +556,6 @@ export class Mission {
         interact() {
           const out = [];
           if (M.override < 0) out.push({ pos: P().masterConsole, r: 2.4, dy: 2, label: 'Segure <b>F</b> para conectar o override', hold: 2, act: () => M.startOverride() });
-          if (M.override >= 0 && !M.flags.rocketTaken) out.push({ pos: P().rocketLocker, r: 2.2, dy: 2, label: '<b>F</b> Pegar lança-foguetes RPL-2', act: () => { M.flags.rocketTaken = true; G.weapons.ammo.RPL2 = { mag: 1, reserve: 3 }; G.weapons.pickup('RPL2'); G.hud.toast('RPL-2 — use contra a técnica'); } });
           return out;
         },
         update(dt) {

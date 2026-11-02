@@ -3,7 +3,7 @@
 import * as THREE from 'three';
 import { clamp, lerp, damp, smoothstep } from '../core/utils.js';
 import { loadRifleScene, makeRifleGun } from './gunmodel.js';
-import { FPArms } from './fparms.js';
+import { FPSArms } from './fpsarms.js';
 import { GUN_SPECS, loadWeaponGLB, makeGlbGun, makeKnifeGun, makeReticle } from './weaponmodels.js';
 
 const C = {
@@ -162,6 +162,8 @@ function fallbackKnife() {
   return out;
 }
 
+const _dl = new THREE.Vector3();
+
 export class ViewModel {
   constructor(T) {
     this.scene = new THREE.Scene();
@@ -174,7 +176,7 @@ export class ViewModel {
     this.scene.add(this.rig);
     this.guns = {};
     this.T = T;
-    for (const id of ['SD9', 'KR7', 'VK12', 'BRK8', 'P19', 'RPL2', 'LASER']) this._install(id, buildGun(id, T));
+    for (const id of ['SD9', 'KR7', 'VK12', 'P19']) this._install(id, buildGun(id, T));
     this._install('KNIFE', fallbackKnife());
     // granada na mão
     this.nade = new THREE.Group();
@@ -214,7 +216,7 @@ export class ViewModel {
   async useRifleModel() {
     try {
       const src = await loadRifleScene();
-      for (const [id, opt] of [['SD9', { length: 0.84 }], ['KR7', { length: 0.9, tint: 0xb8b4a8 }]]) {
+      for (const [id, opt] of [['SD9', { length: 0.95 }], ['KR7', { length: 0.95, tint: 0xb8b4a8 }]]) {
         const gm = makeRifleGun(src, opt);
         this._flash(gm);
         // retículo vermelho dentro da janela da mira holográfica do próprio modelo
@@ -237,7 +239,7 @@ export class ViewModel {
     return n;
   }
   // braços em malha 3D (depois que os soldados carregam); mantém os de caixa se falhar
-  useFPArms() { try { this.fp = FPArms.create(this.scene, 'ally1'); return !!this.fp; } catch (e) { console.warn('Braços 3D indisponíveis', e); this.fp = null; return false; } }
+  async useFPSArms() { try { this.fps = await FPSArms.create(this.scene); return true; } catch (e) { console.warn('Braços em primeira pessoa indisponíveis', e); this.fps = null; return false; } }
   set(id) {
     for (const k in this.guns) this.guns[k].group.visible = k === id;
     this.current = this.guns[id];
@@ -271,7 +273,8 @@ export class ViewModel {
     const bx = Math.sin(S.bob) * bobA, by = Math.abs(Math.cos(S.bob)) * bobA * 0.8;
     // posições base
     const gid = quick ? 'KNIFE' : st.id;
-    const hip = HIP[gid] || HIP.default;
+    const bp = this.fps && this.fps.basePose(gid);
+    const hip = bp ? [bp.pos.x, bp.pos.y, bp.pos.z] : (HIP[gid] || HIP.default);
     const adsDist = ADS_DIST[gid] ?? ADS_DIST.default;
     const adsPos = [-g.sight.x, -g.sight.y, -adsDist - g.sight.z];
     let px = lerp(hip[0], adsPos[0], ads), py = lerp(hip[1], adsPos[1], ads), pz = lerp(hip[2], adsPos[2], ads);
@@ -279,7 +282,7 @@ export class ViewModel {
     // agachado: arma levemente inclinada
     rz += st.crouch * 0.04 * (1 - ads);
     // postura de repouso: cano levemente voltado para dentro e para cima, como em um jogo de tiro em primeira pessoa
-    ry += 0.1 * (1 - ads); rx += 0.015 * (1 - ads);
+    if (bp) { rx += bp.euler.x * (1 - ads); ry += bp.euler.y * (1 - ads); rz += bp.euler.z * (1 - ads); } else { ry += 0.1 * (1 - ads); rx += 0.015 * (1 - ads); }
     // corrida
     px += sp * -0.06; py += sp * -0.05; pz += sp * 0.04; ry += sp * 0.75; rx += sp * -0.3; rz += sp * 0.25;
     // sway / bob / coice / pouso
@@ -315,7 +318,7 @@ export class ViewModel {
         pz += cyc * 0.03; L.position.z = g.leftHome.z + 0.02 * Math.sin(t * Math.PI * 4);
       } else {
         const tilt = smoothstep(0, 0.15, t) * (1 - smoothstep(0.85, 1, t));
-        rz += tilt * 0.45; rx += tilt * 0.18; py -= tilt * 0.02;
+        rz += tilt * 0.28; rx += tilt * 0.12; py -= tilt * 0.02;
         const out = smoothstep(0.12, 0.32, t), back = smoothstep(0.42, 0.62, t);
         const magDrop = out * (1 - back);
         const handToMag = smoothstep(0.08, 0.2, t) * (1 - smoothstep(0.6, 0.72, t));
@@ -369,17 +372,18 @@ export class ViewModel {
     g.group.position.set(px, py, pz);
     g.group.rotation.set(rx, ry, rz);
     if (g.extra.dot) g.extra.dot.visible = ads > 0.6;
-    if (this.fp) {
-      const vis = g.group.visible;
-      this.fp.setVisible(vis && ads < 0.6);   // ao mirar, só a arma: os antebraços ficariam enormes e borrados nas laterais
-      g.arms.L.visible = g.arms.R.visible = false;
-      if (vis && ads < 0.6) {
+    g.arms.L.visible = g.arms.R.visible = false;
+    if (this.fps) {
+      const key = quick ? 'KNIFE' : gid;
+      const vis = g.group.visible && this.fps.hasPose(key);
+      this.fps.setVisible(vis);
+      if (vis) {
         g.group.updateMatrixWorld(true);
-        const anchors = { rightHome: g.fpR, leftHome: g.leftHome, rightCurl: g.rightCurl, leftCurl: g.leftCurl, rightWrist: g.rightWrist, leftWrist: g.leftWrist, handScale: g.handScale };
-        let over = g.arms.L.position;
-        if (leftTarget) { over = g.group.worldToLocal(leftTarget.clone()); anchors.leftWrist = new THREE.Vector3(); anchors.leftCurl = [1.1, 1.1]; }
-        if (g.extra.knife && !leftTarget) anchors.leftHome = g.leftHome;
-        this.fp.update(g.group, anchors, over);
+        const opts = {};
+        if (leftTarget) opts.leftTarget = leftTarget;
+        else if (g.extra.knife) opts.leftStatic = true;
+        else if (st.reload) opts.leftDelta = _dl.copy(g.arms.L.position).sub(g.leftHome);
+        this.fps.update(g.group.matrixWorld, key, opts);
       }
     }
   }
