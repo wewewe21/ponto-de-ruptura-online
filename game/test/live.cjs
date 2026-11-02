@@ -21,8 +21,15 @@ async function publicCheck(url){
   const clients=[];try{const a=await client(url,room.id,'Verificação A');clients.push(a);const b=await client(url,room.id,'Verificação B');clients.push(b);await until(()=>a.state.players.length===2&&b.state.players.length===2,'both public snapshots');
     assert.notEqual(a.state.players.find(p=>p.id===a.id).team,b.state.players.find(p=>p.id===b.id).team);
     const first=a.state.players.find(p=>p.id===a.id);a.controls.right=1;await until(()=>a.state.players.find(p=>p.id===a.id).seq>=3,'public authoritative ack');a.controls.right=0;
-    assert.equal(a.state.room.weather,b.state.room.weather);assert.equal(a.error,undefined);assert.equal(b.error,undefined);console.log('LIVE_PUBLIC_OK '+url);
+    assert.equal(a.state.room.weather,b.state.room.weather);await weaponCheck(a,b);assert.equal(a.error,undefined);assert.equal(b.error,undefined);console.log('LIVE_PUBLIC_OK '+url);
   }finally{clients.forEach(c=>c.close());}
+}
+async function weaponCheck(a,b){
+  for(const id of ['MK5','KR7','VK12','P19','KNIFE','AX50','SD9']){
+    a.controls.weapon=id;
+    await until(()=>a.state.players.find(p=>p.id===a.id)?.weapon===id&&b.state.players.find(p=>p.id===a.id)?.weapon===id,'shared weapon '+id);
+    assert.equal(a.state.players.find(p=>p.id===a.id).ammo,baseRules.weapons[id].mag);
+  }
 }
 async function localCheck(){
   const rules=structuredClone(baseRules);rules.respawnSeconds=.06;rules.spawnProtectionSeconds=0;rules.intermissionSeconds=.1;rules.scoreLimit=30;
@@ -31,7 +38,7 @@ async function localCheck(){
     const room=app.rooms.values().next().value;
     const a=await client(url,room.id,'Operador A');clients.push(a);const b=await client(url,room.id,'Operador B');clients.push(b);
     await until(()=>a.state.room.phase==='playing'&&b.state.players.length===2,'match start');
-    const p=room.players.get(a.id),q=room.players.get(b.id);assert.notEqual(p.team,q.team);
+    const p=room.players.get(a.id),q=room.players.get(b.id);assert.notEqual(p.team,q.team);await weaponCheck(a,b);
     let lane;
     for(let x=-240;x<=-155&&!lane;x+=5)for(let z=40;z<=96&&!lane;z+=5){
       const clear=(x,z)=>!room.physics.boxBlocked(x-.95,.1,z-.95,x+.95,4.8,z+.95);

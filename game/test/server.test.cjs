@@ -26,7 +26,7 @@ test('balanced team joins, capacity, reconnect reservation and public flattened 
   assert.equal(c.name,'Charlie');assert.throws(()=>h.room.join('Fifth'),/cheia/);
   h.room.disconnect(c.id);assert.equal(h.room.join('changed',c.token).id,c.id);
   const state=h.room.snapshot();assert.equal(state.t,'state');assert.equal(state.room.phase,'playing');
-  const keys=['id','name','team','x','y','z','vy','onGround','yaw','pitch','hp','maxHp','robot','dead','respawnAt','protectedUntil','kills','deaths','points','streak','streakPoints','robotReady','ammo','reloadUntil','seq'].sort();
+  const keys=['id','name','team','x','y','z','vy','onGround','yaw','pitch','hp','maxHp','robot','dead','respawnAt','protectedUntil','kills','deaths','points','streak','streakPoints','robotReady','ammo','weapon','reloadUntil','seq'].sort();
   assert.deepEqual(Object.keys(state.players[0]).sort(),keys);assert.equal(JSON.stringify(state).includes(h.a.token),false);
 });
 test('shared authoritative movement collides, obeys arena and acknowledges one queued command per tick',async()=>{
@@ -73,6 +73,25 @@ test('cooldown and reload use server times and magazine limits',async()=>{
   h.advance(1000);assert.equal(h.room.shoot(h.a,h.now()),false);assert.equal(h.a.ammo,28);
   h.tick(1101);assert.equal(h.a.reloadUntil,0);assert.equal(h.a.ammo,30);
   h.a.ammo=0;h.advance(200);assert.equal(h.room.shoot(h.a,h.now()),false);
+});
+test('weapon choice is validated, ammo is kept per weapon, damage and range follow the weapon and the knife is melee-only',async()=>{
+  const h=await harness();let seq=0;
+  assert.equal(validateInput(command(0,{weapon:'AX50'})).weapon,'AX50');
+  for(const bad of [{weapon:5},{weapon:'123456789'}])assert.equal(validateInput(command(0,bad)),null);
+  const pick=(id)=>{h.room.enqueue(h.a,command(++seq,{weapon:id}));h.tick();};
+  for (const invalid of ['RPL2', '__proto__', 'toString']) { pick(invalid); assert.equal(h.a.weapon,'SD9'); }
+  pick('P19');assert.equal(h.a.weapon,'P19');assert.equal(h.a.ammo,15);
+  assert.equal(h.room.shoot(h.a,h.now()),false);                                  // troca em andamento
+  h.advance(500);assert(h.room.shoot(h.a,h.now()));assert.equal(h.a.ammo,14);
+  pick('SD9');assert.equal(h.a.ammo,30);pick('P19');assert.equal(h.a.ammo,14);    // munição guardada por arma
+  pick('AX50');h.advance(500);aim(h.a,h.b);h.b.protectedUntil=0;
+  assert(h.room.shoot(h.a,h.now()));assert.equal(h.b.dead,true);assert.equal(h.a.ammo,4);   // sniper: um tiro mata
+  assert.equal(h.room.events.filter(e=>e.type==='shot').pop().weapon,'AX50');
+  const k=await harness();k.room.enqueue(k.a,command(1,{weapon:'KNIFE'}));k.tick();k.advance(500);
+  aim(k.a,k.b);k.b.protectedUntil=0;assert(k.room.shoot(k.a,k.now()));assert.equal(k.b.hp,100);        // a 16 m: fora do alcance
+  k.b.body.x=k.a.body.x;k.b.body.z=k.a.body.z-1.5;aim(k.a,k.b);k.advance(700);
+  assert(k.room.shoot(k.a,k.now()));assert.equal(k.b.hp,40);assert.equal(k.a.ammo,0);
+  k.room.enqueue(k.a,command(2,{reload:true}));k.tick();assert.equal(k.a.reloadUntil,0);              // faca não recarrega
 });
 test('robot reward requires infantry streak and points, consumes reward, robot kills cannot recharge, destroyed resets and can re-earn',async()=>{
   const h=await harness({robotStreak:2,robotPoints:300});

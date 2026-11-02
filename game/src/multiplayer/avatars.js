@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+const SHOT_SOUND = { SD9: 'SD9', MK5: 'SD9', KR7: 'KR7', VK12: 'VK12', AX50: 'VK12', P19: 'P19' };
 import { createSoldier } from '../actors/soldier.js';
 import { hasMeshSoldier } from '../actors/meshsoldier.js';
 import { BossAnimator } from '../actors/bossanim.js';
@@ -160,8 +161,10 @@ export class RemoteAvatars {
     this.avatars.get(playerId)?.model.muzzleFlash();
     if (event.origin && event.end) {
       const from = new THREE.Vector3(...event.origin), to = new THREE.Vector3(...event.end);
-      this.G.fx?.tracer(from, to, event.robot ? 0xffc18a : 0xbbe3ff, 340, event.robot ? 8 : 5);
-      this.G.audio?.shot(event.robot ? 'RPL2' : 'KR7', from, { vol: event.robot ? 0.9 : 0.6 });
+      if (event.weapon !== 'KNIFE') {
+        this.G.fx?.tracer(from, to, event.robot ? 0xffc18a : 0xbbe3ff, 340, event.robot ? 8 : 5);
+        this.G.audio?.shot(event.robot ? 'RPL2' : (SHOT_SOUND[event.weapon] || 'KR7'), from, { vol: event.robot ? 0.9 : 0.6 });
+      }
       this.G.fx?.flashLight(from, event.robot ? 0xffa060 : 0xffd5a0, event.robot ? 180 : 80, 0.04);
     }
     const victim = this.avatars.get(event.hit);

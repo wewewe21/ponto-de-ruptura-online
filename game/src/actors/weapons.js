@@ -13,7 +13,7 @@ export const WEAPONS = {
   KNIFE: { id: 'KNIFE', name: 'FACA TÁTICA', short: 'FACA', slot: 'melee', melee: true, adsTime: 0.2, zoom: 1, move: 1.08, mag: 0, reserve: 0 },
 };
 // primárias que o jogador pode alternar (Digit1 repetido); o lança-foguetes é item de missão
-export const ARSENAL = ['SD9', 'MK5', 'KR7', 'VK12', 'AX50'];
+export const ARSENAL = ['SD9', 'MK5', 'KR7', 'VK12'];   // a sniper fica no slot 4
 const RES = { wood: 0.5, metal: 0.8, glass: 0.1, sand: 1.4, concrete: 9 };
 const _v = new THREE.Vector3(), _v2 = new THREE.Vector3(), _q = new THREE.Quaternion();
 
@@ -24,7 +24,7 @@ export class Weapons {
     this.projectiles = [];
   }
   reset(state) {
-    this.slots = state ? { melee: 'KNIFE', ...state.slots } : { primary: 'SD9', secondary: 'P19', melee: 'KNIFE' };
+    this.slots = state ? { melee: 'KNIFE', special: 'AX50', ...state.slots } : { primary: 'SD9', secondary: 'P19', melee: 'KNIFE', special: 'AX50' };
     this.ammo = state ? JSON.parse(JSON.stringify(state.ammo)) : {
       SD9: { mag: 30, reserve: 150 }, MK5: { mag: 32, reserve: 160 }, AX50: { mag: 5, reserve: 20 }, P19: { mag: 15, reserve: 60 }, KR7: { mag: 30, reserve: 90 }, VK12: { mag: 10, reserve: 30 },
     };
@@ -44,7 +44,6 @@ export class Weapons {
 
   equip(slot) {
     if (slot === this.cur && !this.swapTo) return;
-    if (slot === 'special' && !this.G.support.anyUnlocked()) { this.G.hud.toast('Designador sem enlace — desative um bloqueador'); return; }
     if (!this.slots[slot]) return;
     this.reload = null; this.swapTo = slot; this.swap = 0.0001; this.G.audio.mech('swap');
   }
@@ -117,6 +116,7 @@ export class Weapons {
     if (input.pressed('Digit1')) { if (this.cur === 'primary' && !this.busy && this.swapTo === null) this.cyclePrimary(); else this.equip('primary'); }
     if (input.pressed('Digit2')) this.equip('secondary');
     if (input.pressed('Digit3')) this.equip('melee');
+    if (input.pressed('Digit4')) this.equip('special');
     if (input.wheel && !this.busy && !(this.def.laser)) this.equip(this.cur === 'primary' ? 'secondary' : 'primary');
     else if (input.wheel && this.def.laser) G.support.cycle(input.wheel);
     if (input.pressed('KeyX')) { this.tactical = this.tactical === 'flash' ? 'smoke' : 'flash'; G.hud.toast(this.tactical === 'flash' ? 'Tática: ATORDOANTE' : 'Tática: FUMAÇA'); G.audio.mech('beep'); }
