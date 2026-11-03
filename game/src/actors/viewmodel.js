@@ -421,5 +421,13 @@ export class ViewModel {
     }
   }
   land(v) { this.s.land += Math.min(0.06, v * 0.006); }
+  // boca do cano no mundo: a arma é desenhada com outra câmera (outro FOV), então projeta pela câmera da arma e devolve o ponto equivalente na câmera principal
+  muzzleWorld(cam, out) {
+    const g = this.current; if (!g) return out.copy(cam.position);
+    g.muzzle.updateWorldMatrix(true, false); g.muzzle.getWorldPosition(out);
+    const depth = Math.max(0.3, -out.z); out.project(this.camera);
+    cam.updateMatrixWorld(); out.set(out.x, out.y, 0.5).unproject(cam).sub(cam.position).normalize().multiplyScalar(depth).add(cam.position);
+    return out;
+  }
   muzzleCam(out) { const g = this.current; if (!g) return out.set(0.15, -0.1, -0.8); g.muzzle.updateWorldMatrix(true, false); return g.muzzle.getWorldPosition(out); }
 }

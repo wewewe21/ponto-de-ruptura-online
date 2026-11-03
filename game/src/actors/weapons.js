@@ -226,8 +226,7 @@ export class Weapons {
       }
       // traçante
       if (d.tracer && G.stats.shots % d.tracer === 0) {
-        const m = G.vm.muzzleCam(new THREE.Vector3());
-        const mw = cam.localToWorld(m.clone());
+        const mw = G.vm.muzzleWorld(cam, new THREE.Vector3());
         G.fx.tracer(mw, origin.clone().addScaledVector(fwd, 120), 0xffb060, 420, 6);
       }
     }
@@ -247,10 +246,9 @@ export class Weapons {
     G.audio.shot(d.sound);
     G.director.noise(p.eye, d.sup ? 12 : 95, d.sup ? 'supshot' : 'shot', 'player');
     p.muzzleT = d.sup ? 0.05 : 0.15; p.muzzleLight = d.sup ? 0.3 : 1;
-    const mc = G.vm.muzzleCam(new THREE.Vector3());
-    const mw = cam.localToWorld(mc.clone());
+    const mw = G.vm.muzzleWorld(cam, new THREE.Vector3());
     if (!d.sup) G.fx.muzzleFlash(mw, d.rocket ? 3 : 1); else G.fx.muzzleFlash(mw, 0.15);
-    G.fx.muzzleSmoke(mw, fwd, d.id === 'AX50' ? 3 : 2, d.id === 'AX50' ? 1.3 : 1);
+    G.fx.muzzleSmoke(mw, fwd, d.id === 'AX50' ? 4 : d.id === 'VK12' ? 3 : 2, d.id === 'AX50' ? 1.5 : 1);
     if (!d.rocket && d.id !== 'BRK8') {
       const right = _v.set(1, 0, 0).applyQuaternion(cam.quaternion).clone(), upv = _v2.set(0, 1, 0).applyQuaternion(cam.quaternion).clone();
       G.fx.shell(cam.localToWorld(new THREE.Vector3(0.12, -0.1, -0.35)), right, upv);
