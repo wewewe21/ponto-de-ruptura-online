@@ -190,7 +190,7 @@ class Room {
   }
   shoot(p,now) {
     const cfg=this.combat(p),melee=!!cfg.melee;
-    if(this.phase!=='playing'||p.dead||p.reloadUntil||(!melee&&p.ammo<=0)||now<(p.switchUntil||0)||now-p.lastShot+0.001<60000/cfg.rpm)return false;
+    if((this.phase!=='playing'&&this.phase!=='waiting')||p.dead||p.reloadUntil||(!melee&&p.ammo<=0)||now<(p.switchUntil||0)||now-p.lastShot+0.001<60000/cfg.rpm)return false;
     p.lastShot=now;if(!melee)p.ammo--;p.protectedUntil=0;
     const eye=(p.robot?this.rules.robot:this.rules.human).eye;
     const origin=[p.body.x,p.body.y+(p.robot?eye:Math.min(eye,p.body.h-0.15)),p.body.z];
@@ -247,7 +247,7 @@ class Room {
   }
   snapshot() {
     return {t:'state',serverTime:this.now(),room:{id:this.id,name:this.name,phase:this.phase,round:this.round,endsAt:this.endsAt,nextRoundAt:this.nextRoundAt,weather:this.weather,scores:{...this.scores},scoreLimit:this.rules.scoreLimit},
-      players:[...this.players.values()].filter(p=>p.connected).map(p=>({id:p.id,name:p.name,team:p.team,x:p.body.x,y:p.body.y,z:p.body.z,vy:p.body.vy,onGround:p.body.onGround,yaw:p.yaw,pitch:p.pitch,hp:p.hp,maxHp:p.maxHp,robot:p.robot,dead:p.dead,respawnAt:p.respawnAt,protectedUntil:p.protectedUntil,kills:p.kills,deaths:p.deaths,points:p.points,streak:p.streak,streakPoints:p.streakPoints,robotReady:p.robotReady,ammo:p.ammo,weapon:p.weapon,reloadUntil:p.reloadUntil,seq:p.seq}))};
+      players:[...this.players.values()].filter(p=>p.connected).map(p=>({id:p.id,name:p.name,team:p.team,x:p.body.x,y:p.body.y,z:p.body.z,vy:p.body.vy,onGround:p.body.onGround,yaw:p.yaw,pitch:p.pitch,hp:p.hp,maxHp:p.maxHp,robot:p.robot,dead:p.dead,respawnAt:p.respawnAt,protectedUntil:p.protectedUntil,kills:p.kills,deaths:p.deaths,points:p.points,streak:p.streak,streakPoints:p.streakPoints,robotReady:p.robotReady,ammo:p.ammo,weapon:p.weapon,reloadUntil:p.reloadUntil,seq:p.seq,crouch:!!p.body.crouched,slideT:p.body.slideT||0,sdx:p.body.sdx||0,sdz:p.body.sdz||0,sprinting:!!p.body.sprinting}))};
   }
 }
 module.exports={Room,Match:Room,loadEngine,chooseWeather,validateWorld,validateInput,rayBox,rayCylinder,raySphere,HIT};

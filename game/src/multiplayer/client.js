@@ -193,7 +193,8 @@ export class Multiplayer {
     this.snapAt = state.serverTime || this.snapAt; this.round = state.room.round; this.seq = Math.max(this.seq, self.seq);
     this.pending = teleport || self.dead || state.room.phase === 'intermission' ? [] : this.pending.filter((x) => x.seq > self.seq);
     const body = this.G.player.body;
-    Object.assign(body,{x:self.x,y:self.y,z:self.z,vy:self.vy||0,onGround:self.onGround, r:self.robot?this.rules.robot.radius:this.rules.human.radius,h:self.robot?this.rules.robot.height:this.rules.human.height});
+    Object.assign(body,{x:self.x,y:self.y,z:self.z,vy:self.vy||0,onGround:self.onGround, r:self.robot?this.rules.robot.radius:this.rules.human.radius,h:self.robot?this.rules.robot.height:(self.crouch?1.05:this.rules.human.height),
+      crouched:!!self.crouch,slideT:self.slideT||0,sdx:self.sdx||0,sdz:self.sdz||0,sprinting:!!self.sprinting});
     for (const input of this.pending) stepBody(this.G.physics,body,input,1/this.rules.tickRate,self.robot,this.rules);
     if (teleport) { this.G.player.yaw=self.yaw;this.G.player.pitch=self.pitch;this.renderPos.set(body.x,body.y,body.z);this.acc=0;this.crouch=false; }
     if (previous && self.hp < previous.hp) this.G.player.damagePulse = Math.min(0.65, this.G.player.damagePulse + 0.35);
@@ -239,7 +240,11 @@ export class Multiplayer {
       const Wd=G.weapons.def,zm=this.self.robot?1.25:(Wd.zoom||1.25),adsK=G.weapons.adsT>0?THREE.MathUtils.lerp(1,1/zm*1.15,G.weapons.adsT):1;   // mesma sensibilidade do campo de visão normal, proporcional ao zoom
       const sens=0.0017*G.settings.sens*adsK;
       P.yaw-=I.mouseDX*sens; P.pitch=Math.max(-1.4,Math.min(1.4,P.pitch-I.mouseDY*sens*(G.settings.invertY?-1:1)));
+      const sliding=P.body.slideT>0;
+      // como na campanha: correr levanta (antes de agachar, para agachar correndo virar deslize); pular levanta e cancela o deslize
+      if (this.crouch&&!sliding&&I.down('ShiftLeft')&&I.down('KeyW')&&!this.self.robot) this.crouch=false;
       if (I.pressed('KeyC')||I.pressed('ControlLeft')) this.crouch=!this.crouch;
+      if (this.crouch&&I.pressed('Space')) this.crouch=false;
       this.jumpQueued ||= I.pressed('Space'); this.reloadQueued ||= I.pressed('KeyR'); this.robotQueued ||= I.pressed('KeyB');
       if (I.pressed('KeyN')) G.nvg=!G.nvg;
       this.selectWeapon(I);
@@ -255,13 +260,17 @@ export class Multiplayer {
     P.pos.set(P.body.x,P.body.y,P.body.z);
     const speed=enabled&&((I.down('KeyW')||I.down('KeyS')||I.down('KeyA')||I.down('KeyD')))?(I.down('ShiftLeft')?cfg.sprint:cfg.speed):0;
     P.hSpeed=speed;P.sprinting=enabled&&I.down('ShiftLeft')&&I.down('KeyW');P.sprintT=THREE.MathUtils.damp(P.sprintT,P.sprinting?1:0,10,dt);
-    P.stance=this.crouch&&!this.self.robot?'crouch':'stand';P.eyeH=this.self.robot?cfg.eye:(this.crouch?0.98:cfg.eye);P.updateEye();
+    const slideNow=!this.self.robot&&P.body.slideT>0,crouchNow=!this.self.robot&&P.body.crouched;
+    P.stance=crouchNow?'crouch':'stand';
+    const eyeTarget=this.self.robot?cfg.eye:(crouchNow?0.98:cfg.eye)-(slideNow?0.25:0);   // a câmera desce suavemente ao agachar e mais ainda ao deslizar
+    P.eyeH=this.self.robot?cfg.eye:THREE.MathUtils.damp(P.eyeH||cfg.eye,eyeTarget,12,dt);P.updateEye();
+    this.slideRoll=THREE.MathUtils.damp(this.slideRoll||0,slideNow?0.05:0,10,dt);
     this.renderPos.lerp(P.pos,1-Math.exp(-25*dt));if(this.renderPos.distanceTo(P.pos)>3)this.renderPos.copy(P.pos);
     G.camera.position.copy(this.renderPos);G.camera.position.y+=P.eyeH;
-    G.camera.rotation.set(P.pitch,P.yaw,0,'YXZ');
+    G.camera.rotation.set(P.pitch,P.yaw,this.slideRoll||0,'YXZ');
     const W=G.weapons;W.adsT=THREE.MathUtils.damp(W.adsT,enabled&&I.mouse(2)&&(this.self.robot||!W.def.melee)?1:0,12,dt);
     const zoom=this.self.robot?1.25:(W.def.zoom||1.25);W.swap=Math.max(0,W.swap-dt/0.3);W.melee=Math.max(0,W.melee-dt/0.55);
-    const targetFov=G.settings.fov/(W.def.scope&&!this.self.robot?1:(1+W.adsT*(zoom-1)));   // luneta: o zoom fica só na lenteG.camera.fov=THREE.MathUtils.damp(G.camera.fov,targetFov,12,dt);G.camera.updateProjectionMatrix();
+    const targetFov=G.settings.fov/(W.def.scope&&!this.self.robot?1:(1+W.adsT*(zoom-1)))+(P.body.slideT>0?6:0);   // luneta: o zoom fica só na lenteG.camera.fov=THREE.MathUtils.damp(G.camera.fov,targetFov,12,dt);G.camera.updateProjectionMatrix();
     const reloading=this.self.reloadUntil>now;
     const reloadSecs=(this.self.robot?cfg:(this.rules.weapons&&this.rules.weapons[this.self.weapon])||cfg).reloadSeconds;
     W.reload=reloading?{t:Math.max(0,1-(this.self.reloadUntil-now)/(reloadSecs*1000)),empty:this.self.ammo===0}:null;

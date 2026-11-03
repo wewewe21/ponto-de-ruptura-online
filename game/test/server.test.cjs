@@ -26,7 +26,7 @@ test('balanced team joins, capacity, reconnect reservation and public flattened 
   assert.equal(c.name,'Charlie');assert.throws(()=>h.room.join('Fifth'),/cheia/);
   h.room.disconnect(c.id);assert.equal(h.room.join('changed',c.token).id,c.id);
   const state=h.room.snapshot();assert.equal(state.t,'state');assert.equal(state.room.phase,'playing');
-  const keys=['id','name','team','x','y','z','vy','onGround','yaw','pitch','hp','maxHp','robot','dead','respawnAt','protectedUntil','kills','deaths','points','streak','streakPoints','robotReady','ammo','weapon','reloadUntil','seq'].sort();
+  const keys=['id','name','team','x','y','z','vy','onGround','yaw','pitch','hp','maxHp','robot','dead','respawnAt','protectedUntil','kills','deaths','points','streak','streakPoints','robotReady','ammo','weapon','reloadUntil','seq','crouch','slideT','sdx','sdz','sprinting'].sort();
   assert.deepEqual(Object.keys(state.players[0]).sort(),keys);assert.equal(JSON.stringify(state).includes(h.a.token),false);
 });
 test('shared authoritative movement collides, obeys arena and acknowledges one queued command per tick',async()=>{
@@ -132,15 +132,15 @@ test('new joins fill the smaller active team while reconnect keeps the reserved 
   const d=h.room.join('Delta');assert.equal(d.team,'alpha');
   assert.equal(h.room.join('Again',c.token).team,'alpha');
 });
-test('sole-player warmup moves and reloads authoritatively but prevents combat and resets spawn on round start',async()=>{
+test('sole-player warmup moves, shoots and reloads authoritatively but scores nothing and resets spawn on round start',async()=>{
   let time=100000;
   const room=await Room.create(fixture(),rules(),{now:()=>time,random:()=>0}),p=room.join('Warmup');
   const spawnZ=p.body.z;
   assert.equal(room.phase,'waiting');
   assert(room.enqueue(p,command(0,{forward:1,shoot:true})));
   time+=1000/30;room.tick(1/30,time);
-  assert(p.body.z<spawnZ);assert.equal(p.seq,0);assert.equal(p.ammo,30);
-  assert.equal(room.events.some(e=>e.type==='shot'||e.type==='kill'),false);
+  assert(p.body.z<spawnZ);assert.equal(p.seq,0);assert.equal(p.ammo,29);
+  assert.equal(room.events.some(e=>e.type==='shot'),true);assert.equal(room.events.some(e=>e.type==='kill'),false);   // atira no aquecimento, mas nada pontua
   p.robotReady=true;assert.equal(room.activate(p,time),false);assert.equal(p.robot,false);assert.equal(p.robotReady,true);
   room.kill(null,p,time);assert.equal(p.dead,false);assert.equal(p.deaths,0);assert.equal(p.points,0);assert.equal(room.scores.alpha,0);
   p.ammo=29;assert(room.enqueue(p,command(1,{reload:true})));
@@ -220,4 +220,17 @@ test('hit volume is a body cylinder plus head sphere (no phantom hits on empty b
   h.a.view=undefined;assert(h.room.shoot(h.a,h.now()));assert.equal(h.room.events.filter(e=>e.type==='shot').pop().hit,null);
   h.advance(300);h.b.hist=[{t:h.now()-200,x:b.x-3,y:b.y,z:b.z,h:b.h},{t:h.now(),x:b.x,y:b.y,z:b.z,h:b.h}];h.a.view=h.now()-200;
   assert(h.room.shoot(h.a,h.now()));assert.equal(h.room.events.filter(e=>e.type==='shot').pop().hit,h.b.id);
+});
+test('crouching halves speed and lowers the body, sprint+crouch starts a decaying slide, standing or jumping cancels it, and ceilings keep you crouched',async()=>{
+  const h=await harness();const b=h.a.body,{stepBody}=require('../shared/movement.js');
+  const phys=h.room.physics,rules=baseRules,dt=1/30;
+  const run=(input,n)=>{for(let i=0;i<n;i++)stepBody(phys,b,{forward:1,right:0,yaw:0,...input},dt,false,rules);};
+  b.x=-200;b.z=80;b.y=phys.groundHeight?phys.groundHeight(b.x,b.z,5,0.2):b.y;b.vy=0;b.onGround=true;
+  run({sprint:true},10);assert.equal(b.sprinting,true);const z0=b.z;
+  run({sprint:true,crouch:true},1);assert(b.slideT>0&&b.slideT<=0.8);assert.equal(b.h,1.05);
+  run({sprint:true,crouch:true},12);const slid=z0-b.z;assert(slid>1.5,'deslizou '+slid);   // bem mais que andar agachado
+  run({crouch:true},30);assert.equal(b.slideT,0);assert.equal(b.crouched,true);
+  const z1=b.z;run({crouch:true},30);assert(Math.abs((z1-b.z)-rules.human.speed*0.5)<0.2);   // agachado: metade da velocidade
+  run({crouch:false},2);assert.equal(b.h,rules.human.height);assert.equal(b.crouched,false);
+  run({sprint:true},10);run({sprint:true,crouch:true},2);assert(b.slideT>0);run({sprint:true,crouch:false},1);assert.equal(b.slideT,0);   // levantar cancela
 });
