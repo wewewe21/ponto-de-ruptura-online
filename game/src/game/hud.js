@@ -2,6 +2,7 @@
 // mira dinâmica, hitmarker, indicadores de dano/detecção/granada, marcadores no mundo, legendas, mapa.
 import * as THREE from 'three';
 import { clamp } from '../core/utils.js';
+import { codeLabel } from '../core/keybinds.js';
 
 const $ = (id) => document.getElementById(id);
 const SPK = { TROVÃO: '#a6d98f', FAÍSCA: '#f2c46b', ATALAIA: '#8fb8ff', CORUJA: '#c8a6ff', BARQUEIRO: '#ff7d6b', 'CORVO-1': '#7fe3e0', HOSTIL: '#e2574c', ECO: '#ffffff' };
@@ -99,6 +100,12 @@ export class HUD {
     this.W = innerWidth; this.H = innerHeight;
   }
   show(v) { this.el.hidden = !v; }
+  stimUsed() {
+    this.G.vm?.showStim?.();
+    const el = $('stim-use');
+    if (el) { el.classList.remove('on'); void el.offsetWidth; el.classList.add('on'); clearTimeout(this.stimTimer); this.stimTimer = setTimeout(() => el.classList.remove('on'), 900); }
+    this.G.audio?.stim?.();
+  }
   // ---------- notificações ----------
   toast(text) { const t = $('toast'); t.textContent = text; t.classList.add('on'); this.toastT = 2.2; }
   banner(title, sub = '', kind = '') {
@@ -143,6 +150,9 @@ export class HUD {
   // ---------- quadro ----------
   update(dt) {
     const G = this.G, p = G.player, W = G.weapons;
+    const remaining = Math.max(0, Math.ceil(((p.stimReadyAt || 0) - G.time * 1000) / 1000));
+    $('campaign-stim-status').textContent = remaining ? `${remaining}s` : `[${codeLabel(G.input.physical('KeyQ'))}] 1`;
+    $('campaign-stim').classList.toggle('charging', remaining > 0);
     this.toastT -= dt; if (this.toastT <= 0) $('toast').classList.remove('on');
     this.bannerT -= dt; if (this.bannerT <= 0) $('banner').classList.remove('on');
     this.subT -= dt; if (this.subT <= 0) $('subs').classList.remove('on');

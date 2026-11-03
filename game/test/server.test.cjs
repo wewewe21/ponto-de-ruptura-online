@@ -26,7 +26,7 @@ test('balanced team joins, capacity, reconnect reservation and public flattened 
   assert.equal(c.name,'Charlie');assert.throws(()=>h.room.join('Fifth'),/cheia/);
   h.room.disconnect(c.id);assert.equal(h.room.join('changed',c.token).id,c.id);
   const state=h.room.snapshot();assert.equal(state.t,'state');assert.equal(state.room.phase,'playing');
-  const keys=['id','name','team','x','y','z','vy','onGround','yaw','pitch','hp','maxHp','robot','robotDropAt','dead','respawnAt','protectedUntil','kills','deaths','points','streak','streakPoints','robotReady','nukeStreak','nukeReady','ammo','weapon','reloadUntil','seq','loadout','loadoutNext','crouch','slideT','sdx','sdz','sprinting','tacticalT','tacticalCooldown'].sort();
+  const keys=['id','name','team','x','y','z','vy','onGround','yaw','pitch','hp','maxHp','robot','robotDropAt','dead','respawnAt','protectedUntil','stimReadyAt','kills','deaths','points','streak','streakPoints','robotReady','nukeStreak','nukeReady','ammo','weapon','reloadUntil','seq','loadout','loadoutNext','crouch','slideT','sdx','sdz','sprinting','tacticalT','tacticalCooldown'].sort();
   assert.deepEqual(Object.keys(state.players[0]).sort(),keys);assert.equal(JSON.stringify(state).includes(h.a.token),false);
 });
 test('shared authoritative movement collides, obeys arena and acknowledges one queued command per tick',async()=>{
@@ -56,6 +56,23 @@ test('authoritative hits kill, score the team and respawn after server deadline'
   assert.equal(h.a.kills,1);assert.equal(h.a.points,100);assert.equal(h.room.scores.alpha,1);
   assert.equal(h.room.events.filter(e=>e.type==='kill').length,1);
   h.tick(2999);assert(h.b.dead);h.tick(2);assert(!h.b.dead);assert.equal(h.b.hp,100);assert(h.b.protectedUntil>h.now());
+});
+test('online health regenerates after damage and one server-validated syringe recharges',async()=>{
+  const h=await harness(),p=h.a,enemy=h.b;let seq=0;
+  const send=extra=>{assert(h.room.enqueue(p,command(seq++,extra)));h.tick();};
+  send({useStim:true});assert.equal(p.stimReadyAt,0,'full health does not waste syringe');
+  assert.equal(validateInput(command(99,{useStim:'yes'})),null);
+  p.protectedUntil=0;aim(enemy,p);assert(h.room.shoot(enemy,h.now()));const hurt=p.hp,damagedAt=p.lastDamageAt;
+  assert(hurt>0&&hurt<p.maxHp);h.tick(4499);assert.equal(p.hp,hurt,'no regeneration during delay');
+  h.tick(1);assert(p.hp>hurt&&p.hp<p.maxHp,'regeneration starts gradually');
+  send({useStim:true});assert.equal(p.hp,p.maxHp);const readyAt=p.stimReadyAt;
+  assert(readyAt>damagedAt+30000);assert.equal(h.room.events.filter(e=>e.type==='stim').length,1);
+  p.hp=30;p.lastDamageAt=h.now();send({useStim:true});assert.equal(p.hp,30,'unavailable syringe cannot be reused');
+  assert.equal(h.room.snapshot().players.find(x=>x.id===p.id).stimReadyAt,readyAt);
+  h.advance(readyAt-h.now());p.hp=20;p.lastDamageAt=h.now();send({useStim:true});assert.equal(p.hp,100);
+  h.room.kill(enemy,p,h.now());h.tick(3001);assert.equal(p.hp,100);assert.equal(p.stimReadyAt,0,'respawn supplies one charge');
+  p.robot=true;p.hp=300;p.maxHp=900;p.lastDamageAt=h.now()-10000;send({useStim:true});
+  assert.equal(p.hp,300,'robot gets neither human regeneration nor syringe');assert.equal(p.stimReadyAt,0);
 });
 test('friendly fire is blocked by living teammate; spawn protection and world walls prevent damage',async()=>{
   const h=await harness();const c=h.room.join('Charlie');
@@ -236,6 +253,20 @@ test('nuke activation is relayed over real sockets to both players and a late jo
   const c=await connect(wsurl);t.after(()=>c.terminate());result=message(c,v=>v.t==='welcome');
   c.send(JSON.stringify({t:'join',roomId:room.id,name:'Reforço'}));
   const rejoined=await result;assert.equal(rejoined.state.room.nuke.startedAt,ea.event.startedAt);
+});
+test('syringe request works through a real multiplayer socket and is confirmed by the server',async t=>{
+  const {app,wsurl}=await appHarness(t);const room=app.createRoom();const a=await connect(wsurl),b=await connect(wsurl);
+  t.after(()=>{a.terminate();b.terminate();});
+  let result=message(a,v=>v.t==='welcome');a.send(JSON.stringify({t:'join',roomId:room.id,name:'Ferido'}));const wa=await result;
+  result=message(b,v=>v.t==='welcome');b.send(JSON.stringify({t:'join',roomId:room.id,name:'Oponente'}));await result;
+  const p=room.players.get(wa.id);p.hp=30;p.lastDamageAt=Date.now();
+  const ev=message(a,v=>v.t==='event'&&v.event.type==='stim'&&v.event.player===wa.id);
+  const snapshot=message(a,v=>v.t==='state'&&v.players.find(x=>x.id===wa.id)?.stimReadyAt>0);
+  let seq=0;a.send(JSON.stringify(command(seq++,{useStim:true})));
+  const retry=setInterval(()=>a.readyState===WebSocket.OPEN&&a.send(JSON.stringify(command(seq++,{useStim:true}))),100);t.after(()=>clearInterval(retry));
+  const [,state]=await Promise.all([ev,snapshot]);clearInterval(retry);const self=state.players.find(x=>x.id===wa.id);
+  assert.equal(self.hp,100);assert(self.stimReadyAt>state.serverTime+29000);
+  assert.equal(room.events.filter(e=>e.type==='stim'&&e.player===wa.id).length,1);
 });
 test('HTTP serves original campaign, caching, compressed source and byte ranges without production write endpoint',async t=>{
   const {url}=await appHarness(t);

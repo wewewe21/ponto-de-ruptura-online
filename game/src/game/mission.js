@@ -5,6 +5,7 @@ import { applyWorldFlags, setFlood, makeBeamMaterial } from '../world/level.js';
 import { blobShadow } from '../world/env3d.js';
 import { WEAPONS } from '../actors/weapons.js';
 import { clamp, lerp, rand, smoothstep } from '../core/utils.js';
+import { codeLabel } from '../core/keybinds.js';
 
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
 
@@ -275,7 +276,7 @@ export class Mission {
         update(dt) {
           if (M.h2 && !M.h2.path.crashed) M.updateCrashHeli(dt);
           M.hintT += dt;
-          if (M.hintT > 14 && !M.hint1) { M.hint1 = true; G.hud.toast('Q/E inclinar · V pelas costas = execução silenciosa'); }
+          if (M.hintT > 14 && !M.hint1) { M.hint1 = true; G.hud.toast(`${codeLabel(G.input.physical('KeyH'))}/${codeLabel(G.input.physical('KeyE'))} inclinar · V pelas costas = execução silenciosa`); }
           if (pl().pos.z < 98.5 && pl().pos.x > -258) M.next();
         },
       },

@@ -206,6 +206,12 @@ export class GameAudio {
     const notes = nuke ? [420, 560, 740, 1100] : count > 1 ? [650, 870, 1160] : [760, 1020];
     notes.forEach((f, i) => this._tone(out, t + i * 0.075, 0.22, 'triangle', f, f * 0.98, nuke ? 0.18 : 0.12));
   }
+  stim() {
+    if (!this.ctx) return;
+    const out = this._out(null, 0.35), t = this.t;
+    this._noise(out, t, 0.12, 'bandpass', 2200, 2, 0.25);
+    this._tone(out, t + 0.07, 0.2, 'sine', 820, 1100, 0.11);
+  }
   impact(pos, mat) {
     if (!this.ctx || !this._voice()) return;
     const IM = { metal: 'imp_metal', wood: 'imp_wood', flesh: 'imp_flesh', water: 'imp_water', glass: 'imp_glass' }[mat] || 'imp_concrete';

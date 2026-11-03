@@ -190,7 +190,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 }
 @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
 </style>
-<link rel="stylesheet" href="./ui.css?v=medalhas-nuke-1">
+<link rel="stylesheet" href="./ui.css?v=seringa-1">
 <script type="importmap">{ "imports": { "three": "/vendor/three/build/three.module.js", "three/addons/": "/vendor/three/addons/" } }</script>
 </head>
 <body>
@@ -229,6 +229,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     <div class="ammo-row"><span id="w-mag">30</span><span id="w-res">150</span></div>
     <div id="w-reload">RECARREGUE [R]</div>
     <div class="nades"><span>FRAG<b id="g-frag">3</b></span><span id="g-tac-name">FLASH</span><span><b id="g-tac">2</b></span></div>
+    <div class="stim-indicator" id="campaign-stim">✚ <span>SERINGA</span> <b id="campaign-stim-status">[Q] 1</b></div>
     <div id="support">
       <div class="sup locked" id="s-drone"><span>DRONE</span><span class="n">—</span><i class="cd"></i></div>
       <div class="sup locked" id="s-mortar"><span>MORTEIRO</span><span class="n">—</span><i class="cd"></i></div>
@@ -237,6 +238,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
   </div>
   <div id="fps"></div>
 </div>
+<div id="stim-use" aria-hidden="true"><svg viewBox="0 0 128 128"><g fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 105 45 83M44 74 82 36l14 14-38 38zM75 29l28 28M90 21l17 17M98 28l14-14M45 74l14 14M51 68l9 9M60 59l9 9M69 50l9 9"/></g><path d="M51 73 79 45l7 7-28 28z" fill="#8affb3" opacity=".7"/></svg><span>CURA APLICADA</span></div>
 <div id="fullmap" hidden><div><h2>UHE PEDRA FUNDA</h2><canvas id="fullmap-canvas"></canvas></div></div>
 
 <div id="loading"><div class="box"><div class="kicker">OPERAÇÃO MURALHA</div><div id="load-track"><div id="load-bar"></div></div><div id="load-text">Carregando…</div><div id="load-tip"></div></div></div>
@@ -286,7 +288,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
   <div id="mp-feed"></div><div id="mp-crosshair"><i></i><i></i><i></i><i></i><span></span></div><div id="mp-hitmarker"><i></i><i></i><i></i><i></i></div>
   <div id="mp-toast" hidden></div>
   <div id="mp-voice-line" role="status" hidden></div>
-  <div class="mp-player-info"><span id="mp-team" data-team="alpha">MARTELO</span><div class="mp-health"><small>INTEGRIDADE</small><strong id="mp-hp">100 / 100</strong><div><i id="mp-health-fill"></i></div></div><small><b id="mp-points">0</b> PONTOS · TAB PLACAR</small></div>
+  <div class="mp-player-info"><span id="mp-team" data-team="alpha">MARTELO</span><div class="mp-health"><small>INTEGRIDADE</small><strong id="mp-hp">100 / 100</strong><div><i id="mp-health-fill"></i></div></div><div class="stim-indicator" id="mp-stim">✚ <span>SERINGA</span> <b id="mp-stim-status">[Q] 1</b></div><small><b id="mp-points">0</b> PONTOS · TAB PLACAR</small></div>
   <div class="mp-streak"><div><small id="mp-streak-label">8 ABATES SEGUIDOS · CONQUISTE O COLOSSO</small><strong id="mp-streak-count">0 / 8</strong></div><div class="mp-streak-track"><i id="mp-streak-fill"></i></div><button id="mp-robot" hidden>[B] CONTROLAR COLOSSO</button><button id="mp-nuke" hidden>[U] CHAMAR NUKE</button></div>
   <div class="mp-weapon"><small id="mp-weapon-label">CARABINA SD-9</small><strong id="mp-ammo">30</strong><span id="mp-reload-label">[R] RECARREGAR</span></div>
   <div id="mp-waiting"><b>ÁREA DE AQUECIMENTO</b><span>Aguardando outro jogador para começar. Convide um amigo pelo link da sala.</span></div>

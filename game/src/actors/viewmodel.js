@@ -205,6 +205,18 @@ export class ViewModel {
     const nh = new THREE.Mesh(new THREE.BoxGeometry(0.012, 0.04, 0.02), C.metal); nh.position.set(0.02, 0.03, 0); this.nade.add(nh);
     this.nade.visible = false;
     this.scene.add(this.nade);
+    // Seringa em primeira pessoa; a mão 3D existente acompanha a posição por IK.
+    this.stim = new THREE.Group(); this.stim.visible = false; this.stimT = 0; this.stim.scale.setScalar(.6);
+    const stimBody = new THREE.MeshStandardMaterial({color:0xc9dedb,roughness:.25,metalness:.25,transparent:true,opacity:.8});
+    const stimFluid = new THREE.MeshStandardMaterial({color:0x42dd88,emissive:0x0c5429,roughness:.3});
+    const addStim = (geometry,material,y) => { const mesh = new THREE.Mesh(geometry,material); mesh.position.y=y; this.stim.add(mesh); };
+    addStim(new THREE.CylinderGeometry(.023,.023,.16,16),stimBody,0);
+    addStim(new THREE.CylinderGeometry(.014,.014,.11,12),stimFluid,-.015);
+    addStim(new THREE.CylinderGeometry(.032,.032,.01,16),C.metal,.085);
+    addStim(new THREE.CylinderGeometry(.006,.006,.055,10),C.metal,.115);
+    addStim(new THREE.CylinderGeometry(.03,.03,.012,16),C.metal,.145);
+    addStim(new THREE.CylinderGeometry(.003,.001,.1,8),C.blade,-.14);
+    this.scene.add(this.stim);
     this.current = null; this.currentId = null;
     // estado de animação
     this.s = { sx: 0, sy: 0, bob: 0, kickZ: 0, kickR: 0, kickY: 0, land: 0, swayX: 0, swayY: 0, bolt: 0 };
@@ -287,6 +299,7 @@ export class ViewModel {
     this.flashL.intensity = fx.light;
   }
   aspect(a) { this.camera.aspect = a; this.camera.updateProjectionMatrix(); }
+  showStim() { this.stimT = 0.9; }
   // st: estado vindo do controlador de armas
   update(dt, st) {
     const S = this.s;
@@ -410,6 +423,14 @@ export class ViewModel {
       py -= 0.12 * Math.min(1, t * 3);
       leftTarget = this.nade.position;
     } else this.nade.visible = false;
+    this.stimT = Math.max(0, this.stimT - dt);
+    this.stim.visible = this.stimT > 0 && !(st.grenade > 0);
+    if (this.stim.visible) {
+      const t = 1 - this.stimT / .9, lift = Math.sin(Math.PI * t);
+      this.stim.position.set(-.19 + .07 * lift, -.27 + .15 * lift, -.5);
+      this.stim.rotation.set(.18, 0, -.7 + .3 * lift);
+      leftTarget = this.stim.position;
+    }
     // luneta: a câmera fica colada na ocular e a arma não balança (a lente fica sempre alinhada com o aro do modelo)
     if (st.scopeW) {
       const k = smoothstep(0.7, 1, ads);

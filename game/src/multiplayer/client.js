@@ -37,6 +37,7 @@ export class Multiplayer {
     this.lastFire = 0; this.crouch = false; this.jumpQueued = false; this.reloadQueued = false; this.robotQueued = false;
     this.tacticalTap = new SprintTap(); this.tacticalQueued = false;
     this.nukeQueued = false; this.nukeRequestedUntil = 0; this.nukeCinematic = new NukeCinematic(G);
+    this.stimRequestedUntil = 0;
     this.refreshController = null; this.refreshTimer = null;
     $('btn-online').onclick = () => this.openLobby();
     $('mp-back').onclick = () => this.closeLobby();
@@ -158,7 +159,7 @@ export class Multiplayer {
   }
   enter() {
     const G = this.G; this.active = true; clearInterval(this.refreshTimer); this.refreshController?.abort();
-    this.tacticalTap.reset(); this.tacticalQueued=false; this.nukeQueued=false; this.nukeRequestedUntil=0; G.medals?.reset();
+    this.tacticalTap.reset(); this.tacticalQueued=false; this.nukeQueued=false; this.nukeRequestedUntil=0; this.stimRequestedUntil=0; G.medals?.reset();
     G.mission.timers = []; G.dialog.clear(); G.director.clearAll(); G.boss?.reset();
     this.allyVisibility = G.allies.list.map((ally) => ({ally,root:ally.model.root.visible,gun:ally.model.gun?.visible}));
     for (const ally of G.allies.list) { ally.model.root.visible = false; if (ally.model.gun) ally.model.gun.visible = false; }
@@ -292,7 +293,7 @@ export class Multiplayer {
   command(enabled) {
     const I=this.G.input,P=this.G.player;
     return {t:'input',seq:++this.seq,forward:enabled?Number(I.down('KeyW'))-Number(I.down('KeyS')):0,right:enabled?Number(I.down('KeyD'))-Number(I.down('KeyA')):0,yaw:P.yaw,pitch:P.pitch,view:this.snapAt?Math.round(this.snapAt-50):undefined,
-      sprint:!!(enabled&&I.down('ShiftLeft')),tactical:!!(enabled&&this.tacticalQueued&&!this.self.robot),crouch:!!(enabled&&this.crouch),jump:!!(enabled&&this.jumpQueued),shoot:!!(enabled&&I.mouse(0)),reload:!!(enabled&&this.reloadQueued),weapon:this.weapon,activateRobot:!!(enabled&&this.robotQueued&&this.robotView),activateNuke:!!(enabled&&this.self.nukeReady&&(this.nukeQueued||this.now()<this.nukeRequestedUntil))};
+      sprint:!!(enabled&&I.down('ShiftLeft')),tactical:!!(enabled&&this.tacticalQueued&&!this.self.robot),crouch:!!(enabled&&this.crouch),jump:!!(enabled&&this.jumpQueued),shoot:!!(enabled&&I.mouse(0)),reload:!!(enabled&&this.reloadQueued),weapon:this.weapon,activateRobot:!!(enabled&&this.robotQueued&&this.robotView),activateNuke:!!(enabled&&this.self.nukeReady&&(this.nukeQueued||this.now()<this.nukeRequestedUntil)),useStim:!!(enabled&&!this.self.robot&&this.self.hp<this.self.maxHp&&this.now()>=(this.self.stimReadyAt||0)&&this.now()<this.stimRequestedUntil)};
   }
   dropActive(self=this.self, now=this.now()) {
     return !!(self?.robot&&!self.dead&&this.room?.phase!=='intermission'&&self.robotDropAt&&now<self.robotDropAt+(this.rules.robot.dropDurationMs||5000));
@@ -347,6 +348,7 @@ export class Multiplayer {
       if (this.crouch&&I.pressed('Space')) this.crouch=false;
       this.jumpQueued ||= I.pressed('Space'); this.reloadQueued ||= I.pressed('KeyR'); this.robotQueued ||= I.pressed('KeyB');
       if(I.pressed('KeyU')&&this.self.nukeReady){this.nukeQueued=true;this.nukeRequestedUntil=now+2000;}
+      if(I.pressed('KeyQ')&&!this.self.robot&&this.self.hp<this.self.maxHp&&now>=(this.self.stimReadyAt||0))this.stimRequestedUntil=now+1000;
       if (I.pressed('KeyN')) G.nvg=!G.nvg;
       this.selectWeapon(I);
     }
@@ -425,6 +427,8 @@ export class Multiplayer {
     } else if(e.type==='kill') {
       this.feed.unshift({text:`${e.name||'Ambiente'}  ›  ${e.victimName||'Soldado'}`,time:this.now()});this.feed=this.feed.slice(0,4);
       if(e.killer===this.id){this.markHit(true);this.G.medals?.kill(e.multi||1);}
+    } else if(e.type==='stim'&&e.player===this.id){
+      this.stimRequestedUntil=0;this.G.hud?.stimUsed?.();
     } else if(e.type==='robotBlocked'&&e.player===this.id){
       this.toast('Para chamar o Colosso, fique no chão em uma área com espaço livre.');
     } else if(e.type==='robot'&&e.active&&e.player!==this.id){
@@ -440,7 +444,10 @@ export class Multiplayer {
     $('mp-clock').textContent=r.phase==='waiting'?'AGUARDANDO':`${Math.floor(seconds/60)}:${String(Math.floor(seconds%60)).padStart(2,'0')}`;
     $('mp-room-title').textContent=r.name;
     $('mp-weather').textContent=this.rules.weather.find(w=>w.id===r.weather)?.name||r.weather;
-    $('mp-hp').textContent=`${s.hp} / ${s.maxHp}`;$('mp-health-fill').style.width=`${100*s.hp/s.maxHp}%`;
+    $('mp-hp').textContent=`${Math.ceil(s.hp)} / ${s.maxHp}`;$('mp-health-fill').style.width=`${100*s.hp/s.maxHp}%`;
+    const stimRemaining=Math.max(0,Math.ceil(((s.stimReadyAt||0)-now)/1000));
+    $('mp-stim').hidden=!!s.robot;$('mp-stim').classList.toggle('charging',stimRemaining>0);
+    $('mp-stim-status').textContent=stimRemaining?`${stimRemaining}s`:`[${codeLabel(this.G.input.physical('KeyQ'))}] 1`;
     const wdef=WEAPONS[this.weapon],lowMag=!s.robot&&wdef&&!wdef.melee&&s.ammo>0&&s.ammo<=Math.ceil((this.rules.weapons[this.weapon]?.mag||wdef.mag)*0.25)&&!(s.reloadUntil>now);
     $('mp-ammo').classList.toggle('low',lowMag);$('mp-reload-label').classList.toggle('low',lowMag||(!s.robot&&wdef&&!wdef.melee&&s.ammo===0));
     $('mp-ammo').textContent=!s.robot&&wdef&&wdef.melee?'—':s.ammo;$('mp-weapon-label').textContent=s.robot?'COLOSSO MX-9 · CANHÃO PESADO':(wdef?wdef.name:'CARABINA SD-9');
@@ -484,7 +491,7 @@ export class Multiplayer {
     G.post.render(G.scene,G.camera,this.self&&!this.self.dead&&!this.pilotDrop&&!this.room?.nuke?(view?view.scene:G.vm.scene):null,view?view.camera:G.vm.camera,scoped?sc:undefined);
   }
   leave() {
-    this.nukeCinematic?.clear();this.G.medals?.reset();this.nukeQueued=false;this.nukeRequestedUntil=0;
+    this.nukeCinematic?.clear();this.G.medals?.reset();this.nukeQueued=false;this.nukeRequestedUntil=0;this.stimRequestedUntil=0;
     this.G.audio?.stopSpeech?.();this.voiceUntil=0;this.voiceSerial=(this.voiceSerial||0)+1;
     this.tacticalTap?.reset();this.tacticalQueued=false;
     const G=this.G;this.pilotDrop?.avatar.dispose();this.pilotDrop=null;this.pilotFadeUntil=0;$('mp-hud').classList?.remove('robot-intro');$('mp-robot-intro').hidden=true;this.voiceChat?.close();this.intentionalClose=true;this.active=false;this.connected=false;this.joining=false;clearTimeout(this.reconnectTimer);this.socket?.close();this.socket=null;

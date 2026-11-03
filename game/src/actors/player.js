@@ -3,6 +3,7 @@
 import * as THREE from 'three';
 import { clamp, lerp, damp, rand } from '../core/utils.js';
 import { SprintTap, stepTactical } from '../../shared/tactical.js';
+import { REGEN_DELAY_MS, REGEN_PER_SECOND, useStim } from '../../shared/health.js';
 
 const EYE = { stand: 1.65, crouch: 0.98, prone: 0.38 };
 const HEIGHT = { stand: 1.8, crouch: 1.2, prone: 0.6 };
@@ -24,7 +25,7 @@ export class Player {
     this.yaw = yaw; this.pitch = 0; this.roll = 0;
     this.stance = 'stand'; this.eyeH = EYE.stand;
     this.vel.set(0, 0, 0); this.hSpeed = 0;
-    this.hp = 100; this.regenT = 0; this.dead = false; this.locked = false;
+    this.hp = 100; this.maxHp = 100; this.stimReadyAt = 0; this.regenT = 0; this.dead = false; this.locked = false;
     this.sprinting = false; this.sprintT = 0; this.slide = 0; this.slideDir = new THREE.Vector3();
     this.tacticalTap = new SprintTap(); this.tacticalPose = 0; b.tacticalT = 0; b.tacticalCooldown = 0;
     this.lean = 0; this.leanT = 0;
@@ -59,7 +60,7 @@ export class Player {
     const G = this.G;
     const dmg = amount * (kind === 'bullet' ? G.diff.dmgTaken : 1);
     this.hp -= dmg;
-    this.regenT = 4.5;
+    this.regenT = REGEN_DELAY_MS / 1000;
     this.damagePulse = Math.min(1, this.damagePulse + dmg / 40);
     if (fromPos) G.hud.damageFrom(fromPos);
     this.shake(Math.min(0.4, dmg / 60));
@@ -78,6 +79,7 @@ export class Player {
   update(dt, input) {
     const G = this.G, P = G.physics, b = this.body, W = G.weapons;
     const can = !this.dead && !this.locked;
+    if (can && input.pressed('KeyQ') && useStim(this, G.time * 1000)) G.hud?.stimUsed?.();
     // ---------- olhar ----------
     const sens = G.settings.sens * 0.0022 * (W.adsT > 0 ? lerp(1, 1 / (W.def.zoom || 1) * 1.15, W.adsT) : 1);
     if (can) { this.yaw -= input.mouseDX * sens; this.pitch -= input.mouseDY * sens * (G.settings.invertY ? -1 : 1); }
@@ -196,7 +198,7 @@ export class Player {
     this.stationaryT = this.hSpeed < 0.5 ? this.stationaryT + dt : 0;
     // ---------- inclinação ----------
     let leanTarget = 0;
-    if (can && this.slide <= 0 && !this.sprinting) { if (input.down('KeyQ')) leanTarget -= 1; if (input.down('KeyE')) leanTarget += 1; }
+    if (can && this.slide <= 0 && !this.sprinting) { if (input.down('KeyH')) leanTarget -= 1; if (input.down('KeyE')) leanTarget += 1; }
     if (leanTarget !== 0) {
       // não atravessar paredes
       const side = this.right.multiplyScalar(leanTarget * 0.62);
@@ -218,7 +220,7 @@ export class Player {
     // ---------- vida ----------
     if (!this.dead) {
       this.regenT -= dt;
-      if (this.regenT <= 0 && this.hp < 100) this.hp = Math.min(100, this.hp + 25 * dt);
+      if (this.regenT <= 0 && this.hp < this.maxHp) this.hp = Math.min(this.maxHp, this.hp + REGEN_PER_SECOND * dt);
       if (this.hp < 40) { this.heartT -= dt; if (this.heartT <= 0) { G.audio.heartbeat(); this.heartT = 0.75 + this.hp / 80; } }
     }
     this.damagePulse = damp(this.damagePulse, 0, 2.2, dt);
