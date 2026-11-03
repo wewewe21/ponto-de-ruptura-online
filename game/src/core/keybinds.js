@@ -17,7 +17,7 @@ export const ACTIONS = [
   { id: 'Digit1', label: 'Arma primária (repetir troca de arma)', group: 'COMBATE' },
   { id: 'Digit2', label: 'Pistola', group: 'COMBATE' },
   { id: 'Digit3', label: 'Faca', group: 'COMBATE' },
-  { id: 'Digit4', label: 'Sniper AX-50', group: 'COMBATE' },
+  { id: 'Digit4', label: 'Sniper', group: 'COMBATE' },
   { id: 'KeyV', label: 'Golpe rápido de faca', group: 'COMBATE' },
   { id: 'KeyG', label: 'Granada (segure para cozinhar)', group: 'COMBATE' },
   { id: 'KeyT', label: 'Granada tática', group: 'COMBATE' },

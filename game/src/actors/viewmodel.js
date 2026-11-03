@@ -152,7 +152,7 @@ function buildArms(isPistol) {
 
 // posições da arma na tela (espaço da câmera do viewmodel; x direita, y cima, -z à frente): [x, y, z]
 export const HIP = { default: [0.13, -0.16, -0.78], P19: [0.1, -0.11, -0.8], MK5: [0.12, -0.15, -0.8], AX50: [0.1, -0.14, -0.98], VK12: [0.11, -0.14, -0.9], KNIFE: [0.14, -0.16, -0.7], RPL2: [0.15, -0.14, -0.62], BRK8: [0.14, -0.15, -0.78], LASER: [0.13, -0.14, -0.7] };
-export const ADS_DIST = { default: 0.38, P19: 0.34, MK5: 0.36, VK12: 0.36, RPL2: 0.24, AX50: 0.24 };
+export const ADS_DIST = { default: 0.38, P19: 0.36, MK5: 0.36, VK12: 0.36, RPL2: 0.24, AX50: 0.052 };
 
 function fallbackKnife() {
   const g = new THREE.Group();

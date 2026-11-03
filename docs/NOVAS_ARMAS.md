@@ -4,12 +4,14 @@
 
 | Slot | Arma | Modelo |
 |---|---|---|
-| 1 (aperte **1** de novo para trocar) | SD-9, MK-5 (submetralhadora), KR-7, VK-12 (DMR) | `assets/models/rifle.glb`, `weapons/smg.glb`, `weapons/scifi.glb`, `weapons/sniper.glb` |
-| 2 | P-19 (pistola) | `weapons/pistol.glb` |
-| 4 | Sniper AX-50 (luneta, ferrolho) | `weapons/sniper.glb` |
+| 1 (aperte **1** de novo para trocar) | SD-9, MK-5 (submetralhadora), KR-7, VK-12 (DMR) | `assets/models/rifle.glb`, `weapons/smg.glb`, `weapons/scifi.glb` |
+| 2 | Glock brasileira (mira de ferro; id interno P19) | `weapons/glock.glb` |
+| 4 | Sniper brasileira (luneta, ferrolho; id interno AX50) | `weapons/sniper_br.glb` |
 | 3 | Faca (clique = corte e estocada; **V** = golpe rápido/execução) | `weapons/knife.glb` |
 
 A escopeta BRK-8, o lança-foguetes RPL-2 e o designador a laser foram **removidos** por não terem modelo 3D (os inimigos com escudo e o alojamento agora entregam a MK-5; o lança-foguetes da sala de controle saiu). Para devolvê-los, crie o modelo, uma estação nova no Blender (abaixo) e a definição em `weapons.js`.
+
+Os modelos antigos da sniper e da pistola estão guardados em `Assets/antigas/`. Para trocar o modelo de uma arma no arquivo de poses **sem perder as mãos já posicionadas**, use `blender --background Assets/poses/poses_armas.blend --python game/tools/blender/update_weapon_models.py -- ID` (lê a tabela `GUNS` de `build_pose_scene.py`; faça backup antes).
 
 ## Braços em primeira pessoa
 
