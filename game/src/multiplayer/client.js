@@ -35,6 +35,7 @@ export class Multiplayer {
     this.renderPos = new THREE.Vector3(); this.robotView = null; this.weatherKey = null;
     this.loadout = readLoadout(); this.lo = null; this.weapon = this.loadout.primary; this.weaponAt = 0;
     this.lastFire = 0; this.crouch = false; this.jumpQueued = false; this.reloadQueued = false; this.robotQueued = false;
+    this.fireQueued = false;
     this.tacticalTap = new SprintTap(); this.tacticalQueued = false;
     this.nukeQueued = false; this.nukeRequestedUntil = 0; this.nukeCinematic = new NukeCinematic(G);
     this.stimRequestedUntil = 0;
@@ -159,7 +160,7 @@ export class Multiplayer {
   }
   enter() {
     const G = this.G; this.active = true; clearInterval(this.refreshTimer); this.refreshController?.abort();
-    this.tacticalTap.reset(); this.tacticalQueued=false; this.nukeQueued=false; this.nukeRequestedUntil=0; this.stimRequestedUntil=0; G.medals?.reset();
+    this.tacticalTap.reset(); this.tacticalQueued=false; this.nukeQueued=false; this.nukeRequestedUntil=0; this.stimRequestedUntil=0; this.fireQueued=false; G.medals?.reset();
     G.mission.timers = []; G.dialog.clear(); G.director.clearAll(); G.boss?.reset();
     this.allyVisibility = G.allies.list.map((ally) => ({ally,root:ally.model.root.visible,gun:ally.model.gun?.visible}));
     for (const ally of G.allies.list) { ally.model.root.visible = false; if (ally.model.gun) ally.model.gun.visible = false; }
@@ -292,8 +293,9 @@ export class Multiplayer {
       }
   command(enabled) {
     const I=this.G.input,P=this.G.player;
-    return {t:'input',seq:++this.seq,forward:enabled?Number(I.down('KeyW'))-Number(I.down('KeyS')):0,right:enabled?Number(I.down('KeyD'))-Number(I.down('KeyA')):0,yaw:P.yaw,pitch:P.pitch,view:this.snapAt?Math.round(this.snapAt-50):undefined,
-      sprint:!!(enabled&&I.down('ShiftLeft')),tactical:!!(enabled&&this.tacticalQueued&&!this.self.robot),crouch:!!(enabled&&this.crouch),jump:!!(enabled&&this.jumpQueued),shoot:!!(enabled&&I.mouse(0)),reload:!!(enabled&&this.reloadQueued),weapon:this.weapon,activateRobot:!!(enabled&&this.robotQueued&&this.robotView),activateNuke:!!(enabled&&this.self.nukeReady&&(this.nukeQueued||this.now()<this.nukeRequestedUntil)),useStim:!!(enabled&&!this.self.robot&&this.self.hp<this.self.maxHp&&this.now()>=(this.self.stimReadyAt||0)&&this.now()<this.stimRequestedUntil)};
+    const move=enabled?(I.movement?.()||{forward:Number(I.down('KeyW'))-Number(I.down('KeyS')),right:Number(I.down('KeyD'))-Number(I.down('KeyA'))}):{forward:0,right:0};
+    return {t:'input',seq:++this.seq,forward:move.forward,right:move.right,yaw:P.yaw,pitch:P.pitch,view:this.snapAt?Math.round(this.snapAt-50):undefined,
+      sprint:!!(enabled&&I.down('ShiftLeft')),tactical:!!(enabled&&this.tacticalQueued&&!this.self.robot),crouch:!!(enabled&&this.crouch),jump:!!(enabled&&this.jumpQueued),shoot:!!(enabled&&(I.mouse(0)||this.fireQueued)),reload:!!(enabled&&this.reloadQueued),weapon:this.weapon,activateRobot:!!(enabled&&this.robotQueued&&this.robotView),activateNuke:!!(enabled&&this.self.nukeReady&&(this.nukeQueued||this.now()<this.nukeRequestedUntil)),useStim:!!(enabled&&!this.self.robot&&this.self.hp<this.self.maxHp&&this.now()>=(this.self.stimReadyAt||0)&&this.now()<this.stimRequestedUntil)};
   }
   dropActive(self=this.self, now=this.now()) {
     return !!(self?.robot&&!self.dead&&this.room?.phase!=='intermission'&&self.robotDropAt&&now<self.robotDropAt+(this.rules.robot.dropDurationMs||5000));
@@ -347,6 +349,7 @@ export class Multiplayer {
       if (I.pressed('KeyC')||I.pressed('ControlLeft')) this.crouch=!this.crouch;
       if (this.crouch&&I.pressed('Space')) this.crouch=false;
       this.jumpQueued ||= I.pressed('Space'); this.reloadQueued ||= I.pressed('KeyR'); this.robotQueued ||= I.pressed('KeyB');
+      this.fireQueued ||= I.mousePressed(0);
       if(I.pressed('KeyU')&&this.self.nukeReady){this.nukeQueued=true;this.nukeRequestedUntil=now+2000;}
       if(I.pressed('KeyQ')&&!this.self.robot&&this.self.hp<this.self.maxHp&&now>=(this.self.stimReadyAt||0))this.stimRequestedUntil=now+1000;
       if (I.pressed('KeyN')) G.nvg=!G.nvg;
@@ -358,7 +361,7 @@ export class Multiplayer {
       this.acc-=fixed; const input=this.command(enabled);
       if(this.connected&&this.socket.readyState===WebSocket.OPEN&&this.room.phase!=='intermission'&&!this.room.nuke){ this.socket.send(JSON.stringify(input));if(!this.self.dead&&!dropping)this.pending.push(input);if(this.pending.length>90)this.pending.shift(); }
       if(!this.self.dead&&!dropping&&!this.room.nuke&&this.room.phase!=='intermission')stepBody(G.physics,P.body,input,fixed,this.self.robot,this.rules);
-      this.jumpQueued=false;this.reloadQueued=false;this.robotQueued=false;this.tacticalQueued=false;this.nukeQueued=false;
+      this.jumpQueued=false;this.reloadQueued=false;this.robotQueued=false;this.tacticalQueued=false;this.nukeQueued=false;this.fireQueued=false;
     }
     P.pos.set(P.body.x,P.body.y,P.body.z);
     const speed=enabled&&((I.down('KeyW')||I.down('KeyS')||I.down('KeyA')||I.down('KeyD')))?(P.body.tacticalT>0?cfg.tacticalSprint:I.down('ShiftLeft')?cfg.sprint:cfg.speed):0;
@@ -491,7 +494,7 @@ export class Multiplayer {
     G.post.render(G.scene,G.camera,this.self&&!this.self.dead&&!this.pilotDrop&&!this.room?.nuke?(view?view.scene:G.vm.scene):null,view?view.camera:G.vm.camera,scoped?sc:undefined);
   }
   leave() {
-    this.nukeCinematic?.clear();this.G.medals?.reset();this.nukeQueued=false;this.nukeRequestedUntil=0;this.stimRequestedUntil=0;
+    this.nukeCinematic?.clear();this.G.medals?.reset();this.nukeQueued=false;this.nukeRequestedUntil=0;this.stimRequestedUntil=0;this.fireQueued=false;
     this.G.audio?.stopSpeech?.();this.voiceUntil=0;this.voiceSerial=(this.voiceSerial||0)+1;
     this.tacticalTap?.reset();this.tacticalQueued=false;
     const G=this.G;this.pilotDrop?.avatar.dispose();this.pilotDrop=null;this.pilotFadeUntil=0;$('mp-hud').classList?.remove('robot-intro');$('mp-robot-intro').hidden=true;this.voiceChat?.close();this.intentionalClose=true;this.active=false;this.connected=false;this.joining=false;clearTimeout(this.reconnectTimer);this.socket?.close();this.socket=null;

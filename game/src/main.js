@@ -25,6 +25,7 @@ import { HUD, Dialog } from './game/hud.js';
 import { Mission } from './game/mission.js';
 import { Multiplayer } from './multiplayer/client.js';
 import { Medals } from './game/medals.js';
+import { isMobileTouch, TouchControls } from './core/touch-controls.js';
 
 const $ = (id) => document.getElementById(id);
 const DIFF = {
@@ -32,13 +33,15 @@ const DIFF = {
   regular: { acc: 1.0, dmg: 1.0, detect: 1.0, dmgTaken: 1, tokens: 3 },
   veterano: { acc: 1.25, dmg: 1.55, detect: 1.3, dmgTaken: 1, tokens: 4 },
 };
-const DEFAULTS = { keys: {}, sens: 1.0, fov: 74, master: 0.85, voices: true, diff: 'regular', scale: 1, shadows: true, invertY: false, quality: 'alta' };
+const MOBILE = isMobileTouch();
+const DEFAULTS = { keys: {}, sens: 1.0, fov: 74, master: 0.85, voices: true, diff: 'regular', scale: MOBILE ? .85 : 1, shadows: !MOBILE, invertY: false, quality: MOBILE ? 'baixa' : 'alta' };
 function loadSettings() {
   try { return { ...DEFAULTS, ...JSON.parse(localStorage.getItem('pdr-settings') || '{}') }; } catch (e) { return { ...DEFAULTS }; }
 }
 function saveSettings() { try { localStorage.setItem('pdr-settings', JSON.stringify(G.settings)); } catch (e) {} }
 
-const G = (window.G = { time: 0, state: 'loading', settings: loadSettings(), nvg: false, cinematic: false });
+const G = (window.G = { time: 0, state: 'loading', settings: loadSettings(), nvg: false, cinematic: false, mobile: MOBILE });
+if (MOBILE) document.body.classList.add('mobile-touch');
 G.diff = DIFF[G.settings.diff];
 const OUTDOOR = { name: 'outdoor', ambient: 0.22, indoor: false, reverb: 'outdoor' };
 G.zoneAt = (p) => {
@@ -137,7 +140,7 @@ async function boot() {
   G.hud = new HUD(G);
   G.dialog = new Dialog(G);
   G.mission = new Mission(G);
-  G.input = new Input(canvas);
+  G.input = new Input(canvas, { mobile: MOBILE });
   G.input.onUnlock = () => { if (G.multiplayer?.active) G.multiplayer.menu = true; else if (G.state === 'playing') pause(); };
   G.vm.set('SD9');
   applyWorldFlags(G, {});
@@ -149,6 +152,13 @@ async function boot() {
   G.hud.show(false);
   setupMenus();
   G.multiplayer = new Multiplayer(G);
+  if (MOBILE) {
+    G.touchControls = new TouchControls(G);
+    $('btn-go').textContent = 'INICIAR MISSÃO';
+    $('mp-resume').textContent = 'VOLTAR À PARTIDA';
+    $('mp-capture-hint').textContent = 'Toque em voltar para continuar jogando.';
+    $('btn-respawn').textContent = 'VOLTAR AO CHECKPOINT';
+  }
   await G.multiplayer.init();
   applyQuality();
   G.state = 'title';
@@ -163,7 +173,7 @@ async function boot() {
 
 function resize() {
   const r = G.renderer;
-  const pr = Math.min(devicePixelRatio, 1.5) * G.settings.scale;
+  const pr = Math.min(devicePixelRatio, MOBILE ? 1 : 1.5) * G.settings.scale;
   r.setPixelRatio(pr);
   r.setSize(innerWidth, innerHeight);
   G.camera.aspect = innerWidth / innerHeight; G.camera.updateProjectionMatrix();
@@ -425,6 +435,7 @@ function loop(now) {
   last = now;
   fpsAcc += dt; fpsN++;
   if (fpsAcc > 0.5) { $('fps').textContent = Math.round(fpsN / fpsAcc) + ' fps'; fpsAcc = 0; fpsN = 0; }
+  G.touchControls?.update();
   if (G.multiplayer?.active) G.multiplayer.update(dt);
   else if (G.state === 'title' || G.state === 'briefing' || G.state === 'victory') { attract(dt); G.audio.ctx && G.audio.setMusic(G.state === 'victory' ? 'victory' : 'menu'); }
   else if (G.state === 'playing' || G.state === 'dead') update(dt);

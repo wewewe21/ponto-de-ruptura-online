@@ -190,7 +190,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 }
 @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
 </style>
-<link rel="stylesheet" href="./ui.css?v=seringa-1">
+<link rel="stylesheet" href="./ui.css?v=mobile-2">
 <script type="importmap">{ "imports": { "three": "/vendor/three/build/three.module.js", "three/addons/": "/vendor/three/addons/" } }</script>
 </head>
 <body>
@@ -239,6 +239,24 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
   <div id="fps"></div>
 </div>
 <div id="stim-use" aria-hidden="true"><svg viewBox="0 0 128 128"><g fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 105 45 83M44 74 82 36l14 14-38 38zM75 29l28 28M90 21l17 17M98 28l14-14M45 74l14 14M51 68l9 9M60 59l9 9M69 50l9 9"/></g><path d="M51 73 79 45l7 7-28 28z" fill="#8affb3" opacity=".7"/></svg><span>CURA APLICADA</span></div>
+<div id="touch-controls" hidden aria-label="Controles por toque">
+  <div id="touch-stick" role="application" aria-label="Movimentação"><div id="touch-stick-knob"></div><span>CORRER ↑</span></div>
+  <button id="touch-pause" class="touch-top" type="button" aria-label="Pausar">Ⅱ</button>
+  <button id="touch-more" class="touch-top" type="button" aria-label="Mais ações">⋯</button>
+  <button id="touch-fire" class="touch-btn touch-main" data-action="Mouse0" type="button" aria-label="Atirar">✥<small>ATIRAR</small></button>
+  <button id="touch-aim" class="touch-btn" data-action="Mouse2" type="button" aria-label="Alternar mira" aria-pressed="false">◎<small>MIRAR</small></button>
+  <button id="touch-jump" class="touch-btn" data-action="Space" type="button" aria-label="Pular">⇧<small>PULAR</small></button>
+  <button id="touch-crouch" class="touch-btn" data-action="KeyC" type="button" aria-label="Agachar ou deslizar">⬇<small>DESLIZAR</small></button>
+  <button id="touch-reload" class="touch-btn" data-action="KeyR" type="button" aria-label="Recarregar">⟳<small>RECARREGAR</small></button>
+  <button id="touch-interact" class="touch-btn" data-action="KeyF" type="button" aria-label="Interagir">◇<small>USAR</small></button>
+  <button id="touch-heal" class="touch-btn" data-action="KeyQ" type="button" aria-label="Usar seringa">✚<small>CURA</small></button>
+  <button id="touch-run" class="touch-btn" data-action="ShiftLeft" type="button" aria-label="Correr, toque duas vezes para corrida tática">»<small>CORRER<br>2× TÁTICA</small></button>
+  <div id="touch-weapons" aria-label="Armas"><button data-action="Digit1" type="button">1 <small>PRINCIPAL</small></button><button data-action="Digit2" type="button">2 <small>PISTOLA</small></button><button data-action="Digit3" type="button">3 <small>FACA</small></button><button id="touch-special" data-action="Digit4" type="button">4 <small>SNIPER</small></button></div>
+  <div id="touch-rewards"><button id="touch-robot" data-action="KeyB" type="button" hidden>COLOSSO</button><button id="touch-nuke" data-action="KeyU" type="button" hidden>NUKE</button></div>
+  <div id="touch-extra" hidden><button data-action="KeyG" data-campaign type="button">GRANADA</button><button data-action="KeyT" data-campaign type="button">TÁTICA</button><button data-action="KeyX" data-campaign type="button">TIPO TÁT.</button><button data-action="KeyV" data-campaign type="button">GOLPE</button><button data-action="KeyZ" data-campaign type="button">DEITAR</button><button data-action="KeyN" type="button">VISÃO N.</button><button data-action="KeyM" data-campaign type="button">MAPA</button><button data-action="Tab" data-online type="button">PLACAR</button></div>
+  <div id="touch-hint">ARRASTE À DIREITA PARA OLHAR · EMPURRE O ANALÓGICO PARA CORRER</div>
+</div>
+<div id="touch-rotate" hidden><div>↻<strong>GIRE O CELULAR</strong><span>Jogue com a tela deitada para ter mais espaço.</span></div></div>
 <div id="fullmap" hidden><div><h2>UHE PEDRA FUNDA</h2><canvas id="fullmap-canvas"></canvas></div></div>
 
 <div id="loading"><div class="box"><div class="kicker">OPERAÇÃO MURALHA</div><div id="load-track"><div id="load-bar"></div></div><div id="load-text">Carregando…</div><div id="load-tip"></div></div></div>

@@ -239,7 +239,7 @@ export class Mission {
             [4.5, ['TROVÃO', 'Chuva é amiga. Esconde passo e engole tiro.', 1]],
             [3.4, () => M.next()],
           ]);
-          G.hud.toast('WASD mover · SHIFT correr · C agachar · Z deitar');
+          G.hud.toast(G.mobile ? 'Use o analógico para mover · arraste para olhar' : 'WASD mover · SHIFT correr · C agachar · Z deitar');
         },
         update(dt) {
           // Martelo-1 vai embora

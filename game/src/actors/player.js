@@ -115,8 +115,8 @@ export class Player {
     // ---------- movimento ----------
     let fx = 0, fz = 0;
     if (can) {
-      if (input.down('KeyW')) fz += 1; if (input.down('KeyS')) fz -= 1;
-      if (input.down('KeyD')) fx += 1; if (input.down('KeyA')) fx -= 1;
+      if (input.movement) { const move = input.movement(); fx = move.right; fz = move.forward; }
+      else { if (input.down('KeyW')) fz += 1; if (input.down('KeyS')) fz -= 1; if (input.down('KeyD')) fx += 1; if (input.down('KeyA')) fx -= 1; }
     }
     const fwd = this.forward, rgt = this.right;
     const wish = new THREE.Vector3().addScaledVector(fwd, fz).addScaledVector(rgt, fx);

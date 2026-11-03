@@ -142,7 +142,7 @@ export class HUD {
     const p = $('prompt');
     if (!text) { p.classList.remove('on'); return; }
     p.classList.add('on');
-    $('prompt-text').innerHTML = text;
+    $('prompt-text').innerHTML = this.G.mobile ? text.replace(/<b>F<\/b>/g, '<b>USAR</b>') : text;
     const ring = $('prompt-ring');
     ring.style.display = progress >= 0 ? 'block' : 'none';
     ring.style.setProperty('--p', Math.round(progress * 100));
