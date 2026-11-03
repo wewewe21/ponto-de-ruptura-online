@@ -26,7 +26,7 @@ test('balanced team joins, capacity, reconnect reservation and public flattened 
   assert.equal(c.name,'Charlie');assert.throws(()=>h.room.join('Fifth'),/cheia/);
   h.room.disconnect(c.id);assert.equal(h.room.join('changed',c.token).id,c.id);
   const state=h.room.snapshot();assert.equal(state.t,'state');assert.equal(state.room.phase,'playing');
-  const keys=['id','name','team','x','y','z','vy','onGround','yaw','pitch','hp','maxHp','robot','robotDropAt','dead','respawnAt','protectedUntil','kills','deaths','points','streak','streakPoints','robotReady','ammo','weapon','reloadUntil','seq','loadout','loadoutNext','crouch','slideT','sdx','sdz','sprinting','tacticalT','tacticalCooldown'].sort();
+  const keys=['id','name','team','x','y','z','vy','onGround','yaw','pitch','hp','maxHp','robot','robotDropAt','dead','respawnAt','protectedUntil','kills','deaths','points','streak','streakPoints','robotReady','nukeStreak','nukeReady','ammo','weapon','reloadUntil','seq','loadout','loadoutNext','crouch','slideT','sdx','sdz','sprinting','tacticalT','tacticalCooldown'].sort();
   assert.deepEqual(Object.keys(state.players[0]).sort(),keys);assert.equal(JSON.stringify(state).includes(h.a.token),false);
 });
 test('shared authoritative movement collides, obeys arena and acknowledges one queued command per tick',async()=>{
@@ -114,6 +114,31 @@ test('death loses an unused robot reward and activation refuses insufficient hea
   h.room.physics.add(-2,2,6,2,3,10);assert.equal(h.room.activate(h.a,h.now()),false);assert(h.a.robotReady);
   h.room.kill(h.b,h.a,h.now());assert.equal(h.a.robotReady,false);assert.equal(h.a.streakPoints,0);
 });
+test('nuke requires fifteen consecutive kills, survives robot activation, and ends the match for its caller',async()=>{
+  const h=await harness({scoreLimit:100,roundSeconds:600,intermissionSeconds:2});
+  assert.equal(h.room.activateNuke(h.a,h.now()),false);
+  for(let i=0;i<14;i++){h.room.kill(h.a,h.b,h.now());h.room.spawn(h.b,h.now());h.advance(1000);}
+  assert.equal(h.a.nukeStreak,14);assert.equal(h.a.nukeReady,false);
+  assert(h.room.activate(h.a,h.now()));assert.equal(h.a.nukeStreak,14,'Colosso does not consume nuclear streak');
+  h.room.kill(h.a,h.b,h.now());assert.equal(h.a.nukeStreak,15);assert(h.a.nukeReady);
+  assert.equal(h.room.events.filter(e=>e.type==='kill').at(-1).nukeEarned,true);
+  const snapshot=h.room.snapshot();assert.equal(snapshot.players.find(p=>p.id===h.a.id).nukeReady,true);
+  assert.equal(validateInput(command(0,{activateNuke:'yes'})),null);
+  assert(h.room.enqueue(h.a,command(1,{activateNuke:true})));h.tick(6000);
+  assert.equal(h.room.nuke,null,'stale commands expire');
+  assert(h.room.enqueue(h.a,command(2,{activateNuke:true})));h.tick();
+  assert.equal(h.room.nuke.player,h.a.id);assert.equal(h.a.nukeReady,false);assert.equal(h.room.activateNuke(h.b,h.now()),false);
+  const started=h.room.nuke.startedAt;h.tick(10499);assert.equal(h.room.phase,'playing');h.tick(2);
+  assert.equal(h.room.phase,'intermission');assert.equal(h.room.nuke.name,'Alpha');assert.equal(h.room.nuke.startedAt,started);
+  h.tick(2001);assert.equal(h.room.nuke,null);assert.equal(h.a.nukeStreak,0);assert.equal(h.a.nukeReady,false);
+});
+test('nuclear progress resets on death and rapid-kill awards reset after five seconds',async()=>{
+  const h=await harness({scoreLimit:100});
+  h.room.kill(h.a,h.b,h.now());assert.equal(h.room.events.at(-1).multi,1);h.room.spawn(h.b,h.now());
+  h.advance(1000);h.room.kill(h.a,h.b,h.now());assert.equal(h.room.events.at(-1).multi,2);h.room.spawn(h.b,h.now());
+  h.advance(5001);h.room.kill(h.a,h.b,h.now());assert.equal(h.room.events.at(-1).multi,1);h.room.spawn(h.b,h.now());
+  h.room.kill(h.b,h.a,h.now());assert.equal(h.a.nukeStreak,0);assert.equal(h.a.multiKills,0);assert.equal(h.a.nukeReady,false);
+});
 test('robot activation rejects obstacles along the descent and does not consume the reward',async()=>{
   const h=await harness(),p=h.a;p.robotReady=true;
   h.room.physics.add(-2,12,6,2,14,10);assert.equal(h.room.activate(p,h.now()),false);assert.equal(p.robotReady,true);
@@ -193,6 +218,24 @@ test('real HTTP rooms and WebSockets join, synchronize, reject malformed and ign
   p=message(a,v=>v.t==='error');a.send('{bad');assert.match((await p).message,/inválida/);
   const closed=once(a,'close');a.send('null');a.send('[]');assert.equal((await closed)[0],1008);
   assert.equal(app.rooms.get(room.id).players.get(welcome.id).connected,false);
+});
+test('nuke activation is relayed over real sockets to both players and a late joiner gets the same timeline',async t=>{
+  const {app,wsurl}=await appHarness(t);const room=app.createRoom();
+  const a=await connect(wsurl),b=await connect(wsurl);t.after(()=>{a.terminate();b.terminate();});
+  let result=message(a,v=>v.t==='welcome');a.send(JSON.stringify({t:'join',roomId:room.id,name:'Nuclear'}));const wa=await result;
+  result=message(b,v=>v.t==='welcome');b.send(JSON.stringify({t:'join',roomId:room.id,name:'Testemunha'}));const wb=await result;
+  const pa=room.players.get(wa.id),pb=room.players.get(wb.id);
+  for(let i=0;i<15;i++){room.kill(pa,pb);room.spawn(pb);}
+  assert.equal(pa.nukeReady,true);
+  const eventA=message(a,v=>v.t==='event'&&v.event.type==='nuke'),eventB=message(b,v=>v.t==='event'&&v.event.type==='nuke');
+  const stateB=message(b,v=>v.t==='state'&&v.room.nuke?.player===wa.id);
+  let seq=0;a.send(JSON.stringify(command(seq++,{activateNuke:true})));
+  const retry=setInterval(()=>a.readyState===WebSocket.OPEN&&a.send(JSON.stringify(command(seq++,{activateNuke:true}))),100);t.after(()=>clearInterval(retry));
+  const [ea,eb,state]=await Promise.all([eventA,eventB,stateB]);clearInterval(retry);
+  assert.equal(ea.event.startedAt,eb.event.startedAt);assert.equal(state.room.nuke.name,'Nuclear');
+  const c=await connect(wsurl);t.after(()=>c.terminate());result=message(c,v=>v.t==='welcome');
+  c.send(JSON.stringify({t:'join',roomId:room.id,name:'Reforço'}));
+  const rejoined=await result;assert.equal(rejoined.state.room.nuke.startedAt,ea.event.startedAt);
 });
 test('HTTP serves original campaign, caching, compressed source and byte ranges without production write endpoint',async t=>{
   const {url}=await appHarness(t);

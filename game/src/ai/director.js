@@ -334,10 +334,10 @@ export class Director {
     this.pickups.push({ kind: 'ammo', pos: m.position.clone(), mesh: m, t: 90 });
   }
   onPlayerKill(e, dist, stealth) {
+    this.G.medals?.kill();
     if (dist > 40) this.adapt.longKills++;
     if (dist < 8) this.adapt.closeKills++;
     if (stealth) this.adapt.stealthKills++;
-    this.G.allies && this.G.allies.onEnemyKilled(e);
   }
   get combatLevel() {
     const inC = this.enemies.filter((e) => !e.dead && e.state === 'combat').length;

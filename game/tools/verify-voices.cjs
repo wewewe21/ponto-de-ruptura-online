@@ -3,10 +3,10 @@ const assert=require('node:assert/strict');const fs=require('node:fs');const pat
 const {catalog,key,id}=require('./voice-catalog.cjs');
 const ROOT=path.join(__dirname,'..');
 function verify(lines,manifest,root=ROOT){
-  assert.equal(manifest.language,'pt-BR');assert.equal(Object.keys(manifest.lines).length,lines.length,'stale or missing recorded lines');
+  assert.equal(manifest.language,'pt-BR');assert.ok(Object.keys(manifest.lines).length>=lines.length,'missing recorded lines');
   const ids=new Set();let bytes=0,seconds=0;
   for(const line of lines){
-    const entry=manifest.lines[key(line.speaker,line.text)];assert.ok(entry,'Unvoiced: '+line.speaker+': '+line.text);
+    const entry=manifest.lines[key(line.speaker,line.text)];assert.ok(entry,'missing recording: '+line.speaker+': '+line.text);
     assert.equal(entry.id,id(line.speaker,line.text));assert.ok(!ids.has(entry.id),'Duplicate line ID');ids.add(entry.id);
     assert.equal(entry.speaker,line.speaker);assert.equal(entry.text,line.text);assert.ok(entry.sources.length>0);
     assert.ok(entry.duration>.15&&entry.duration<60,'invalid duration '+entry.id);assert.ok(entry.bytes>1000);

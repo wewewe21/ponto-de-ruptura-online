@@ -190,7 +190,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 }
 @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
 </style>
-<link rel="stylesheet" href="./ui.css">
+<link rel="stylesheet" href="./ui.css?v=medalhas-nuke-1">
 <script type="importmap">{ "imports": { "three": "/vendor/three/build/three.module.js", "three/addons/": "/vendor/three/addons/" } }</script>
 </head>
 <body>
@@ -276,6 +276,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
   </div>
 </section>
 
+<div id="kill-medal" hidden aria-live="polite"><div class="medal-icons"></div><strong></strong><small></small></div>
 <div id="mp-hud" hidden>
   <div id="mp-robot-intro" hidden><div></div><span>COLOSSO MX-9 · ENTRANDO</span><div></div></div>
   <button id="mp-exit-match" class="mp-match-exit" title="Pressione ESC para liberar o mouse">SAIR DA SALA</button>
@@ -286,13 +287,19 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
   <div id="mp-toast" hidden></div>
   <div id="mp-voice-line" role="status" hidden></div>
   <div class="mp-player-info"><span id="mp-team" data-team="alpha">MARTELO</span><div class="mp-health"><small>INTEGRIDADE</small><strong id="mp-hp">100 / 100</strong><div><i id="mp-health-fill"></i></div></div><small><b id="mp-points">0</b> PONTOS · TAB PLACAR</small></div>
-  <div class="mp-streak"><div><small id="mp-streak-label">8 ABATES SEGUIDOS · CONQUISTE O COLOSSO</small><strong id="mp-streak-count">0 / 8</strong></div><div class="mp-streak-track"><i id="mp-streak-fill"></i></div><button id="mp-robot" hidden>[B] CONTROLAR COLOSSO</button></div>
+  <div class="mp-streak"><div><small id="mp-streak-label">8 ABATES SEGUIDOS · CONQUISTE O COLOSSO</small><strong id="mp-streak-count">0 / 8</strong></div><div class="mp-streak-track"><i id="mp-streak-fill"></i></div><button id="mp-robot" hidden>[B] CONTROLAR COLOSSO</button><button id="mp-nuke" hidden>[U] CHAMAR NUKE</button></div>
   <div class="mp-weapon"><small id="mp-weapon-label">CARABINA SD-9</small><strong id="mp-ammo">30</strong><span id="mp-reload-label">[R] RECARREGAR</span></div>
   <div id="mp-waiting"><b>ÁREA DE AQUECIMENTO</b><span>Aguardando outro jogador para começar. Convide um amigo pelo link da sala.</span></div>
   <div id="mp-dead" hidden><div><small>VOCÊ FOI ELIMINADO</small><h2>RETORNANDO EM <b id="mp-respawn-time">3</b></h2><p>A sequência foi reiniciada.</p></div></div>
   <div id="mp-pause"><div><div class="kicker">DEATHMATCH ONLINE</div><h2>PRONTO PARA<br>ENTRAR?</h2><p id="mp-capture-hint">A partida continua enquanto este menu está aberto.</p><button class="btn primary" id="mp-resume">JOGAR · TRAVAR MOUSE</button><button class="btn" id="mp-loadout">LOADOUT · ARMAS</button><button class="btn" id="mp-controls">CONTROLES · TECLAS</button><button class="btn" id="mp-settings">CONFIGURAÇÕES · ÁUDIO · GRÁFICOS</button><button class="btn" id="mp-copy">COPIAR CONVITE DA SALA</button><button class="btn" id="mp-leave">SAIR DA SALA</button></div></div>
-  <div id="mp-intermission" hidden><h2 id="mp-result">FIM DA PARTIDA</h2><p id="mp-next-round"></p></div>
+  <div id="mp-intermission" hidden><h2 id="mp-result">FIM DA PARTIDA</h2><p id="mp-nuke-winner" hidden></p><p id="mp-next-round"></p></div>
   <div id="mp-scoreboard" hidden><header><div class="kicker">SUBESTAÇÃO · DEATHMATCH</div><h2>PLACAR DA PARTIDA</h2></header><div class="mp-score-tables"><section><h3 class="alpha">MARTELO</h3><table><thead><tr><th>SOLDADO</th><th>A</th><th>M</th><th>PTS</th></tr></thead><tbody id="mp-rows-alpha"></tbody></table></section><section><h3 class="bravo">AFOGADOS</h3><table><thead><tr><th>SOLDADO</th><th>A</th><th>M</th><th>PTS</th></tr></thead><tbody id="mp-rows-bravo"></tbody></table></section></div><p>8 ABATES SEGUIDOS → COLOSSO MX-9 · [B] ATIVAR</p></div>
+</div>
+<div id="nuke-cinematic" hidden aria-live="polite">
+  <div class="nuke-phone"><div class="phone-glove"></div><div class="phone-device"><small>COMANDO ESTRATÉGICO</small><b>LANÇAMENTO NUCLEAR</b><div class="phone-code"></div><div class="phone-keypad"><i>1</i><i>2</i><i>3</i><i>4</i><i>5</i><i>6</i><i>7</i><i>8</i><i>9</i><i>✳</i><i>0</i><i>#</i></div><span>TRANSMITINDO AUTORIZAÇÃO</span></div><div class="phone-finger"></div></div>
+  <div class="nuke-alert"><small>AMEAÇA ESTRATÉGICA</small><strong>ATAQUE NUCLEAR</strong><span>LANÇAMENTO CONFIRMADO</span></div>
+  <div class="nuke-sky"><div class="nuke-clouds"></div><div class="nuke-missile"><div class="missile-body"><i></i></div><div class="missile-flame"></div></div><div class="nuke-ground"></div></div>
+  <div class="nuke-blast"><div class="blast-core"></div><div class="blast-cloud"></div><div class="blast-ring"></div></div>
 </div>
 
 <section id="briefing" class="screen solid" hidden>

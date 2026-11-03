@@ -200,6 +200,12 @@ export class GameAudio {
     else if (kind === 'armor') { this._tone(o, t, 0.08, 'square', 1700, 1500, 0.1); }
     else { this._noise(o, t, 0.03, 'bandpass', 3500, 2, 0.4); this._tone(o, t, 0.03, 'triangle', 1900, 1700, 0.1); }
   }
+  medal(count = 1, nuke = false) {
+    if (!this.ctx) return;
+    const out = this._out(null, 0.32), t = this.t;
+    const notes = nuke ? [420, 560, 740, 1100] : count > 1 ? [650, 870, 1160] : [760, 1020];
+    notes.forEach((f, i) => this._tone(out, t + i * 0.075, 0.22, 'triangle', f, f * 0.98, nuke ? 0.18 : 0.12));
+  }
   impact(pos, mat) {
     if (!this.ctx || !this._voice()) return;
     const IM = { metal: 'imp_metal', wood: 'imp_wood', flesh: 'imp_flesh', water: 'imp_water', glass: 'imp_glass' }[mat] || 'imp_concrete';

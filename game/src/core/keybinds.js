@@ -24,6 +24,7 @@ export const ACTIONS = [
   { id: 'KeyX', label: 'Alternar tática (atordoante/fumaça)', group: 'COMBATE' },
   { id: 'KeyF', label: 'Interagir', group: 'OUTROS' },
   { id: 'KeyB', label: 'Entrar no Colosso (online)', group: 'OUTROS' },
+  { id: 'KeyU', label: 'Chamar nuke (online)', group: 'OUTROS' },
   { id: 'KeyN', label: 'Visão noturna', group: 'OUTROS' },
   { id: 'KeyM', label: 'Mapa', group: 'OUTROS' },
   { id: 'Tab', label: 'Placar (online)', group: 'OUTROS' },

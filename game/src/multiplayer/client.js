@@ -5,6 +5,7 @@ import { applyWorldFlags } from '../world/level.js';
 import { RemoteAvatars, RobotAvatar, robotDropHeight } from './avatars.js';
 import { RobotView } from './robot-view.js';
 import { VoiceChat } from './voice-chat.js';
+import { NukeCinematic } from './nuke-cinematic.js';
 import { WEAPONS } from '../actors/weapons.js';
 import { codeLabel } from '../core/keybinds.js';
 // opções de loadout (o servidor valida a mesma lista em shared/rules.json): [id, descrição]
@@ -35,6 +36,7 @@ export class Multiplayer {
     this.loadout = readLoadout(); this.lo = null; this.weapon = this.loadout.primary; this.weaponAt = 0;
     this.lastFire = 0; this.crouch = false; this.jumpQueued = false; this.reloadQueued = false; this.robotQueued = false;
     this.tacticalTap = new SprintTap(); this.tacticalQueued = false;
+    this.nukeQueued = false; this.nukeRequestedUntil = 0; this.nukeCinematic = new NukeCinematic(G);
     this.refreshController = null; this.refreshTimer = null;
     $('btn-online').onclick = () => this.openLobby();
     $('mp-back').onclick = () => this.closeLobby();
@@ -46,6 +48,7 @@ export class Multiplayer {
     $('mp-exit-match').onclick = () => this.leave();
     $('mp-copy').onclick = () => this.copyInvite();
     $('mp-robot').onclick = () => { this.robotQueued = true; G.input.lock(); };
+    $('mp-nuke').onclick = () => { this.nukeQueued = true; this.nukeRequestedUntil=this.now()+2000; G.input.lock(); };
     $('mp-player-name').value = localStorage.getItem('pdr-player-name') || '';
     $('mp-loadout-btn').onclick = () => this.openLoadout('lobby');
     $('mp-loadout').onclick = () => this.openLoadout('match');
@@ -155,7 +158,7 @@ export class Multiplayer {
   }
   enter() {
     const G = this.G; this.active = true; clearInterval(this.refreshTimer); this.refreshController?.abort();
-    this.tacticalTap.reset(); this.tacticalQueued=false;
+    this.tacticalTap.reset(); this.tacticalQueued=false; this.nukeQueued=false; this.nukeRequestedUntil=0; G.medals?.reset();
     G.mission.timers = []; G.dialog.clear(); G.director.clearAll(); G.boss?.reset();
     this.allyVisibility = G.allies.list.map((ally) => ({ally,root:ally.model.root.visible,gun:ally.model.gun?.visible}));
     for (const ally of G.allies.list) { ally.model.root.visible = false; if (ally.model.gun) ally.model.gun.visible = false; }
@@ -246,7 +249,7 @@ export class Multiplayer {
     if (this.weatherKey !== key) { this.weatherKey = key; this.G.weather.setMatchWeather(state.room.weather); }
     const teleport = this.firstSnapshot || !previous || self.robot !== previous.robot || self.dead !== previous.dead || this.round !== state.room.round;
     this.snapAt = state.serverTime || this.snapAt; this.round = state.room.round; this.seq = Math.max(this.seq, self.seq);
-    this.pending = teleport || self.dead || state.room.phase === 'intermission' ? [] : this.pending.filter((x) => x.seq > self.seq);
+    this.pending = teleport || self.dead || state.room.phase === 'intermission' || state.room.nuke ? [] : this.pending.filter((x) => x.seq > self.seq);
     if(this.dropActive(self))this.pending=[];
     const body = this.G.player.body;
     Object.assign(body,{x:self.x,y:self.y,z:self.z,vy:self.vy||0,onGround:self.onGround, r:self.robot?this.rules.robot.radius:this.rules.human.radius,h:self.robot?this.rules.robot.height:(self.crouch?1.05:this.rules.human.height),
@@ -258,6 +261,8 @@ export class Multiplayer {
     if (teleport) { this.G.player.yaw=self.yaw;this.G.player.pitch=self.pitch;this.renderPos.set(body.x,body.y,body.z);this.acc=0;this.crouch=false; }
     if (previous && self.hp < previous.hp) this.G.player.damagePulse = Math.min(0.65, this.G.player.damagePulse + 0.35);
     if (!previous?.robotReady && self.robotReady) this.toast('COLOSSO DISPONÍVEL · pressione B para assumir o controle');
+    if (previous && !previous.nukeReady && self.nukeReady) { this.G.medals?.nuke(); this.toast('NUKE DISPONÍVEL · pressione U para chamar'); }
+    if (previous && !previous.dead && self.dead) this.G.medals?.reset();
     if (previous?.robot && !self.robot) this.toast('Colosso destruído. Faça outra sequência para conquistá-lo novamente.');
     this.G.player.hp = self.hp; this.G.player.dead = self.dead;
     if (!self.robot && self.weapon && self.weapon !== this.weapon && performance.now() - this.weaponAt > 1500) this.applyWeapon(self.weapon, true);
@@ -277,7 +282,7 @@ export class Multiplayer {
     if(!previous||oldRoom?.phase!==room.phase||oldRoom?.round!==room.round){
       if(room.phase==='waiting')this.speakMatch('waiting',1);
       else if(room.phase==='playing')this.speakMatch('start',3);
-      else if(room.phase==='intermission'){const opponent=self.team==='alpha'?'bravo':'alpha';this.speakMatch(room.scores.alpha===room.scores.bravo?'draw':room.scores[self.team]>room.scores[opponent]?'win':'loss',4);}
+      else if(room.phase==='intermission'){const opponent=self.team==='alpha'?'bravo':'alpha';this.speakMatch(room.nuke?(self.team===room.nuke.team?'win':'loss'):room.scores.alpha===room.scores.bravo?'draw':room.scores[self.team]>room.scores[opponent]?'win':'loss',4);}
     }
     if(previous&&!previous.robotReady&&self.robotReady)this.speakMatch('ready',3);
     if(previous&&!previous.robot&&self.robot)this.speakMatch('pilot',4);
@@ -287,7 +292,7 @@ export class Multiplayer {
   command(enabled) {
     const I=this.G.input,P=this.G.player;
     return {t:'input',seq:++this.seq,forward:enabled?Number(I.down('KeyW'))-Number(I.down('KeyS')):0,right:enabled?Number(I.down('KeyD'))-Number(I.down('KeyA')):0,yaw:P.yaw,pitch:P.pitch,view:this.snapAt?Math.round(this.snapAt-50):undefined,
-      sprint:!!(enabled&&I.down('ShiftLeft')),tactical:!!(enabled&&this.tacticalQueued&&!this.self.robot),crouch:!!(enabled&&this.crouch),jump:!!(enabled&&this.jumpQueued),shoot:!!(enabled&&I.mouse(0)),reload:!!(enabled&&this.reloadQueued),weapon:this.weapon,activateRobot:!!(enabled&&this.robotQueued&&this.robotView)};
+      sprint:!!(enabled&&I.down('ShiftLeft')),tactical:!!(enabled&&this.tacticalQueued&&!this.self.robot),crouch:!!(enabled&&this.crouch),jump:!!(enabled&&this.jumpQueued),shoot:!!(enabled&&I.mouse(0)),reload:!!(enabled&&this.reloadQueued),weapon:this.weapon,activateRobot:!!(enabled&&this.robotQueued&&this.robotView),activateNuke:!!(enabled&&this.self.nukeReady&&(this.nukeQueued||this.now()<this.nukeRequestedUntil))};
   }
   dropActive(self=this.self, now=this.now()) {
     return !!(self?.robot&&!self.dead&&this.room?.phase!=='intermission'&&self.robotDropAt&&now<self.robotDropAt+(this.rules.robot.dropDurationMs||5000));
@@ -329,7 +334,7 @@ export class Multiplayer {
     const G=this.G,P=G.player,I=G.input,now=this.now(),cfg=this.self.robot?this.rules.robot:this.rules.human;
     G.time+=dt; this.menu=!I.locked;
     const dropping=this.dropActive(this.self,now);
-    const enabled=this.connected&&I.locked&&!this.self.dead&&this.room.phase!=='intermission'&&!dropping;
+    const enabled=this.connected&&I.locked&&!this.self.dead&&this.room.phase!=='intermission'&&!dropping&&!this.room.nuke;
     if(this.tacticalTap.update(dt,enabled&&I.pressed('ShiftLeft'))&&!this.self.robot)this.tacticalQueued=true;
     if (enabled) {
       const Wd=G.weapons.def,zm=this.self.robot?1.25:(Wd.zoom||1.25),adsK=G.weapons.adsT>0?THREE.MathUtils.lerp(1,1/zm*1.15,G.weapons.adsT):1;   // mesma sensibilidade do campo de visão normal, proporcional ao zoom
@@ -341,6 +346,7 @@ export class Multiplayer {
       if (I.pressed('KeyC')||I.pressed('ControlLeft')) this.crouch=!this.crouch;
       if (this.crouch&&I.pressed('Space')) this.crouch=false;
       this.jumpQueued ||= I.pressed('Space'); this.reloadQueued ||= I.pressed('KeyR'); this.robotQueued ||= I.pressed('KeyB');
+      if(I.pressed('KeyU')&&this.self.nukeReady){this.nukeQueued=true;this.nukeRequestedUntil=now+2000;}
       if (I.pressed('KeyN')) G.nvg=!G.nvg;
       this.selectWeapon(I);
     }
@@ -348,9 +354,9 @@ export class Multiplayer {
     const fixed=1/this.rules.tickRate;
     while(this.acc>=fixed) {
       this.acc-=fixed; const input=this.command(enabled);
-      if(this.connected&&this.socket.readyState===WebSocket.OPEN&&this.room.phase!=='intermission'){ this.socket.send(JSON.stringify(input));if(!this.self.dead&&!dropping)this.pending.push(input);if(this.pending.length>90)this.pending.shift(); }
-      if(!this.self.dead&&!dropping&&this.room.phase!=='intermission')stepBody(G.physics,P.body,input,fixed,this.self.robot,this.rules);
-      this.jumpQueued=false;this.reloadQueued=false;this.robotQueued=false;this.tacticalQueued=false;
+      if(this.connected&&this.socket.readyState===WebSocket.OPEN&&this.room.phase!=='intermission'&&!this.room.nuke){ this.socket.send(JSON.stringify(input));if(!this.self.dead&&!dropping)this.pending.push(input);if(this.pending.length>90)this.pending.shift(); }
+      if(!this.self.dead&&!dropping&&!this.room.nuke&&this.room.phase!=='intermission')stepBody(G.physics,P.body,input,fixed,this.self.robot,this.rules);
+      this.jumpQueued=false;this.reloadQueued=false;this.robotQueued=false;this.tacticalQueued=false;this.nukeQueued=false;
     }
     P.pos.set(P.body.x,P.body.y,P.body.z);
     const speed=enabled&&((I.down('KeyW')||I.down('KeyS')||I.down('KeyA')||I.down('KeyD')))?(P.body.tacticalT>0?cfg.tacticalSprint:I.down('ShiftLeft')?cfg.sprint:cfg.speed):0;
@@ -384,9 +390,10 @@ export class Multiplayer {
     G.audio.listener(G.camera);G.audio.setRain(G.weather.intensity,false);
     P.damagePulse=THREE.MathUtils.damp(P.damagePulse,0,3,dt);
     const U=G.post.uniforms;U.uTime.value=G.time;U.uNVG.value=G.nvg?1:0;U.uDamage.value=P.damagePulse;U.uLowHealth.value=!this.self.dead?Math.max(0,(cfg.hp*0.35-this.self.hp)/(cfg.hp*0.35)):0;
-    if(!pilotCinematic)U.uFade.value=this.self.dead?0.3:Math.max(0,((this.pilotFadeUntil||0)-now)/350);U.uExposure.value=daylight?1:1.2;U.uFocus.value=W.def.scope&&!this.self.robot?0:W.adsT;U.uScope.value=!this.self.robot&&W.def.scope&&W.adsT>0.92?1:0;U.uUnder.value=0;U.uFlash.value=0;
+    if(!pilotCinematic)U.uFade.value=this.self.dead?0.3:Math.max(0,((this.pilotFadeUntil||0)-now)/350);U.uExposure.value=daylight?1:1.2;U.uFocus.value=W.def.scope&&!this.self.robot?0:W.adsT;U.uScope.value=!this.room.nuke&&!this.self.robot&&W.def.scope&&W.adsT>0.92?1:0;U.uUnder.value=0;U.uFlash.value=0;
     $('mp-scoreboard').hidden=!(I.down('Tab')||this.room.phase==='intermission');
     this.updateHud();
+    this.nukeCinematic?.update(this.room.nuke,this.room.phase,this.id,now);
   }
   event(e) {
     if(!this.active||!e)return;
@@ -417,7 +424,7 @@ export class Multiplayer {
       }
     } else if(e.type==='kill') {
       this.feed.unshift({text:`${e.name||'Ambiente'}  ›  ${e.victimName||'Soldado'}`,time:this.now()});this.feed=this.feed.slice(0,4);
-      if(e.killer===this.id){this.toast('+100 · ALVO ELIMINADO');this.markHit(true);if(!e.head)this.G.audio.hit('killshot');this.speakMatch('kill',0);}
+      if(e.killer===this.id){this.markHit(true);this.G.medals?.kill(e.multi||1);}
     } else if(e.type==='robotBlocked'&&e.player===this.id){
       this.toast('Para chamar o Colosso, fique no chão em uma área com espaço livre.');
     } else if(e.type==='robot'&&e.active&&e.player!==this.id){
@@ -442,6 +449,7 @@ export class Multiplayer {
     $('mp-streak-fill').style.width=`${Math.min(100,s.streak/this.rules.robotStreak*100)}%`;
     $('mp-robot').hidden=!s.robotReady;$('mp-robot').disabled=!this.robotView;
     $('mp-robot').textContent=this.robotView?`[${codeLabel(this.G.input.physical('KeyB'))}] CONTROLAR COLOSSO`:'PREPARANDO COLOSSO…';
+    $('mp-nuke').hidden=!s.nukeReady||s.dead||r.phase!=='playing'||!!r.nuke;$('mp-nuke').textContent=`[${codeLabel(this.G.input.physical('KeyU'))}] CHAMAR NUKE`;
     $('mp-streak-label').textContent=s.robot?'COLOSSO ATIVO':s.robotReady?'RECOMPENSA CONQUISTADA':'8 ABATES SEGUIDOS · CONQUISTE O COLOSSO';
     $('mp-robot-frame').hidden=!s.robot;
     $('mp-crosshair').hidden=s.dead||r.phase==='intermission'||(!s.robot&&this.G.weapons.adsT>0.5);
@@ -453,7 +461,7 @@ export class Multiplayer {
     $('mp-respawn-time').textContent=Math.max(0,Math.ceil((s.respawnAt-now)/1000));
     $('mp-pause').hidden=!this.menu||s.dead||r.phase==='intermission';
     $('mp-intermission').hidden=r.phase!=='intermission';
-    if(r.phase==='intermission'){$('mp-result').textContent=r.scores.alpha===r.scores.bravo?'EMPATE':r.scores[s.team]>r.scores[s.team==='alpha'?'bravo':'alpha']?'VITÓRIA':'DERROTA';$('mp-next-round').textContent=`Próxima partida em ${Math.ceil(seconds)}s · novo clima`;} 
+    if(r.phase==='intermission'){$('mp-result').textContent=r.nuke?(r.nuke.team===s.team?'VITÓRIA NUCLEAR':'DERROTA NUCLEAR'):r.scores.alpha===r.scores.bravo?'EMPATE':r.scores[s.team]>r.scores[s.team==='alpha'?'bravo':'alpha']?'VITÓRIA':'DERROTA';$('mp-nuke-winner').hidden=!r.nuke;$('mp-nuke-winner').textContent=r.nuke?`${r.nuke.name} é foda.`:'';$('mp-next-round').textContent=`Próxima partida em ${Math.ceil(seconds)}s · novo clima`;}
   }
   updateScoreboard() {
     for(const team of ['alpha','bravo']) {
@@ -470,12 +478,13 @@ export class Multiplayer {
   resize() { this.robotView?.resize(this.G.camera.aspect); }
   render() {
     const G=this.G,view=this.self?.robot&&this.robotView;
-    const W=G.weapons,sc=G.scopeCam,scoped=!view&&G.post.uniforms.uScope.value>0.5&&W.def.scope;
+    const W=G.weapons,sc=G.scopeCam,scoped=!this.room?.nuke&&!view&&G.post.uniforms.uScope.value>0.5&&W.def.scope;
     if(scoped){sc.position.copy(G.camera.position);sc.quaternion.copy(G.camera.quaternion);sc.aspect=G.camera.aspect;sc.fov=G.settings.fov/(W.def.zoom||4);sc.updateProjectionMatrix();}
     document.body.classList.toggle('scoped',!!scoped);
-    G.post.render(G.scene,G.camera,this.self&&!this.self.dead&&!this.pilotDrop?(view?view.scene:G.vm.scene):null,view?view.camera:G.vm.camera,scoped?sc:undefined);
+    G.post.render(G.scene,G.camera,this.self&&!this.self.dead&&!this.pilotDrop&&!this.room?.nuke?(view?view.scene:G.vm.scene):null,view?view.camera:G.vm.camera,scoped?sc:undefined);
   }
   leave() {
+    this.nukeCinematic?.clear();this.G.medals?.reset();this.nukeQueued=false;this.nukeRequestedUntil=0;
     this.G.audio?.stopSpeech?.();this.voiceUntil=0;this.voiceSerial=(this.voiceSerial||0)+1;
     this.tacticalTap?.reset();this.tacticalQueued=false;
     const G=this.G;this.pilotDrop?.avatar.dispose();this.pilotDrop=null;this.pilotFadeUntil=0;$('mp-hud').classList?.remove('robot-intro');$('mp-robot-intro').hidden=true;this.voiceChat?.close();this.intentionalClose=true;this.active=false;this.connected=false;this.joining=false;clearTimeout(this.reconnectTimer);this.socket?.close();this.socket=null;

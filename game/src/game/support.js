@@ -134,7 +134,6 @@ export class Support {
           G.fx.blood(tp, tp.clone().sub(c).normalize(), true);
           G.audio.sniperDistant();
           G.stats.supportKills++;
-          if (Math.random() < 0.5) G.dialog.say('CORUJA', Math.random() < 0.5 ? 'Abatido.' : 'Alvo neutralizado.', { priority: 1, short: true });
         }
       }
     }

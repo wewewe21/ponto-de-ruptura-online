@@ -9,7 +9,6 @@ export const MP_VOICE_LINES = {
   destroyed: ['ATALAIA', 'Colosso destruído. Conquiste outra sequência para solicitar reforço.'],
   enemyRobot: ['ATALAIA', 'Atenção, Colosso inimigo no campo de batalha!'],
   friendlyRobot: ['ATALAIA', 'Colosso aliado em operação. Avancem com ele.'],
-  kill: ['ECO', 'Alvo neutralizado.'],
   death: ['ATALAIA', 'Operador abatido. Preparando retorno.'],
   respawn: ['ECO', 'De volta à operação.'],
 };

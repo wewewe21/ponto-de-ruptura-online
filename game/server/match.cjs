@@ -36,7 +36,7 @@ function validateInput(v) {
   const clean = { seq: v.seq, forward: v.forward, right: v.right, yaw: v.yaw % (Math.PI * 2), pitch: v.pitch };
   if (v.view !== undefined) { if (typeof v.view !== 'number' || !Number.isFinite(v.view)) return null; clean.view = v.view; }
   if (v.weapon !== undefined) { if (typeof v.weapon !== 'string' || v.weapon.length > 8) return null; clean.weapon = v.weapon; }
-  for (const k of ['jump','sprint','tactical','crouch','shoot','reload','activateRobot']) {
+  for (const k of ['jump','sprint','tactical','crouch','shoot','reload','activateRobot','activateNuke']) {
     if (v[k] !== undefined && typeof v[k] !== 'boolean') return null;
     clean[k] = v[k] === true;
   }
@@ -86,7 +86,7 @@ class Room {
     for (const r of world.ramps) this.physics.addRamp(r.minX,r.maxX,r.minZ,r.maxZ,r.axis,r.y0,r.y1,r);
     const t = world.terrain; this.physics.setTerrain(t.minX,t.minZ,t.size,t.n,t.h);
     this.phase = 'waiting'; this.round = 0; this.endsAt = 0; this.nextRoundAt = 0;
-    this.weather = chooseWeather(rules, this.random); this.scores = { alpha: 0, bravo: 0 };
+    this.weather = chooseWeather(rules, this.random); this.scores = { alpha: 0, bravo: 0 }; this.nuke = null;
     this.lastActive = this.now(); this.eventSeq = 0;
   }
   summary() { return {id:this.id,name:this.name,players:[...this.players.values()].filter(p => p.connected).length,maxPlayers:this.maxPlayers,phase:this.phase,weather:this.weather}; }
@@ -101,7 +101,7 @@ class Room {
     const bravo = [...this.players.values()].filter(p => p.connected && p.team === 'bravo').length;
     const team = alpha <= bravo ? 'alpha' : 'bravo';
     const p = { id:randomUUID(), token:randomBytes(24).toString('hex'), name:String(name || 'Soldado').replace(/[\x00-\x1f\x7f<>]/g,'').trim().slice(0,24) || 'Soldado',team,
-      connected:true,queue:[],input:null,lastReceived:now,acceptedSeq:-1,seq:-1,kills:0,deaths:0,points:0,streak:0,streakPoints:0,robotReady:false,
+      connected:true,queue:[],input:null,lastReceived:now,acceptedSeq:-1,seq:-1,kills:0,deaths:0,points:0,streak:0,streakPoints:0,robotReady:false,nukeStreak:0,nukeReady:false,multiKills:0,lastKillAt:0,
       rateStart:now,rateCount:0,lastShot:-Infinity,robot:false,dead:false,loadout:null,loadoutNext:this.sanitizeLoadout(loadout) };
     this.players.set(p.id,p); this.spawn(p,now); this.lastActive = now;
     if (this.phase === 'waiting' && this.connectedCount() >= 2) this.startRound(now);
@@ -166,8 +166,8 @@ class Room {
   }
   startRound(now=this.now()) {
     this.phase='playing';this.round++;this.endsAt=now+this.rules.roundSeconds*1000;this.nextRoundAt=0;
-    this.scores={alpha:0,bravo:0};this.weather=chooseWeather(this.rules,this.random);
-    for(const p of this.players.values()) {p.kills=0;p.deaths=0;p.points=0;p.streak=0;p.streakPoints=0;p.robotReady=false;this.spawn(p,now);}
+    this.scores={alpha:0,bravo:0};this.weather=chooseWeather(this.rules,this.random);this.nuke=null;
+    for(const p of this.players.values()) {p.kills=0;p.deaths=0;p.points=0;p.streak=0;p.streakPoints=0;p.robotReady=false;p.nukeStreak=0;p.nukeReady=false;p.multiKills=0;p.lastKillAt=0;this.spawn(p,now);}
     this.emit('round',{phase:this.phase,round:this.round,weather:this.weather});
   }
   endRound(now=this.now()) {
@@ -186,16 +186,25 @@ class Room {
     p.robotDropAt=now;p.robotDropUntil=now+(cfg.dropDurationMs||5000);p.protectedUntil=p.robotDropUntil;
     this.emit('robot',{player:p.id,active:true,dropAt:now});return true;
   }
+  activateNuke(p,now) {
+    if(this.phase!=='playing'||this.nuke||!p.connected||p.dead||!p.nukeReady)return false;
+    p.nukeReady=false;
+    this.nuke={player:p.id,name:p.name,team:p.team,x:p.body.x,y:p.body.y,z:p.body.z,startedAt:now,impactAt:now+7000,endAt:now+10500};
+    for(const player of this.players.values()){player.queue=[];player.input=null;}
+    this.emit('nuke',{...this.nuke});return true;
+  }
   kill(killer,victim,now=this.now(),head=false) {
     if(this.phase!=='playing'||victim.dead || (killer && killer.team === victim.team))return;
     const wasRobot=victim.robot;victim.hp=0;victim.dead=true;victim.deaths++;victim.respawnAt=now+this.rules.respawnSeconds*1000;victim.robotDropAt=0;victim.robotDropUntil=0;
-    victim.streak=0;victim.streakPoints=0;victim.robotReady=false;victim.queue=[];victim.input=null;victim.reloadUntil=0;
+    victim.streak=0;victim.streakPoints=0;victim.robotReady=false;victim.nukeStreak=0;victim.multiKills=0;victim.lastKillAt=0;victim.queue=[];victim.input=null;victim.reloadUntil=0;
     if(killer&&killer.team!==victim.team&&killer.id!==victim.id) {
       killer.kills++;killer.points+=this.rules.killPoints;this.scores[killer.team]++;
+      killer.nukeStreak++;if(killer.nukeStreak>=15)killer.nukeReady=true;
+      killer.multiKills=killer.lastKillAt && now-killer.lastKillAt<=5000?killer.multiKills+1:1;killer.lastKillAt=now;
       if(!killer.robot) {killer.streak++;killer.streakPoints+=this.rules.killPoints;
         if(killer.streak>=this.rules.robotStreak&&killer.streakPoints>=this.rules.robotPoints)killer.robotReady=true;}
     }
-    this.emit('kill',{killer:killer?.id||null,victim:victim.id,name:killer?.name||'Ambiente',victimName:victim.name,team:killer?.team||null,head:!!head});
+    this.emit('kill',{killer:killer?.id||null,victim:victim.id,name:killer?.name||'Ambiente',victimName:victim.name,team:killer?.team||null,head:!!head,multi:killer?.multiKills||0,nukeEarned:!!killer&&killer.nukeStreak===15});
     if(wasRobot)this.emit('robot',{player:victim.id,active:false,destroyed:true});
     if(Math.max(this.scores.alpha,this.scores.bravo)>=this.rules.scoreLimit)this.endRound(now);
   }
@@ -236,9 +245,10 @@ class Room {
   tick(dt=1/this.rules.tickRate,now=this.now()) {
     for(const [id,p] of this.players)if(!p.connected&&now-p.disconnectedAt>15000)this.players.delete(id);
     if(this.connectedCount())this.lastActive=now;
+    if(this.phase==='playing'&&this.nuke){if(now>=this.nuke.endAt)this.endRound(now);return;}
     if(this.phase==='intermission'&&now>=this.nextRoundAt) {
       if(this.connectedCount()>=2)this.startRound(now);
-      else{this.phase='waiting';this.nextRoundAt=0;this.emit('round',{phase:this.phase,round:this.round});}
+      else{this.phase='waiting';this.nextRoundAt=0;this.nuke=null;this.emit('round',{phase:this.phase,round:this.round});}
     }
     if(this.phase==='waiting'&&this.connectedCount()>=2)this.startRound(now);
     if(this.phase==='intermission')return;
@@ -258,6 +268,7 @@ class Room {
       (p.hist||(p.hist=[])).push({t:now,x:p.body.x,y:p.body.y,z:p.body.z,h:p.body.h});while(p.hist.length&&now-p.hist[0].t>1000)p.hist.shift();
       if(p.body.y < -80){if(this.phase==='playing')this.kill(null,p,now);else this.spawn(p,now);continue;}
       if(fresh&&input.activateRobot&&!this.activate(p,now)&&p.robotReady&&!p.robot)this.emit('robotBlocked',{player:p.id});
+      if(fresh&&input.activateNuke&&this.activateNuke(p,now))return;
       if(p.robot&&now<(p.robotDropUntil||0)){p.input=null;continue;}
       if(fresh&&input.weapon)this.switchWeapon(p,input.weapon,now);
       const cfg=this.combat(p);
@@ -267,8 +278,8 @@ class Room {
     }
   }
   snapshot() {
-    return {t:'state',serverTime:this.now(),room:{id:this.id,name:this.name,phase:this.phase,round:this.round,endsAt:this.endsAt,nextRoundAt:this.nextRoundAt,weather:this.weather,scores:{...this.scores},scoreLimit:this.rules.scoreLimit},
-      players:[...this.players.values()].filter(p=>p.connected).map(p=>({id:p.id,name:p.name,team:p.team,x:p.body.x,y:p.body.y,z:p.body.z,vy:p.body.vy,onGround:p.body.onGround,yaw:p.yaw,pitch:p.pitch,hp:p.hp,maxHp:p.maxHp,robot:p.robot,robotDropAt:p.robotDropAt||0,dead:p.dead,respawnAt:p.respawnAt,protectedUntil:p.protectedUntil,kills:p.kills,deaths:p.deaths,points:p.points,streak:p.streak,streakPoints:p.streakPoints,robotReady:p.robotReady,ammo:p.ammo,weapon:p.weapon,reloadUntil:p.reloadUntil,seq:p.seq,loadout:p.loadout,loadoutNext:p.loadoutNext,crouch:!!p.body.crouched,slideT:p.body.slideT||0,sdx:p.body.sdx||0,sdz:p.body.sdz||0,sprinting:!!p.body.sprinting,tacticalT:p.body.tacticalT||0,tacticalCooldown:p.body.tacticalCooldown||0}))};
+    return {t:'state',serverTime:this.now(),room:{id:this.id,name:this.name,phase:this.phase,round:this.round,endsAt:this.endsAt,nextRoundAt:this.nextRoundAt,weather:this.weather,scores:{...this.scores},scoreLimit:this.rules.scoreLimit,nuke:this.nuke},
+      players:[...this.players.values()].filter(p=>p.connected).map(p=>({id:p.id,name:p.name,team:p.team,x:p.body.x,y:p.body.y,z:p.body.z,vy:p.body.vy,onGround:p.body.onGround,yaw:p.yaw,pitch:p.pitch,hp:p.hp,maxHp:p.maxHp,robot:p.robot,robotDropAt:p.robotDropAt||0,dead:p.dead,respawnAt:p.respawnAt,protectedUntil:p.protectedUntil,kills:p.kills,deaths:p.deaths,points:p.points,streak:p.streak,streakPoints:p.streakPoints,robotReady:p.robotReady,nukeStreak:p.nukeStreak,nukeReady:p.nukeReady,ammo:p.ammo,weapon:p.weapon,reloadUntil:p.reloadUntil,seq:p.seq,loadout:p.loadout,loadoutNext:p.loadoutNext,crouch:!!p.body.crouched,slideT:p.body.slideT||0,sdx:p.body.sdx||0,sdz:p.body.sdz||0,sprinting:!!p.body.sprinting,tacticalT:p.body.tacticalT||0,tacticalCooldown:p.body.tacticalCooldown||0}))};
   }
 }
 module.exports={Room,Match:Room,loadEngine,chooseWeather,validateWorld,validateInput,rayBox,rayCylinder,raySphere,HIT};

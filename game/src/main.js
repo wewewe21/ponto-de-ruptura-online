@@ -24,6 +24,7 @@ import { Support } from './game/support.js';
 import { HUD, Dialog } from './game/hud.js';
 import { Mission } from './game/mission.js';
 import { Multiplayer } from './multiplayer/client.js';
+import { Medals } from './game/medals.js';
 
 const $ = (id) => document.getElementById(id);
 const DIFF = {
@@ -95,6 +96,7 @@ async function boot() {
   G.scene.add(G.hemi, G.moon, G.moon.target);
   G.physics = new Physics();
   G.audio = new GameAudio();
+  G.medals = new Medals(G.audio);
   meshSoldiers.camera = G.camera;
   meshSoldiers.audio = G.audio;
   progress('Erguendo a barragem', 15); await tick();
@@ -208,6 +210,7 @@ function resume() {
   G.input.lock();
 }
 G.onPlayerDeath = (cause) => {
+  G.medals?.reset();
   G.audio.setMusic('death');
   G.stats.deaths++;
   G.state = 'dead';
