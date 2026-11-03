@@ -13,6 +13,8 @@ A escopeta BRK-8, o lança-foguetes RPL-2 e o designador a laser foram **removid
 
 Os modelos antigos da sniper e da pistola estão guardados em `Assets/antigas/`. Para trocar o modelo de uma arma no arquivo de poses **sem perder as mãos já posicionadas**, use `blender --background Assets/poses/poses_armas.blend --python game/tools/blender/update_weapon_models.py -- ID` (lê a tabela `GUNS` de `build_pose_scene.py`; faça backup antes).
 
+Se você mover, girar ou redimensionar o `Modelo_XX` dentro do `ARMA_XX` no Blender, essa posição também é exportada (`model` em `fps_poses.json`) e o jogo aplica igual: a arma fica no jogo exatamente onde está no Blender, junto com a mão e os dedos.
+
 ## Braços em primeira pessoa
 
 - Vêm do `FPS Arms.fbx` (51 ossos, com dedos) → `assets/models/fps_arms.glb` (gerado por `tools/blender/export_arms_glb.py`).

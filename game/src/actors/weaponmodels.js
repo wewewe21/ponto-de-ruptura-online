@@ -52,6 +52,13 @@ function repairNormals(geo) {
   n.needsUpdate = true;
 }
 
+// Onde o modelo de cada arma foi deixado no Blender (matriz no espaço da arma, de assets/poses/fps_poses.json).
+let _placements = null;
+export function loadPlacements() {
+  _placements ||= fetch('./assets/poses/fps_poses.json').then((r) => (r.ok ? r.json() : null)).then((j) => Object.fromEntries(Object.entries((j && j.weapons) || {}).filter(([, v]) => v.model).map(([k, v]) => [k, v.model]))).catch(() => ({}));
+  return _placements;
+}
+
 const cache = new Map();
 export function loadWeaponGLB(name) {
   if (!cache.has(name)) cache.set(name, new GLTFLoader().loadAsync(`./assets/models/weapons/${name}.glb`).then((g) => { g.scene.traverse((o) => { if (o.isMesh) repairNormals(o.geometry); }); return g.scene; }));
@@ -99,7 +106,7 @@ export function makeHoloSight(scale = 1, riser = 0) {
 }
 
 // monta o gun a partir da ficha. flash: sprite do cano (do ViewModel)
-export function makeGlbGun(src, spec) {
+export function makeGlbGun(src, spec, placement = null) {
   const s = spec.len, sign = spec.flip ? -1 : 1, rotY = spec.flip ? Math.PI / 2 : -Math.PI / 2;
   const [ox, oy] = spec.origin;
   let mesh0 = null; src.traverse((o) => { if (o.isMesh && !mesh0) mesh0 = o; });
@@ -108,6 +115,14 @@ export function makeGlbGun(src, spec) {
   if (spec.scope) clipToScope(mat);   // aro da luneta cortado em faixa fina quando se olha pela lente
   // posição no espaço da arma de um ponto (x,y) do modelo
   const toGun = (x, y, lat = 0) => new THREE.Vector3(lat, (y - oy) * s, sign * (x - ox) * s);
+  // ajuste feito no Blender: matriz do modelo na arma = D · base. Se o modelo foi movido/girado/redimensionado lá, aplica igual aqui.
+  let D = null;
+  if (placement) {
+    const base = new THREE.Matrix4().makeRotationY(rotY).multiply(new THREE.Matrix4().makeScale(s, s, s)).multiply(new THREE.Matrix4().makeTranslation(-ox, -oy, 0));
+    const d = new THREE.Matrix4().fromArray(placement).multiply(base.invert());
+    if (d.elements.some((v, i) => Math.abs(v - (i % 5 === 0 ? 1 : 0)) > 1e-5)) D = d;
+  }
+  const fix = (v) => (D ? v.applyMatrix4(D) : v);
   // peça: grupo no espaço da arma, posicionado no ponto pivô (px,py) do modelo
   const part = (mesh, px, py) => {
     const outer = new THREE.Group(); outer.position.copy(toGun(px, py));
@@ -115,7 +130,8 @@ export function makeGlbGun(src, spec) {
     const holder = new THREE.Group(); holder.position.set(-px, -py, 0); pivot.add(holder); holder.add(mesh);
     return outer;
   };
-  const root = new THREE.Group();
+  const root = new THREE.Group(), mroot = new THREE.Group(); root.add(mroot);
+  if (D) { mroot.matrixAutoUpdate = false; mroot.matrix.copy(D); }
   const base = new THREE.Mesh(mesh0.geometry, mat);
   let body = base, magOuter = null, slideOuter = null;
   const inMag = spec.mag ? (x, y) => x > spec.mag.x[0] && x < spec.mag.x[1] && y > spec.mag.y[0] && y < spec.mag.y[1] : null;
@@ -123,29 +139,29 @@ export function makeGlbGun(src, spec) {
   const parts = [];
   if (inMag) { const r = splitMesh(new THREE.Mesh(mesh0.geometry, mat), inMag); parts.push(['mag', r.mag]); body = r.body; }
   if (inSlide) { const r = splitMesh(body, inSlide); parts.push(['slide', r.mag]); body = r.body; }
-  body.material = mat; root.add(part(body, ox, oy));
+  body.material = mat; mroot.add(part(body, ox, oy));
   for (const [kind, mesh] of parts) {
     mesh.material = mat;
-    if (kind === 'mag') { magOuter = part(mesh, ...spec.mag.pivot); root.add(magOuter); }
-    else { slideOuter = part(mesh, ox, oy); root.add(slideOuter); }
+    if (kind === 'mag') { magOuter = part(mesh, ...spec.mag.pivot); mroot.add(magOuter); }
+    else { slideOuter = part(mesh, ox, oy); mroot.add(slideOuter); }
   }
   const out = {
     group: root, muzzle: new THREE.Object3D(), mag: magOuter, extra: { isModel: true },
-    sight: spec.scope ? toGun(spec.scope[0], spec.scope[1], spec.scopeLat || 0) : new THREE.Vector3(0, 0.07, 0),
-    rightHome: toGun(...spec.right), leftHome: toGun(...spec.left, spec.leftLat || 0),
+    sight: spec.scope ? fix(toGun(spec.scope[0], spec.scope[1], spec.scopeLat || 0)) : new THREE.Vector3(0, 0.07, 0),
+    rightHome: fix(toGun(...spec.right)), leftHome: fix(toGun(...spec.left, spec.leftLat || 0)),
     rightCurl: spec.rightCurl, leftCurl: spec.leftCurl, handScale: spec.handScale, rightWrist: spec.rightWrist && new THREE.Vector3(...spec.rightWrist), leftWrist: spec.leftWrist && new THREE.Vector3(...spec.leftWrist),
   };
-  out.muzzle.position.copy(toGun(...spec.muzzle)); root.add(out.muzzle);
+  out.muzzle.position.copy(toGun(...spec.muzzle)); mroot.add(out.muzzle);
   if (magOuter) {
-    const rest = magOuter.position.clone(), magBase = toGun(spec.mag.pivot[0], 0.02);
+    const rest = magOuter.position.clone(), magBase = fix(toGun(spec.mag.pivot[0], 0.02));
     out.setMagDrop = (d) => { magOuter.position.y = rest.y - d * 0.2; magOuter.rotation.x = -d * 0.3; };
     out.magHand = (d) => new THREE.Vector3(magBase.x, magBase.y - d * 0.2, magBase.z);
   }
   if (slideOuter) { out.extra.slide = slideOuter; out.extra.slideBase = 0; out.extra.slideTravel = spec.slide.travel; }
   if (spec.holo) {
     const h = makeHoloSight(spec.holoScale || 1, spec.riser || 0);
-    const at = toGun(spec.holo[0], spec.holo[1]); h.group.position.copy(at); root.add(h.group);
-    out.sight = new THREE.Vector3(at.x, at.y + h.centerY, at.z);
+    const at = toGun(spec.holo[0], spec.holo[1]); h.group.position.copy(at); mroot.add(h.group);
+    out.sight = fix(new THREE.Vector3(at.x, at.y + h.centerY, at.z));
     out.extra.holo = h;
   }
   root.traverse((m) => { if (m.isMesh) m.frustumCulled = false; });

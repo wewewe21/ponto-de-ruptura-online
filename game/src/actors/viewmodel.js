@@ -4,7 +4,7 @@ import * as THREE from 'three';
 import { clamp, lerp, damp, smoothstep } from '../core/utils.js';
 import { loadRifleScene, makeRifleGun } from './gunmodel.js';
 import { FPSArms } from './fpsarms.js';
-import { GUN_SPECS, loadWeaponGLB, makeGlbGun, makeKnifeGun, makeReticle } from './weaponmodels.js';
+import { GUN_SPECS, loadWeaponGLB, loadPlacements, makeGlbGun, makeKnifeGun, makeReticle } from './weaponmodels.js';
 
 const C = {
   poly: new THREE.MeshStandardMaterial({ color: 0x1c1d1f, roughness: 0.62, metalness: 0.15 }),
@@ -152,7 +152,7 @@ function buildArms(isPistol) {
 
 // posições da arma na tela (espaço da câmera do viewmodel; x direita, y cima, -z à frente): [x, y, z]
 export const HIP = { default: [0.13, -0.16, -0.78], P19: [0.1, -0.11, -0.8], MK5: [0.12, -0.15, -0.8], AX50: [0.1, -0.14, -0.98], VK12: [0.11, -0.14, -0.9], KNIFE: [0.14, -0.16, -0.7], RPL2: [0.15, -0.14, -0.62], BRK8: [0.14, -0.15, -0.78], LASER: [0.13, -0.14, -0.7] };
-export const ADS_DIST = { default: 0.38, P19: 0.36, MK5: 0.36, VK12: 0.36, RPL2: 0.24, AX50: 0.052 };
+export const ADS_DIST = { default: 0.38, P19: 0.26, MK5: 0.36, VK12: 0.36, RPL2: 0.24, AX50: 0.052 };
 
 function fallbackKnife() {
   const g = new THREE.Group();
@@ -245,8 +245,9 @@ export class ViewModel {
   // Armas novas em GLB (submetralhadora, sniper, pistola, DMR) e a faca. Cada uma que falhar mantém a versão procedural.
   async useWeaponModels() {
     let n = 0;
+    const placements = await loadPlacements();
     await Promise.all(Object.entries(GUN_SPECS).map(async ([id, spec]) => {
-      try { const gm = makeGlbGun(await loadWeaponGLB(spec.file), spec); this._flash(gm); this._install(id, gm); n++; }
+      try { const gm = makeGlbGun(await loadWeaponGLB(spec.file), spec, placements[id]); this._flash(gm); this._install(id, gm); n++; }
       catch (e) { console.warn('Arma indisponível:', id, e); }
     }));
     try { const kg = makeKnifeGun(await loadWeaponGLB('knife')); this._flash(kg); this._install('KNIFE', kg); n++; } catch (e) { console.warn('Faca indisponível:', e); }

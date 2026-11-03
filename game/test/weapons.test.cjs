@@ -54,3 +54,12 @@ test('each selectable weapon has a registered model and deployed model file, inc
     assert.ok(poses.weapons[id === 'KR7' ? 'SD9' : id], `${id} arm pose`);
   }
 });
+
+test('model placement saved in the pose file is applied to the gun (pistol is shrunk and sniper moved back, exactly as left in Blender)', async () => {
+  const fs = require('node:fs'), path = require('node:path');
+  const poses = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'assets', 'poses', 'fps_poses.json'), 'utf8'));
+  for (const id of ['MK5', 'P19', 'VK12', 'AX50', 'SD9']) assert.equal(poses.weapons[id].model.length, 16, id + ' sem posição do modelo');
+  const m = poses.weapons.P19.model;                                       // matriz coluna-major: escala = comprimento da 1ª coluna
+  assert(Math.abs(Math.hypot(m[0], m[1], m[2]) - 0.256) < 0.01, 'a Glock ficou menor no Blender (0,256)');
+  assert(Math.abs(poses.weapons.AX50.model[14] - 1.148) < 0.01 || Math.abs(Math.hypot(poses.weapons.AX50.model[0], poses.weapons.AX50.model[1], poses.weapons.AX50.model[2]) - 1.15) < 0.01);
+});
