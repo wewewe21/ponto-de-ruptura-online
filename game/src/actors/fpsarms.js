@@ -10,7 +10,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
 const san = (n) => THREE.PropertyBinding.sanitizeNodeName(n);
 const _m = new THREE.Matrix4(), _m2 = new THREE.Matrix4(), _q = new THREE.Quaternion(), _v = new THREE.Vector3(), _v2 = new THREE.Vector3();
-const POSE_KEY = { KR7: 'SD9' };    // armas que compartilham a pose
+const POSE_KEY = { KR7: 'SD9', DE50: 'P19' };    // armas que compartilham a pose
 
 function aboutPoint(q, p, out) {          // rotação q em torno do ponto p
   out.makeRotationFromQuaternion(q);
@@ -74,7 +74,7 @@ export class FPSArms {
     const D = this._D;
     for (const n of this.names) D[n] = P.D[n];                                   // começa na pose do Blender
     for (const side of ['L', 'R']) {
-      const dS = side === 'L' ? this._leftDelta(dG, gunMatrix, P, opts) : dG;
+      const dS = this._handDelta(side, dG, gunMatrix, P, opts);
       const S = _pos(P.Wp['Arm_1.' + side]), Ep = _pos(P.Wp['Arm_2.' + side]), Wp = _pos(P.Wp['Hand_1.' + side]);
       const l1 = S.distanceTo(Ep), l2 = Ep.distanceTo(Wp);
       const target = Wp.clone().applyMatrix4(dS);
@@ -100,15 +100,20 @@ export class FPSArms {
     }
     this._apply(D);
   }
-  _leftDelta(dG, gunMatrix, P, opts) {
+  _handDelta(side, dG, gunMatrix, P, opts) {
+    if (side === 'R') return this._offsetDelta(dG, gunMatrix, P, 'R', opts.rightDelta, opts.rightRot);
     if (opts.leftTarget) { const Wp = _pos(P.Wp['Hand_1.L']); return new THREE.Matrix4().makeTranslation(opts.leftTarget.x - Wp.x, opts.leftTarget.y - Wp.y, opts.leftTarget.z - Wp.z); }
     if (opts.leftStatic) { const e = opts.leftExtra; return e ? new THREE.Matrix4().makeTranslation(e.x, e.y, e.z) : new THREE.Matrix4(); }
-    if (opts.leftDelta && opts.leftDelta.lengthSq() > 1e-8) {
-      // translação no espaço da arma aplicada sobre a pose: G_agora · T(delta) · G_pose⁻¹
-      const T = new THREE.Matrix4().makeTranslation(opts.leftDelta.x, opts.leftDelta.y, opts.leftDelta.z);
-      return new THREE.Matrix4().multiplyMatrices(gunMatrix, T).multiply(P.gunInv);
-    }
-    return dG;
+    return this._offsetDelta(dG, gunMatrix, P, 'L', opts.leftDelta, opts.leftRot);
+  }
+  // deslocamento (espaço da arma) e giro em torno do pulso (espaço da arma) aplicados sobre a pose: G_agora · T(delta) · R(pulso) · G_pose⁻¹
+  _offsetDelta(dG, gunMatrix, P, side, delta, rot) {
+    const has = delta && delta.lengthSq() > 1e-8, spin = rot && Math.abs(rot.w) < 0.99999;
+    if (!has && !spin) return dG;
+    const M = new THREE.Matrix4().copy(gunMatrix);
+    if (has) M.multiply(new THREE.Matrix4().makeTranslation(delta.x, delta.y, delta.z));
+    if (spin) { const wrist = _pos(P.Wp['Hand_1.' + side]).applyMatrix4(P.gunInv); M.multiply(aboutPoint(rot, wrist, new THREE.Matrix4())); }
+    return M.multiply(P.gunInv);
   }
   _apply(D) {
     // espaço do modelo: mundo desejado = P⁻¹ · D · P · repouso

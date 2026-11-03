@@ -1,6 +1,7 @@
 // Pipeline: cena (HDR) + viewmodel -> bloom (pirâmide de 5 níveis) -> passe final com nitidez, ACES, gradação de cor,
 // NVG, dano, supressão, flash, fade, luneta.
 import * as THREE from 'three';
+import { SCOPE_CLIP, SCOPE_RING } from './scopeclip.js';
 
 export class Post {
   constructor(renderer) {
@@ -14,7 +15,7 @@ export class Post {
       tScene: { value: this.rt.texture }, uTime: { value: 0 }, uNVG: { value: 0 }, uGain: { value: 11 },
       uGlare: { value: 0 }, uDamage: { value: 0 }, uFlash: { value: 0 }, uLowHealth: { value: 0 },
       uExposure: { value: 1.0 }, uSuppress: { value: 0 }, uFade: { value: 0 }, uAspect: { value: size.x / size.y },
-      uUnder: { value: 0 }, uRes: { value: new THREE.Vector2(size.x, size.y) }, uScope: { value: 0 }, uSat: { value: 1 },
+      uUnder: { value: 0 }, uRes: { value: new THREE.Vector2(size.x, size.y) }, uScope: { value: 0 }, uLensR: { value: 0.48 }, uSat: { value: 1 },
       tBloom: { value: null }, uFocus: { value: 0 }, tAO: { value: null }, uAOk: { value: 0.85 }, uBloom: { value: 0.32 }, uSharp: { value: 0.12 }, uGrade: { value: 1 }, uRain: { value: 0 },
     };
     this.mat = new THREE.ShaderMaterial({
@@ -25,6 +26,8 @@ export class Post {
         varying vec2 vUv;
         uniform sampler2D tScene, tBloom, tAO; uniform vec2 uRes; uniform float uAOk;
         uniform float uBloom, uSharp, uGrade, uRain, uFocus;
+        uniform float uLensR;
+        const float RING = ${SCOPE_RING};
         uniform float uTime, uNVG, uGain, uGlare, uDamage, uFlash, uLowHealth, uExposure, uSuppress, uFade, uAspect, uUnder, uScope, uSat;
         float hash(vec2 p){ return fract(sin(dot(p, vec2(12.9898,78.233))) * 43758.5453); }
         vec3 aces(vec3 x){ return clamp((x*(2.51*x+0.03))/(x*(2.43*x+0.59)+0.14), 0.0, 1.0); }
@@ -63,6 +66,15 @@ export class Post {
             for (int k = 0; k < 8; k++) { float a = float(k) * 0.7853982; b += texture2D(tScene, uv + vec2(cos(a), sin(a)) * px * (1.0 + e * 3.5)).rgb; }
             col = mix(col, b * 0.125, e * uFocus * 0.9);
           }
+          // luneta: o que está fora do aro fica desfocado
+          if (uScope > 0.5) {
+            float rr = length(dir * vec2(uAspect, 1.0)), o = smoothstep(uLensR + RING, uLensR + RING + 0.025, rr);
+            if (o > 0.0) {
+              vec2 px = (uRes.y / 720.0) / uRes; vec3 b = vec3(0.0);
+              for (int k = 0; k < 12; k++) { float a = float(k) * 0.5236; vec2 d = vec2(cos(a), sin(a)); b += texture2D(tScene, uv + d * px * 7.0).rgb + texture2D(tScene, uv + d * px * 16.0).rgb; }
+              col = mix(col, b / 24.0, o);
+            }
+          }
           col *= mix(1.0, texture2D(tAO, uv).r, uAOk);
           col += texture2D(tBloom, uv).rgb * uBloom * (uNVG > 0.5 ? 0.35 : 1.0);
           col *= uExposure;
@@ -97,18 +109,24 @@ export class Post {
           col = mix(col, vec3(0.45, 0.0, 0.0), edge * clamp(uDamage * 0.8 + uLowHealth * 0.55 * (0.75 + 0.25 * sin(uTime * 6.0)), 0.0, 0.85));
           // água
           col = mix(col, col * vec3(0.3, 0.55, 0.5), uUnder * 0.8);
-          // luneta
+          // luneta: o aro vem do modelo da arma; aqui só o interior da lente (escurece na borda, retículo, ponto vermelho)
           if (uScope > 0.5) {
             vec2 sp = dir * vec2(uAspect, 1.0);
-            float r = length(sp);
-            float ring = smoothstep(0.375, 0.37, r);
-            col *= ring;
-            col *= mix(1.0, 0.75, smoothstep(0.2, 0.37, r));
-            float lw = 0.0012;
-            float cross = (step(abs(sp.x), lw) * step(0.012, abs(sp.y))) + (step(abs(sp.y), lw) * step(0.012, abs(sp.x)));
-            float thick = (step(abs(sp.x), lw * 3.0) * step(0.18, abs(sp.y))) + (step(abs(sp.y), lw * 3.0) * step(0.18, abs(sp.x)));
-            col = mix(col, vec3(0.0), clamp(cross + thick, 0.0, 1.0) * ring);
-            col = mix(col, vec3(1.0, 0.15, 0.1), smoothstep(0.004, 0.002, r));
+            float r = length(sp), R = uLensR, s = R / 0.35;
+            float inLens = smoothstep(R, R - 0.004, r);
+            col *= 1.0 - inLens * 0.8 * smoothstep(R * 0.78, R, r);
+            float Rc = R + RING;
+            col = mix(col, vec3(0.03, 0.0, 0.0), smoothstep(Rc - 0.006, Rc - 0.002, r) * (1.0 - smoothstep(Rc - 0.001, Rc + 0.001, r)));   // borda do aro cortado
+            col *= 1.0 - 0.3 * smoothstep(Rc, Rc + 0.35, r);
+            col += vec3(0.04) * smoothstep(0.006, 0.0, abs(r - R * 0.93)) * inLens;
+            vec2 q = sp / s;
+            float lw = 0.0009;
+            float thk = lw * (1.0 + 3.0 * smoothstep(0.14, 0.30, abs(q.x)));
+            float hLine = step(abs(q.y), thk) * step(0.028, abs(q.x));
+            float thkV = lw * (1.0 + 3.0 * smoothstep(0.14, 0.30, abs(q.y)));
+            float vLine = step(abs(q.x), thkV) * step(0.014, -q.y);
+            col = mix(col, vec3(0.0), clamp(hLine + vLine, 0.0, 1.0) * inLens * 0.92);
+            col = mix(col, vec3(1.0, 0.12, 0.08), smoothstep(0.0032, 0.0017, length(q)) * inLens);
           }
           // flash / fade
           col = mix(col, vec3(1.0), clamp(uFlash, 0.0, 1.0));
@@ -184,6 +202,24 @@ export class Post {
     this.scene = new THREE.Scene();
     this.scene.add(this.quad);
     this.cam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+    // luneta: a cena é renderizada uma segunda vez, com zoom, e colada num círculo no centro; o resto da tela segue visível
+    this.scopeRT = new THREE.WebGLRenderTarget(size.x, size.y, { type: THREE.HalfFloatType, samples: 2 });
+    this.scopeBlit = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), new THREE.ShaderMaterial({
+      uniforms: { tScope: { value: this.scopeRT.texture }, uAspect: this.uniforms.uAspect, uLensR: this.uniforms.uLensR }, depthTest: false, depthWrite: false,
+      vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }',
+      fragmentShader: [
+        'precision highp float; varying vec2 vUv; uniform sampler2D tScope; uniform float uAspect, uLensR;',
+        'void main(){',
+        '  vec2 d = vUv - 0.5; float r = length(d * vec2(uAspect, 1.0)) / uLensR; if (r > 1.0) discard;',
+        '  float k = 0.16 * r * r;            // distorção de barril: a borda da lente comprime a imagem',
+        '  float ca = 0.03 * r * r;           // aberração cromática: vermelho e azul se separam perto da borda',
+        '  vec3 c = vec3(texture2D(tScope, 0.5 + d * (1.0 + k + ca)).r, texture2D(tScope, 0.5 + d * (1.0 + k)).g, texture2D(tScope, 0.5 + d * (1.0 + k - ca)).b);',
+        '  gl_FragColor = vec4(c, 1.0);',
+        '}',
+      ].join('\n'),
+    }));
+    this.scopeBlit.frustumCulled = false;
+    this.scopeScene = new THREE.Scene(); this.scopeScene.add(this.scopeBlit);
   }
   _makeBloomTargets(W, H) {
     for (const t of [...this.bDown, ...this.bUp]) t.dispose();
@@ -238,20 +274,33 @@ export class Post {
   }
   resize(w, h, pixelRatio) {
     const W = Math.floor(w * pixelRatio * this.scale), H = Math.floor(h * pixelRatio * this.scale);
-    this.rt.setSize(W, H);
+    this.rt.setSize(W, H); this.scopeRT.setSize(W, H);
     this.uniforms.uAspect.value = w / h;
     this.uniforms.uRes.value.set(W, H);
     this._makeBloomTargets(W, H);
     if (this.whiteTex) this.whiteTex.needsUpdate = true;
   }
-  render(scene, camera, vmScene, vmCamera) {
-    const r = this.r;
+  _makeWhiteTex() {
+    this.whiteTex = new THREE.DataTexture(new Uint8Array([255, 255, 255, 255]), 1, 1); this.whiteTex.needsUpdate = true;   // sem isso a textura sobe preta e escurece a tela toda
+    return this.whiteTex;
+  }
+  render(scene, camera, vmScene, vmCamera, scopeCam) {
+    const r = this.r, scoped = !!scopeCam && this.uniforms.uScope.value > 0.5;
     r.setRenderTarget(this.rt);
     r.clear();
     r.render(scene, camera);
-    if (this.aoEnabled) this._ao(camera); else this.uniforms.tAO.value = this.whiteTex || (this.whiteTex = new THREE.DataTexture(new Uint8Array([255, 255, 255, 255]), 1, 1));
+    if (this.aoEnabled && !scoped) this._ao(camera); else this.uniforms.tAO.value = this.whiteTex || this._makeWhiteTex();
     r.setRenderTarget(this.rt);
-    if (vmScene) { r.clearDepth(); r.render(vmScene, vmCamera); }
+    if (vmScene) {
+      r.clearDepth();
+      SCOPE_CLIP.r.value = scoped ? this.uniforms.uLensR.value + SCOPE_RING : 0; SCOPE_CLIP.res.value.copy(this.uniforms.uRes.value);
+      r.render(vmScene, vmCamera);
+      SCOPE_CLIP.r.value = 0;
+    }
+    if (scoped) {
+      r.setRenderTarget(this.scopeRT); r.clear(); r.render(scene, scopeCam);
+      r.setRenderTarget(this.rt); r.render(this.scopeScene, this.cam);
+    }
     this.uniforms.uBloom.value = this.bloomEnabled ? 0.32 : 0.0;
     if (this.bloomEnabled) this._bloom();
     r.setRenderTarget(null);

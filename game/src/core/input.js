@@ -8,16 +8,19 @@ export class Input {
     this.mouseDX = 0;
     this.mouseDY = 0;
     this.wheel = 0;
-    this.buttons = [false, false, false];
-    this.btnPressed = [false, false, false];
-    this.btnReleased = [false, false, false];
+    this.buttons = [false, false, false, false, false];
+    this.btnPressed = [false, false, false, false, false];
+    this.btnReleased = [false, false, false, false, false];
+    this.binds = {};       // ação (código padrão) -> tecla/botão físico escolhido pelo jogador
+    this.capture = null;   // quando definido, a próxima tecla/botão vai para essa função (tela de controles)
     this.locked = false;
     this.enabled = true;
     this.onUnlock = null;
 
     addEventListener('keydown', (e) => {
+      if (this.capture) { e.preventDefault(); if (!e.repeat) this._capture(e.code); return; }
       if (e.repeat) return;
-      if (['Tab', 'Space', 'ControlLeft', 'KeyS'].includes(e.code) && this.locked) e.preventDefault();
+      if (this.locked && (['Tab', 'Space', 'ControlLeft', 'KeyS'].includes(e.code) || Object.values(this.binds).includes(e.code))) e.preventDefault();
       this.keys.add(e.code);
       this.pressedSet.add(e.code);
     });
@@ -33,6 +36,7 @@ export class Input {
       this.mouseDY += e.movementY;
     });
     addEventListener('mousedown', (e) => {
+      if (this.capture) { e.preventDefault(); this._capture('Mouse' + e.button); return; }
       if (!this.locked) return;
       this.buttons[e.button] = true;
       this.btnPressed[e.button] = true;
@@ -46,10 +50,10 @@ export class Input {
     document.addEventListener('pointerlockchange', () => {
       const was = this.locked;
       this.locked = document.pointerLockElement === this.canvas;
-      if (!this.locked) { this.keys.clear(); this.buttons = [false, false, false]; }
+      if (!this.locked) { this.keys.clear(); this.buttons = [false, false, false, false, false]; }
       if (was && !this.locked && this.onUnlock) this.onUnlock();
     });
-    addEventListener('blur', () => { this.keys.clear(); this.buttons = [false, false, false]; });
+    addEventListener('blur', () => { this.keys.clear(); this.buttons = [false, false, false, false, false]; });
   }
   async lock() {
     try {
@@ -64,17 +68,28 @@ export class Input {
     }
   }
   unlock() { if (document.pointerLockElement) document.exitPointerLock(); }
-  down(code) { return this.enabled && this.keys.has(code); }
-  pressed(code) { return this.enabled && this.pressedSet.has(code); }
-  released(code) { return this.releasedSet.has(code); }
-  mouse(b) { return this.enabled && this.buttons[b]; }
-  mousePressed(b) { return this.enabled && this.btnPressed[b]; }
-  mouseReleased(b) { return this.btnReleased[b]; }
+  // remapeamento: o jogo pergunta pelo código padrão (ex.: 'KeyW'); aqui vira a tecla/botão que o jogador escolheu
+  setBinds(binds) { this.binds = { ...(binds || {}) }; }
+  physical(code) { return this.binds[code] || code; }
+  _capture(code) {
+    const fn = this.capture; this.capture = null;
+    if (code.startsWith('Mouse')) addEventListener('click', (e) => { e.stopPropagation(); e.preventDefault(); }, { capture: true, once: true });   // o clique que escolheu o botão não aciona nada
+    fn && fn(code);
+  }
+  _down(c) { return c.startsWith('Mouse') ? !!this.buttons[+c.slice(5)] : this.keys.has(c); }
+  _pressed(c) { return c.startsWith('Mouse') ? !!this.btnPressed[+c.slice(5)] : this.pressedSet.has(c); }
+  _released(c) { return c.startsWith('Mouse') ? !!this.btnReleased[+c.slice(5)] : this.releasedSet.has(c); }
+  down(code) { return this.enabled && this._down(this.physical(code)); }
+  pressed(code) { return this.enabled && this._pressed(this.physical(code)); }
+  released(code) { return this._released(this.physical(code)); }
+  mouse(b) { return this.enabled && this._down(this.physical('Mouse' + b)); }
+  mousePressed(b) { return this.enabled && this._pressed(this.physical('Mouse' + b)); }
+  mouseReleased(b) { return this._released(this.physical('Mouse' + b)); }
   endFrame() {
     this.pressedSet.clear();
     this.releasedSet.clear();
     this.mouseDX = 0; this.mouseDY = 0; this.wheel = 0;
-    this.btnPressed = [false, false, false];
-    this.btnReleased = [false, false, false];
+    this.btnPressed = [false, false, false, false, false];
+    this.btnReleased = [false, false, false, false, false];
   }
 }

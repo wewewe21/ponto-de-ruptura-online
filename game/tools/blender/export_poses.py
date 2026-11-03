@@ -60,7 +60,10 @@ def main():
             pole = rig.pose.bones['pole' + suf]
             elbow = rig.pose.bones['Arm_2' + suf].head
             poles[suf] = {'elbow': list(to_game(Matrix.Translation(rig.matrix_world @ elbow), org).translation), 'ctrl': list(to_game(rig.matrix_world @ pole.matrix, org).translation)}
+        model = bpy.data.objects.get('Modelo_' + gid)   # onde você deixou o modelo dentro da arma (espaço da arma, jogo)
         result['stations'][gid] = {'gun': three(gun_g), 'bones': bones, 'pole': poles}
+        if model is not None and model.parent == gun:
+            result['stations'][gid]['model'] = three(C4i @ model.matrix_basis @ C4)
     with open(out_pose, 'w', encoding='utf8') as f:
         json.dump(result, f)
     print('POSES', out_pose, list(result['stations']))

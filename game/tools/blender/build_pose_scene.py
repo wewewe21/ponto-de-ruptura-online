@@ -40,9 +40,9 @@ def mat_from_three(e):
 GUNS = [
     ('SD9', 'Fuzil SD-9 / KR-7', os.path.join(MODELS, 'rifle.glb'), False, 0.95, 0.84, (0.05, 0.27)),
     ('MK5', 'Submetralhadora MK-5', os.path.join(MODELS, 'weapons', 'smg.glb'), False, 0.90, 0.84, (0.05, 0.355)),
-    ('P19', 'Pistola P-19', os.path.join(MODELS, 'weapons', 'pistol.glb'), False, 0.36, 0.40, (0.1, 0.528)),
+    ('P19', 'Pistola Glock brasileira', os.path.join(MODELS, 'weapons', 'glock.glb'), False, 0.36, 0.40, (0.03, 0.527)),
     ('VK12', 'DMR VK-12', os.path.join(MODELS, 'weapons', 'scifi.glb'), True, 1.05, 0.95, (0.0, 0.171)),
-    ('AX50', 'Sniper AX-50', os.path.join(MODELS, 'weapons', 'sniper.glb'), True, 1.15, 1.0, (-0.03, 0.17)),
+    ('AX50', 'Sniper brasileira', os.path.join(MODELS, 'weapons', 'sniper_br.glb'), False, 1.15, 1.0, (0.02, 0.14)),
     ('KNIFE', 'Faca', os.path.join(MODELS, 'weapons', 'knife.glb'), None, 0.28, 0.3, (0, 0.2)),
     ('BRK8', 'Escopeta BRK-8 (modelo simples)', None, None, 1.0, 1.0, (0, 0)),
     ('RPL2', 'Lança-foguetes RPL-2 (modelo simples)', None, None, 1.0, 1.0, (0, 0)),
@@ -215,4 +215,5 @@ def main():
     print('SALVO', out)
 
 
-main()
+if __name__ == '__main__':
+    main()

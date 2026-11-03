@@ -4,7 +4,8 @@ import * as THREE from 'three';
 import { clamp, lerp, damp, smoothstep } from '../core/utils.js';
 import { loadRifleScene, makeRifleGun } from './gunmodel.js';
 import { FPSArms } from './fpsarms.js';
-import { GUN_SPECS, loadWeaponGLB, makeGlbGun, makeKnifeGun, makeReticle } from './weaponmodels.js';
+import { reloadPose, makeReloadState } from './reloadanim.js';
+import { GUN_SPECS, loadWeaponGLB, loadPlacements, baseMatrix, makeGlbGun, makeKnifeGun, makeReticle } from './weaponmodels.js';
 
 const C = {
   poly: new THREE.MeshStandardMaterial({ color: 0x1c1d1f, roughness: 0.62, metalness: 0.15 }),
@@ -152,7 +153,7 @@ function buildArms(isPistol) {
 
 // posições da arma na tela (espaço da câmera do viewmodel; x direita, y cima, -z à frente): [x, y, z]
 export const HIP = { default: [0.13, -0.16, -0.78], P19: [0.1, -0.11, -0.8], MK5: [0.12, -0.15, -0.8], AX50: [0.1, -0.14, -0.98], VK12: [0.11, -0.14, -0.9], KNIFE: [0.14, -0.16, -0.7], RPL2: [0.15, -0.14, -0.62], BRK8: [0.14, -0.15, -0.78], LASER: [0.13, -0.14, -0.7] };
-export const ADS_DIST = { default: 0.38, P19: 0.34, MK5: 0.36, VK12: 0.36, RPL2: 0.24, AX50: 0.4 };
+export const ADS_DIST = { default: 0.38, P19: 0.26, DE50: 0.26, MK5: 0.36, VK12: 0.36, RPL2: 0.24, AX50: 0.052 };
 
 function fallbackKnife() {
   const g = new THREE.Group();
@@ -164,6 +165,18 @@ function fallbackKnife() {
 }
 
 const _dl = new THREE.Vector3();
+
+// clarão de boca de cano por arma: size = tamanho (m), dur = duração (s), light = luz no cenário (a fumaça fica no mundo, em fx.muzzleSmoke)
+const MUZZLE_FX = {
+  default: { size: 0.2, dur: 0.05, light: 2.0 },
+  SD9: { size: 0.1, dur: 0.04, light: 0.6 },     // silenciada: clarão pequeno, mais fumaça
+  MK5: { size: 0.12, dur: 0.04, light: 0.7 },
+  KR7: { size: 0.24, dur: 0.05, light: 2.0 },
+  VK12: { size: 0.3, dur: 0.06, light: 2.6 },
+  P19: { size: 0.18, dur: 0.045, light: 1.5 },
+  DE50: { size: 0.3, dur: 0.06, light: 2.6 },
+  AX50: { size: 0.42, dur: 0.07, light: 3.5 },
+};
 
 export class ViewModel {
   constructor(T) {
@@ -210,8 +223,10 @@ export class ViewModel {
     if (this.currentId === id) this.current = gm;
   }
   _flash(gm) {
-    const fl = new THREE.Sprite(new THREE.SpriteMaterial({ map: this.T.flash, color: 0xffd090, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true }));
-    fl.scale.setScalar(0.22); fl.visible = false; gm.muzzle.add(fl); gm.flash = fl;
+    const mk = (color) => new THREE.Sprite(new THREE.SpriteMaterial({ map: this.T.flash, color, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true }));
+    const fl = mk(0xff9a3c), core = mk(0xffe6b0); fl.material.opacity = 0.85; core.material.opacity = 0.7;   // estrela alaranjada + núcleo quase branco
+    fl.scale.setScalar(0.22); core.scale.setScalar(0.1); fl.visible = core.visible = false;
+    gm.muzzle.add(fl, core); gm.flash = fl; gm.flashCore = core;
   }
   // Troca os fuzis procedurais pelo modelo GLB (se falhar, mantém os procedurais).
   async useRifleModel() {
@@ -232,8 +247,14 @@ export class ViewModel {
   // Armas novas em GLB (submetralhadora, sniper, pistola, DMR) e a faca. Cada uma que falhar mantém a versão procedural.
   async useWeaponModels() {
     let n = 0;
+    const placements = await loadPlacements();
     await Promise.all(Object.entries(GUN_SPECS).map(async ([id, spec]) => {
-      try { const gm = makeGlbGun(await loadWeaponGLB(spec.file), spec); this._flash(gm); this._install(id, gm); n++; }
+      let place = placements[id];
+      if (!place && spec.like && placements[spec.like]) {   // mesmo ajuste de posição/escala de outra arma, com a base desta
+        const like = GUN_SPECS[spec.like];
+        place = new THREE.Matrix4().fromArray(placements[spec.like]).multiply(baseMatrix(like).invert()).multiply(baseMatrix(spec)).toArray();
+      }
+      try { const gm = makeGlbGun(await loadWeaponGLB(spec.file), spec, place); this._flash(gm); this._install(id, gm); n++; }
       catch (e) { console.warn('Arma indisponível:', id, e); }
     }));
     try { const kg = makeKnifeGun(await loadWeaponGLB('knife')); this._flash(kg); this._install('KNIFE', kg); n++; } catch (e) { console.warn('Faca indisponível:', e); }
@@ -243,15 +264,20 @@ export class ViewModel {
   // braços em malha 3D (depois que os soldados carregam); mantém os de caixa se falhar
   async useFPSArms() { try { this.fps = await FPSArms.create(this.scene); return true; } catch (e) { console.warn('Braços em primeira pessoa indisponíveis', e); this.fps = null; return false; } }
   set(id) {
-    for (const k in this.guns) this.guns[k].group.visible = k === id;
+    for (const k in this.guns) { const gm = this.guns[k]; gm.group.visible = k === id; gm.flashLeft = 0; if (gm.flash) gm.flash.visible = false; if (gm.flashCore) gm.flashCore.visible = false; }
     this.current = this.guns[id];
     this.currentId = id;
   }
   kick(power = 1) {
     this.s.kickZ += 0.045 * power; this.s.kickR += 0.06 * power; this.s.kickY += (Math.random() - 0.5) * 0.02 * power;
     const g = this.current;
-    if (g && g.flash) { g.flash.visible = true; g.flash.material.rotation = Math.random() * 6; g.flash.scale.setScalar((0.16 + Math.random() * 0.12) * (this.currentId === 'SD9' || this.currentId === 'MK5' ? 0.4 : 1)); this.flashT = 0.04; }
-    this.flashL.intensity = this.currentId === 'SD9' || this.currentId === 'MK5' ? 0.6 : 3;
+    const fx = MUZZLE_FX[this.currentId] || MUZZLE_FX.default;
+    if (g && g.flash) {
+      g.flash.visible = true; g.flash.material.rotation = Math.random() * 6; g.flash.scale.setScalar(fx.size * (0.8 + Math.random() * 0.4));
+      if (g.flashCore) { g.flashCore.visible = true; g.flashCore.material.rotation = Math.random() * 6; g.flashCore.scale.setScalar(fx.size * 0.45 * (0.8 + Math.random() * 0.4)); }
+      g.flashLeft = fx.dur; this.flashT = fx.dur;
+    }
+    this.flashL.intensity = fx.light;
   }
   aspect(a) { this.camera.aspect = a; this.camera.updateProjectionMatrix(); }
   // st: estado vindo do controlador de armas
@@ -263,7 +289,8 @@ export class ViewModel {
     const quick = st.melee > 0 && st.id !== 'KNIFE' && this.guns.KNIFE;
     if (quick) { g = this.guns.KNIFE; for (const k in this.guns) this.guns[k].group.visible = false; g.group.visible = true; }
     else if (g !== this.current || !g.group.visible) { for (const k in this.guns) this.guns[k].group.visible = this.guns[k] === g; }
-    if (this.flashT > 0) { this.flashT -= dt; if (this.flashT <= 0) { if (this.current.flash) this.current.flash.visible = false; this.flashL.intensity = 0; } }
+    for (const k in this.guns) { const gm = this.guns[k]; if (gm.flashLeft > 0) { gm.flashLeft -= dt; if (gm.flashLeft <= 0) { if (gm.flash) gm.flash.visible = false; if (gm.flashCore) gm.flashCore.visible = false; } } }
+    if (this.flashT > 0) { this.flashT -= dt; if (this.flashT <= 0) { if (this.current.flash) this.current.flash.visible = false; if (this.current.flashCore) this.current.flashCore.visible = false; this.flashL.intensity = 0; } }
     S.kickZ = damp(S.kickZ, 0, 14, dt); S.kickR = damp(S.kickR, 0, 12, dt); S.kickY = damp(S.kickY, 0, 10, dt);
     S.swayX = damp(S.swayX, clamp(-st.mouseDX * 0.0006, -0.04, 0.04), 8, dt);
     S.swayY = damp(S.swayY, clamp(st.mouseDY * 0.0006, -0.04, 0.04), 8, dt);
@@ -298,7 +325,7 @@ export class ViewModel {
     // recarga
     const L = g.arms.L;
     L.position.copy(g.leftHome);
-    let leftTarget = null, leftExtra = null;
+    let leftTarget = null, leftExtra = null, handAnim = null;
     if (g.mag) { g.mag.visible = st.id !== 'BRK8'; }
     if (g.extra.warhead) g.extra.warhead.visible = st.loaded !== false;
     if (st.reload && !quick) {
@@ -312,31 +339,20 @@ export class ViewModel {
       } else if (st.id === 'RPL2') {
         const d = Math.sin(clamp(t, 0, 1) * Math.PI);
         py -= d * 0.25; rx -= d * 0.6;
-      } else if (st.id === 'AX50') {
-        // ferrolho: gira o conjunto e puxa/empurra a arma
-        const tilt = smoothstep(0, 0.15, t) * (1 - smoothstep(0.85, 1, t));
-        rz += tilt * 0.35; rx += tilt * 0.12; py -= tilt * 0.02;
-        const cyc = smoothstep(0.25, 0.4, t) * (1 - smoothstep(0.4, 0.55, t)) + smoothstep(0.65, 0.78, t) * (1 - smoothstep(0.78, 0.9, t));
-        pz += cyc * 0.03; L.position.z = g.leftHome.z + 0.02 * Math.sin(t * Math.PI * 4);
       } else {
-        const tilt = smoothstep(0, 0.15, t) * (1 - smoothstep(0.85, 1, t));
-        rz += tilt * 0.28; rx += tilt * 0.12; py -= tilt * 0.02;
-        const out = smoothstep(0.12, 0.32, t), back = smoothstep(0.42, 0.62, t);
-        const magDrop = out * (1 - back);
-        const handToMag = smoothstep(0.08, 0.2, t) * (1 - smoothstep(0.6, 0.72, t));
-        if (g.setMagDrop) { g.setMagDrop(magDrop); L.position.lerp(g.magHand(magDrop), handToMag); }
-        else {
-          if (g.mag) { g.mag.position.y = (st.id === 'P19' ? -0.03 : -0.04) - magDrop * 0.28; g.mag.rotation.x = magDrop * 0.4; }
-          if (g.mag) L.position.lerp(new THREE.Vector3(g.mag.position.x - 0.01, g.mag.position.y - 0.1, g.mag.position.z), handToMag);
-        }
-        if (empty) {
-          const b = smoothstep(0.7, 0.78, t) * (1 - smoothstep(0.8, 0.9, t));
-          rz += b * 0.25; px -= b * 0.02;
-          if (g.extra.slide) g.extra.slide.position.z = (g.extra.slideBase ?? -0.04) + b * (g.extra.slideTravel ?? 0.04);
-        }
+        // coreografia de recarga com as duas mãos (reloadanim.js): inclinação da arma, mãos, pente, ferrolho e culatra
+        const R = reloadPose(st.id, t, empty, g, this._rl || (this._rl = makeReloadState()));
+        rx += R.rx; rz += R.rz; py += R.py; pz += R.pz; px += R.px;
+        if (g.setMagDrop) g.setMagDrop(R.magDrop);
+        if (g.mag) g.mag.visible = R.magVisible;
+        if (g.setBolt) g.setBolt(R.lift, R.back);
+        if (g.extra.slide && R.slide != null) g.extra.slide.position.z = (g.extra.slideBase ?? 0) + R.slide * (g.extra.slideTravel ?? 0.04);
+        handAnim = R;
       }
     }
     if (!st.reload && g.setMagDrop) g.setMagDrop(0);
+    if (!st.reload && g.setBolt) g.setBolt(0, 0);
+    if (!st.reload && g.mag) g.mag.visible = true;
     if (g.extra.pump) g.extra.pump.position.z = -0.28 + (st.pumpT || 0) * 0.08;
     if (g.extra.slide && !st.reload) g.extra.slide.position.z = (g.extra.slideBase ?? -0.04) + (st.slideT || 0) * (g.extra.slideTravel ?? 0.04);
     // troca de arma
@@ -376,8 +392,12 @@ export class ViewModel {
       py -= 0.12 * Math.min(1, t * 3);
       leftTarget = this.nade.position;
     } else this.nade.visible = false;
-    // visibilidade (luneta esconde arma)
-    g.group.visible = !(st.scoped) && g.group.visible;
+    // luneta: a câmera fica colada na ocular e a arma não balança (a lente fica sempre alinhada com o aro do modelo)
+    if (st.scopeW) {
+      const k = smoothstep(0.7, 1, ads);
+      px = lerp(px, adsPos[0], k); py = lerp(py, adsPos[1], k); pz = lerp(pz, adsPos[2], k);
+      rx *= 1 - k; ry *= 1 - k; rz *= 1 - k;
+    }
     this.rig.position.set(0, 0, 0);
     g.group.position.set(px, py, pz);
     g.group.rotation.set(rx, ry, rz);
@@ -392,11 +412,20 @@ export class ViewModel {
         const opts = {};
         if (leftTarget) opts.leftTarget = leftTarget;
         else if (g.extra.knife) { opts.leftStatic = true; opts.leftExtra = leftExtra; }
+        else if (handAnim) { opts.leftDelta = handAnim.L; opts.rightDelta = handAnim.R; opts.leftRot = handAnim.lq; opts.rightRot = handAnim.rq; }
         else if (st.reload) opts.leftDelta = _dl.copy(g.arms.L.position).sub(g.leftHome);
         this.fps.update(g.group.matrixWorld, key, opts);
       }
     }
   }
   land(v) { this.s.land += Math.min(0.06, v * 0.006); }
+  // boca do cano no mundo: a arma é desenhada com outra câmera (outro FOV), então projeta pela câmera da arma e devolve o ponto equivalente na câmera principal
+  muzzleWorld(cam, out) {
+    const g = this.current; if (!g) return out.copy(cam.position);
+    g.muzzle.updateWorldMatrix(true, false); g.muzzle.getWorldPosition(out);
+    const depth = Math.max(0.3, -out.z); out.project(this.camera);
+    cam.updateMatrixWorld(); out.set(out.x, out.y, 0.5).unproject(cam).sub(cam.position).normalize().multiplyScalar(depth).add(cam.position);
+    return out;
+  }
   muzzleCam(out) { const g = this.current; if (!g) return out.set(0.15, -0.1, -0.8); g.muzzle.updateWorldMatrix(true, false); return g.muzzle.getWorldPosition(out); }
 }

@@ -25,11 +25,16 @@ async function publicCheck(url){
   }finally{clients.forEach(c=>c.close());}
 }
 async function weaponCheck(a,b){
-  for(const id of ['MK5','KR7','VK12','P19','KNIFE','AX50','SD9']){
+  const me=(c,id)=>c.state.players.find(p=>p.id===id);
+  for(const id of ['P19','KNIFE','SD9']){   // loadout padrão: principal SD9, secundária P19 e faca
     a.controls.weapon=id;
-    await until(()=>a.state.players.find(p=>p.id===a.id)?.weapon===id&&b.state.players.find(p=>p.id===a.id)?.weapon===id,'shared weapon '+id);
-    assert.equal(a.state.players.find(p=>p.id===a.id).ammo,baseRules.weapons[id].mag);
+    await until(()=>me(a,a.id)?.weapon===id&&me(b,a.id)?.weapon===id,'shared weapon '+id);
+    assert.equal(me(a,a.id).ammo,baseRules.weapons[id].mag);
   }
+  a.controls.weapon='AX50';await wait(300);assert.equal(me(a,a.id).weapon,'SD9');   // fora do loadout: recusada
+  a.ws.send(JSON.stringify({t:'loadout',primary:'MK5',secondary:'DE50'}));
+  await until(()=>me(a,a.id)?.loadoutNext?.primary==='MK5'&&me(a,a.id)?.loadoutNext?.secondary==='DE50','pending loadout');
+  assert.equal(me(a,a.id).weapon,'SD9');   // só vale ao reaparecer
 }
 async function localCheck(){
   const rules=structuredClone(baseRules);rules.respawnSeconds=.06;rules.spawnProtectionSeconds=0;rules.intermissionSeconds=.1;rules.scoreLimit=30;

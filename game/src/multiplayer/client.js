@@ -3,7 +3,22 @@ import { stepBody } from '../../shared/movement.js';
 import { applyWorldFlags } from '../world/level.js';
 import { RemoteAvatars } from './avatars.js';
 import { RobotView } from './robot-view.js';
-import { WEAPONS, ARSENAL as PRIMARIES } from '../actors/weapons.js';
+import { WEAPONS } from '../actors/weapons.js';
+import { codeLabel } from '../core/keybinds.js';
+// opções de loadout (o servidor valida a mesma lista em shared/rules.json): [id, descrição]
+export const LOADOUT_OPTIONS = {
+  primary: [['SD9', 'Carabina equilibrada, boa em qualquer distância'], ['KR7', 'Fuzil de dano alto, um pouco mais lento'], ['MK5', 'Submetralhadora: cadência altíssima, curto alcance'], ['VK12', 'DMR semiautomático de tiro forte'], ['AX50', 'Sniper com luneta: um tiro no corpo quase mata, na cabeça mata']],
+  secondary: [['P19', 'Glock: rápida e leve, dano menor'], ['DE50', 'Pistola pesada: lenta, dano alto; na cabeça é um tiro só']],
+};
+const DEFAULT_LOADOUT = { primary: 'SD9', secondary: 'P19' };
+function readLoadout() {
+  try {
+    const l = JSON.parse(localStorage.getItem('pdr-loadout') || 'null');
+    const ok = (list, id) => list.some(([x]) => x === id);
+    if (l && ok(LOADOUT_OPTIONS.primary, l.primary) && ok(LOADOUT_OPTIONS.secondary, l.secondary)) return { primary: l.primary, secondary: l.secondary };
+  } catch (e) {}
+  return { ...DEFAULT_LOADOUT };
+}
 import { MP_VOICE_LINES } from './voice-lines.js';
 
 const $ = (id) => document.getElementById(id);
@@ -15,7 +30,7 @@ export class Multiplayer {
     this.G = G; this.active = false; this.connected = false; this.pending = []; this.seq = 0; this.acc = 0;
     this.players = []; this.offset = 0; this.feed = []; this.ping = 0; this.intentionalClose = true;
     this.renderPos = new THREE.Vector3(); this.robotView = null; this.weatherKey = null;
-    this.weapon = 'SD9'; this.lastPrimary = 'SD9'; this.weaponAt = 0;
+    this.loadout = readLoadout(); this.lo = null; this.weapon = this.loadout.primary; this.weaponAt = 0;
     this.lastFire = 0; this.crouch = false; this.jumpQueued = false; this.reloadQueued = false; this.robotQueued = false;
     this.refreshController = null; this.refreshTimer = null;
     $('btn-online').onclick = () => this.openLobby();
@@ -29,6 +44,10 @@ export class Multiplayer {
     $('mp-copy').onclick = () => this.copyInvite();
     $('mp-robot').onclick = () => { this.robotQueued = true; G.input.lock(); };
     $('mp-player-name').value = localStorage.getItem('pdr-player-name') || '';
+    $('mp-loadout-btn').onclick = () => this.openLoadout('lobby');
+    $('mp-loadout').onclick = () => this.openLoadout('match');
+    $('lo-close').onclick = () => { $('loadout').hidden = true; };
+    this.updateLoadoutSummary();
     addEventListener('beforeunload', () => { this.intentionalClose = true; this.socket?.close(); });
     document.addEventListener('visibilitychange', () => {
       if (document.hidden && this.connected) this.socket.send(JSON.stringify(this.command(false)));
@@ -101,7 +120,7 @@ export class Multiplayer {
     clearTimeout(this.reconnectTimer);
     const socket = this.socket = new WebSocket(`${location.protocol === 'https:' ? 'wss:' : 'ws:'}//${location.host}/ws`);
     const timeout = setTimeout(() => { if (socket.readyState !== WebSocket.OPEN) socket.close(); }, 20000);
-    socket.onopen = () => { if (socket !== this.socket || this.intentionalClose) { socket.close(); return; } clearTimeout(timeout); socket.send(JSON.stringify({t:'join',roomId:this.roomId,name:this.name,token:this.token||undefined})); };
+    socket.onopen = () => { if (socket !== this.socket || this.intentionalClose) { socket.close(); return; } clearTimeout(timeout); socket.send(JSON.stringify({t:'join',roomId:this.roomId,name:this.name,token:this.token||undefined,loadout:this.loadout})); };
     socket.onmessage = (m) => {
       if (socket !== this.socket || this.intentionalClose) return;
       let data; try { data = JSON.parse(m.data); } catch { return; }
@@ -137,7 +156,7 @@ export class Multiplayer {
     for (const ally of G.allies.list) { ally.model.root.visible = false; if (ally.model.gun) ally.model.gun.visible = false; }
     applyWorldFlags(G, {}); G.nvg = false; G.cinematic = false; G.player.zone = null;
     for (const key of ['uSuppress','uGlare','uFlash','uLowHealth','uUnder','uScope','uDamage','uFade']) G.post.uniforms[key].value = 0;
-    G.state = 'multiplayer'; G.hud.show(false); G.weapons.reset(); G.vm.set('SD9'); this.weapon = 'SD9'; this.lastPrimary = 'SD9'; this.applyWeapon('SD9', true);
+    G.state = 'multiplayer'; G.hud.show(false); G.weapons.reset(); this.lo = { ...this.loadout }; this.applyWeapon(this.lo.primary, true);
     for (const id of ['title','briefing','pause','death','victory','settings','controls','chapters','mp-lobby','fullmap']) $(id).hidden = true;
     $('mp-hud').hidden = false; this.menu = true;
     this.avatars = new RemoteAvatars(G);
@@ -148,23 +167,62 @@ export class Multiplayer {
     const url = new URL(location.href); url.searchParams.set('sala', this.roomId); history.replaceState(null, '', url);
     G.input.lock();
   }
+  muzzleWorld() { return this.G.vm.muzzleWorld(this.G.camera,new THREE.Vector3()); }
+  // acerto: mira amarela + marcador em X (vermelho e maior na eliminação)
+  markHit(kill) {
+    const c=$('mp-crosshair'),h=$('mp-hitmarker');
+    c.classList.add('hit');h.classList.add('on');h.classList.toggle('kill',!!kill);
+    clearTimeout(this.hitTimer);this.hitTimer=setTimeout(()=>{c.classList.remove('hit');h.classList.remove('on','kill');},kill?420:170);
+  }
   // troca a arma na tela (o servidor valida e passa a usar o dano/cadência/munição dela)
   applyWeapon(id, instant = false) {
-    const G=this.G,W=G.weapons; this.weapon=id; this.weaponAt=performance.now();
-    if (PRIMARIES.includes(id)) { this.lastPrimary=id; W.slots.primary=id; W.cur='primary'; }
-    else if (id==='P19') W.cur='secondary'; else if (id==='KNIFE') W.cur='melee'; else { W.slots.special=id; W.cur='special'; }
+    const G=this.G,W=G.weapons,lo=this.lo||this.loadout||DEFAULT_LOADOUT; this.weapon=id; this.weaponAt=performance.now();
+    W.slots.primary=lo.primary; W.slots.secondary=lo.secondary;   // só a principal, a secundária e a faca do loadout
+    if (id===lo.secondary) W.cur='secondary'; else if (id==='KNIFE') W.cur='melee'; else { if (id!==lo.primary) W.slots.primary=id; W.cur='primary'; }
+    for (const x of [lo.primary, lo.secondary]) if (!W.ammo[x]) W.ammo[x]={mag:0,reserve:0};
     if (!W.ammo[id]) W.ammo[id]={mag:0,reserve:0};
     W.swap=instant?0:0.9; W.swapTo=null; W.reload=null; G.vm.set(W.id);
   }
   selectWeapon(input) {
     if (this.self.robot) return;
     let want = null;
-    if (input.pressed('Digit1')) want = PRIMARIES.includes(this.weapon) ? PRIMARIES[(PRIMARIES.indexOf(this.weapon) + 1) % PRIMARIES.length] : this.lastPrimary;
-    else if (input.pressed('Digit2')) want = 'P19';
+    const lo = this.lo || this.loadout || DEFAULT_LOADOUT, order = [lo.primary, lo.secondary, 'KNIFE'];
+    if (input.pressed('Digit1')) want = lo.primary;
+    else if (input.pressed('Digit2')) want = lo.secondary;
     else if (input.pressed('Digit3')) want = 'KNIFE';
-    else if (input.pressed('Digit4')) want = 'AX50';
+    if (!want && input.wheel) { const n = order.length, i = Math.max(0, order.indexOf(this.weapon)); want = order[(i + Math.sign(input.wheel) + n) % n]; }
     if (want && want !== this.weapon) {
       this.applyWeapon(want); this.G.audio.mech('swap'); this.reloadQueued = false;
+    }
+  }
+  // ---------- loadout ----------
+  updateLoadoutSummary() {
+    const el = $('mp-loadout-sum'); if (!el) return;
+    el.textContent = `${WEAPONS[this.loadout.primary].name} + ${WEAPONS[this.loadout.secondary].name} + faca`;
+  }
+  openLoadout(from) {
+    this.loadoutFrom = from; $('loadout').hidden = false; this.renderLoadout();
+  }
+  chooseLoadout(slot, id) {
+    this.loadout = { ...this.loadout, [slot]: id };
+    try { localStorage.setItem('pdr-loadout', JSON.stringify(this.loadout)); } catch (e) {}
+    this.updateLoadoutSummary();
+    if (this.connected && this.socket && this.socket.readyState === WebSocket.OPEN) this.socket.send(JSON.stringify({ t: 'loadout', primary: this.loadout.primary, secondary: this.loadout.secondary }));
+    this.renderLoadout();
+  }
+  renderLoadout() {
+    const rules = this.rules && this.rules.weapons, inMatch = this.active && this.connected;
+    const pending = inMatch && this.room && this.room.phase !== 'waiting' && this.lo && (this.lo.primary !== this.loadout.primary || this.lo.secondary !== this.loadout.secondary);
+    $('lo-note').textContent = inMatch ? (pending ? 'Escolha salva: vale quando você reaparecer (depois de ser eliminado ou na próxima rodada).' : 'Escolha suas armas. Na partida, a mudança vale quando você reaparecer.') : 'Escolha suas armas antes de entrar: você já aparece com elas.';
+    const bar = (v, max) => `<div class="lo-bar"><i style="width:${Math.max(6, Math.min(100, (v / max) * 100))}%"></i></div>`;
+    for (const slot of ['primary', 'secondary']) {
+      const box = $('lo-' + slot); box.replaceChildren();
+      for (const [id, desc] of LOADOUT_OPTIONS[slot]) {
+        const d = WEAPONS[id], r = rules && rules[id], b = document.createElement('button'); b.type = 'button'; b.className = 'lo-card' + (this.loadout[slot] === id ? ' on' : '');
+        const stats = r ? `<div class="lo-bars"><span>DANO</span>${bar(r.damage, 110)}<span>CABEÇA</span>${bar(r.damage * (r.head || 1.5), 130)}<span>CADÊNCIA</span>${bar(r.rpm, 900)}</div>` : '';
+        b.innerHTML = `<b>${d.name}</b><small>${desc}</small>${stats}`;
+        b.onclick = () => this.chooseLoadout(slot, id); box.appendChild(b);
+      }
     }
   }
   makeBoundary() {
@@ -181,11 +239,15 @@ export class Multiplayer {
     const key = `${state.room.round}:${state.room.weather}`;
     if (this.weatherKey !== key) { this.weatherKey = key; this.G.weather.setMatchWeather(state.room.weather); }
     const teleport = this.firstSnapshot || !previous || self.robot !== previous.robot || self.dead !== previous.dead || this.round !== state.room.round;
-    this.round = state.room.round; this.seq = Math.max(this.seq, self.seq);
+    this.snapAt = state.serverTime || this.snapAt; this.round = state.room.round; this.seq = Math.max(this.seq, self.seq);
     this.pending = teleport || self.dead || state.room.phase === 'intermission' ? [] : this.pending.filter((x) => x.seq > self.seq);
     const body = this.G.player.body;
-    Object.assign(body,{x:self.x,y:self.y,z:self.z,vy:self.vy||0,onGround:self.onGround, r:self.robot?this.rules.robot.radius:this.rules.human.radius,h:self.robot?this.rules.robot.height:this.rules.human.height});
+    Object.assign(body,{x:self.x,y:self.y,z:self.z,vy:self.vy||0,onGround:self.onGround, r:self.robot?this.rules.robot.radius:this.rules.human.radius,h:self.robot?this.rules.robot.height:(self.crouch?1.05:this.rules.human.height),
+      crouched:!!self.crouch,slideT:self.slideT||0,sdx:self.sdx||0,sdz:self.sdz||0,sprinting:!!self.sprinting});
     for (const input of this.pending) stepBody(this.G.physics,body,input,1/this.rules.tickRate,self.robot,this.rules);
+    if (self.loadout && (!this.lo || self.loadout.primary!==this.lo.primary || self.loadout.secondary!==this.lo.secondary)) { this.lo = { ...self.loadout }; if (!self.robot) this.applyWeapon(self.weapon || this.lo.primary, true); }
+    if (teleport && !self.robot && !self.dead && self.weapon) this.applyWeapon(self.weapon, true);   // reaparece com a arma do loadout
+    this.loadoutNext = self.loadoutNext; if ($('loadout')?.hidden === false) this.renderLoadout();
     if (teleport) { this.G.player.yaw=self.yaw;this.G.player.pitch=self.pitch;this.renderPos.set(body.x,body.y,body.z);this.acc=0;this.crouch=false; }
     if (previous && self.hp < previous.hp) this.G.player.damagePulse = Math.min(0.65, this.G.player.damagePulse + 0.35);
     if (!previous?.robotReady && self.robotReady) this.toast('COLOSSO DISPONÍVEL · pressione B para assumir o controle');
@@ -214,11 +276,10 @@ export class Multiplayer {
     if(previous&&!previous.robot&&self.robot)this.speakMatch('pilot',4);
     if(previous&&!previous.dead&&self.dead)this.speakMatch(self.robot?'destroyed':'death',4);
     if(previous?.dead&&!self.dead)this.speakMatch('respawn',1);
-    if(previous&&!self.robot&&!self.dead&&self.reloadUntil>this.now()&&!(previous.reloadUntil>this.now()))this.speakMatch('reload',0);
-  }
+      }
   command(enabled) {
     const I=this.G.input,P=this.G.player;
-    return {t:'input',seq:++this.seq,forward:enabled?Number(I.down('KeyW'))-Number(I.down('KeyS')):0,right:enabled?Number(I.down('KeyD'))-Number(I.down('KeyA')):0,yaw:P.yaw,pitch:P.pitch,
+    return {t:'input',seq:++this.seq,forward:enabled?Number(I.down('KeyW'))-Number(I.down('KeyS')):0,right:enabled?Number(I.down('KeyD'))-Number(I.down('KeyA')):0,yaw:P.yaw,pitch:P.pitch,view:this.snapAt?Math.round(this.snapAt-50):undefined,
       sprint:!!(enabled&&I.down('ShiftLeft')),crouch:!!(enabled&&this.crouch),jump:!!(enabled&&this.jumpQueued),shoot:!!(enabled&&I.mouse(0)),reload:!!(enabled&&this.reloadQueued),weapon:this.weapon,activateRobot:!!(enabled&&this.robotQueued&&this.robotView)};
   }
   update(dt) {
@@ -227,9 +288,14 @@ export class Multiplayer {
     G.time+=dt; this.menu=!I.locked;
     const enabled=this.connected&&I.locked&&!this.self.dead&&this.room.phase!=='intermission';
     if (enabled) {
-      const sens=0.0017*G.settings.sens*(I.mouse(2)?0.7:1);
+      const Wd=G.weapons.def,zm=this.self.robot?1.25:(Wd.zoom||1.25),adsK=G.weapons.adsT>0?THREE.MathUtils.lerp(1,1/zm*1.15,G.weapons.adsT):1;   // mesma sensibilidade do campo de visão normal, proporcional ao zoom
+      const sens=0.0017*G.settings.sens*adsK;
       P.yaw-=I.mouseDX*sens; P.pitch=Math.max(-1.4,Math.min(1.4,P.pitch-I.mouseDY*sens*(G.settings.invertY?-1:1)));
+      const sliding=P.body.slideT>0;
+      // como na campanha: correr levanta (antes de agachar, para agachar correndo virar deslize); pular levanta e cancela o deslize
+      if (this.crouch&&!sliding&&I.down('ShiftLeft')&&I.down('KeyW')&&!this.self.robot) this.crouch=false;
       if (I.pressed('KeyC')||I.pressed('ControlLeft')) this.crouch=!this.crouch;
+      if (this.crouch&&I.pressed('Space')) this.crouch=false;
       this.jumpQueued ||= I.pressed('Space'); this.reloadQueued ||= I.pressed('KeyR'); this.robotQueued ||= I.pressed('KeyB');
       if (I.pressed('KeyN')) G.nvg=!G.nvg;
       this.selectWeapon(I);
@@ -245,13 +311,18 @@ export class Multiplayer {
     P.pos.set(P.body.x,P.body.y,P.body.z);
     const speed=enabled&&((I.down('KeyW')||I.down('KeyS')||I.down('KeyA')||I.down('KeyD')))?(I.down('ShiftLeft')?cfg.sprint:cfg.speed):0;
     P.hSpeed=speed;P.sprinting=enabled&&I.down('ShiftLeft')&&I.down('KeyW');P.sprintT=THREE.MathUtils.damp(P.sprintT,P.sprinting?1:0,10,dt);
-    P.stance=this.crouch&&!this.self.robot?'crouch':'stand';P.eyeH=this.self.robot?cfg.eye:(this.crouch?0.98:cfg.eye);P.updateEye();
+    const slideNow=!this.self.robot&&P.body.slideT>0,crouchNow=!this.self.robot&&P.body.crouched;
+    P.stance=crouchNow?'crouch':'stand';
+    const eyeTarget=this.self.robot?cfg.eye:(crouchNow?0.98:cfg.eye)-(slideNow?0.25:0);   // a câmera desce suavemente ao agachar e mais ainda ao deslizar
+    P.eyeH=this.self.robot?cfg.eye:THREE.MathUtils.damp(P.eyeH||cfg.eye,eyeTarget,12,dt);P.updateEye();
+    this.slideRoll=THREE.MathUtils.damp(this.slideRoll||0,slideNow?0.05:0,10,dt);
     this.renderPos.lerp(P.pos,1-Math.exp(-25*dt));if(this.renderPos.distanceTo(P.pos)>3)this.renderPos.copy(P.pos);
     G.camera.position.copy(this.renderPos);G.camera.position.y+=P.eyeH;
-    G.camera.rotation.set(P.pitch,P.yaw,0,'YXZ');
+    G.camera.rotation.set(P.pitch,P.yaw,this.slideRoll||0,'YXZ');
+    G.weapons.recoil.update(dt,P);   // recuo da mira: sobe, segura e volta suave
     const W=G.weapons;W.adsT=THREE.MathUtils.damp(W.adsT,enabled&&I.mouse(2)&&(this.self.robot||!W.def.melee)?1:0,12,dt);
     const zoom=this.self.robot?1.25:(W.def.zoom||1.25);W.swap=Math.max(0,W.swap-dt/0.3);W.melee=Math.max(0,W.melee-dt/0.55);
-    const targetFov=G.settings.fov/(1+W.adsT*(zoom-1));G.camera.fov=THREE.MathUtils.damp(G.camera.fov,targetFov,12,dt);G.camera.updateProjectionMatrix();
+    const targetFov=G.settings.fov/(W.def.scope&&!this.self.robot?1:(1+W.adsT*(zoom-1)))+(P.body.slideT>0?6:0);   // luneta: o zoom fica só na lenteG.camera.fov=THREE.MathUtils.damp(G.camera.fov,targetFov,12,dt);G.camera.updateProjectionMatrix();
     const reloading=this.self.reloadUntil>now;
     const reloadSecs=(this.self.robot?cfg:(this.rules.weapons&&this.rules.weapons[this.self.weapon])||cfg).reloadSeconds;
     W.reload=reloading?{t:Math.max(0,1-(this.self.reloadUntil-now)/(reloadSecs*1000)),empty:this.self.ammo===0}:null;
@@ -281,14 +352,20 @@ export class Multiplayer {
         else {
           this.G.fx.tracer(origin,end,e.robot?0xff9c3d:0xffcf88,450,e.robot?9:4);
           this.G.audio.shot(e.robot?'KR7':(def?def.sound:'SD9'));
-          if(e.robot)this.robotView?.kick();else this.G.vm.kick(e.weapon==='AX50'?1.8:1);
-          this.G.player.pitch=Math.min(1.4,this.G.player.pitch+(e.robot?0.0035:e.weapon==='AX50'?0.012:0.006));
+          if(e.robot)this.robotView?.kick();else this.G.vm.kick(e.weapon==='AX50'?3.2:e.weapon==='VK12'?1.8:1);
+          if(e.robot)this.G.player.pitch=Math.min(1.4,this.G.player.pitch+0.0035);
+          else {
+            const r=(def&&def.recoil)||{up:1,side:0.2,rand:0.3},W=this.G.weapons,mult=(1-W.adsT*0.4)*(this.crouch?0.85:1),i=this.shotIdx=(Date.now()-(this.lastShotAt||0)>350?0:(this.shotIdx||0)+1);this.lastShotAt=Date.now();
+            const up=r.up*(i<6?1.15:0.85)*(1+(Math.random()-0.5)*r.rand),side=r.side*Math.sin(i*r.freq+r.phase)+(Math.random()-0.5)*r.rand*r.up*0.5;
+            W.recoil.kick(up*mult*Math.PI/180,side*mult*Math.PI/180,e.weapon);
+            this.G.fx.muzzleSmoke(this.muzzleWorld(),new THREE.Vector3().subVectors(end,origin).normalize(),e.weapon==='AX50'?4:e.weapon==='VK12'?3:2,e.weapon==='AX50'?1.5:1);
+          }
         }
-        if(e.hit){$('mp-crosshair').classList.add('hit');clearTimeout(this.hitTimer);this.hitTimer=setTimeout(()=>$('mp-crosshair').classList.remove('hit'),120);}
+        if(e.dealt??e.hit){this.markHit(!!e.head);this.G.audio.hit(e.head?'headshot':'confirm');}
       }
     } else if(e.type==='kill') {
       this.feed.unshift({text:`${e.name||'Ambiente'}  ›  ${e.victimName||'Soldado'}`,time:this.now()});this.feed=this.feed.slice(0,4);
-      if(e.killer===this.id){this.toast('+100 · ALVO ELIMINADO');this.speakMatch('kill',0);}
+      if(e.killer===this.id){this.toast('+100 · ALVO ELIMINADO');this.markHit(true);if(!e.head)this.G.audio.hit('killshot');this.speakMatch('kill',0);}
     } else if(e.type==='robot'&&e.active&&e.player!==this.id){
       const pilot=this.players.find(p=>p.id===e.player);if(pilot)this.speakMatch(pilot.team===this.self?.team?'friendlyRobot':'enemyRobot',3);
     }
@@ -304,11 +381,11 @@ export class Multiplayer {
     $('mp-weather').textContent=this.rules.weather.find(w=>w.id===r.weather)?.name||r.weather;
     $('mp-hp').textContent=`${s.hp} / ${s.maxHp}`;$('mp-health-fill').style.width=`${100*s.hp/s.maxHp}%`;
     const wdef=WEAPONS[this.weapon];$('mp-ammo').textContent=!s.robot&&wdef&&wdef.melee?'—':s.ammo;$('mp-weapon-label').textContent=s.robot?'COLOSSO MX-9 · CANHÃO PESADO':(wdef?wdef.name:'CARABINA SD-9');
-    $('mp-reload-label').textContent=!s.robot&&wdef&&wdef.melee?'[1] [2] [3] [4] ARMAS':s.reloadUntil>now?'RECARREGANDO…':s.ammo===0?'[R] RECARREGAR':'[R] RECARREGAR';
+    $('mp-reload-label').textContent=!s.robot&&wdef&&wdef.melee?'[1] [2] [3] ARMAS':s.reloadUntil>now?'RECARREGANDO…':`[${codeLabel(this.G.input.physical('KeyR'))}] RECARREGAR`;
     $('mp-points').textContent=s.points;$('mp-streak-count').textContent=`${s.streak} / ${this.rules.robotStreak}`;
     $('mp-streak-fill').style.width=`${Math.min(100,s.streak/this.rules.robotStreak*100)}%`;
     $('mp-robot').hidden=!s.robotReady;$('mp-robot').disabled=!this.robotView;
-    $('mp-robot').textContent=this.robotView?'[B] CONTROLAR COLOSSO':'PREPARANDO COLOSSO…';
+    $('mp-robot').textContent=this.robotView?`[${codeLabel(this.G.input.physical('KeyB'))}] CONTROLAR COLOSSO`:'PREPARANDO COLOSSO…';
     $('mp-streak-label').textContent=s.robot?'COLOSSO ATIVO':s.robotReady?'RECOMPENSA CONQUISTADA':'8 ABATES SEGUIDOS · CONQUISTE O COLOSSO';
     $('mp-robot-frame').hidden=!s.robot;
     $('mp-crosshair').hidden=s.dead||r.phase==='intermission'||(!s.robot&&this.G.weapons.adsT>0.5);
@@ -337,7 +414,10 @@ export class Multiplayer {
   resize() { this.robotView?.resize(this.G.camera.aspect); }
   render() {
     const G=this.G,view=this.self?.robot&&this.robotView;
-    G.post.render(G.scene,G.camera,this.self&&!this.self.dead?(view?view.scene:G.vm.scene):null,view?view.camera:G.vm.camera);
+    const W=G.weapons,sc=G.scopeCam,scoped=!view&&G.post.uniforms.uScope.value>0.5&&W.def.scope;
+    if(scoped){sc.position.copy(G.camera.position);sc.quaternion.copy(G.camera.quaternion);sc.aspect=G.camera.aspect;sc.fov=G.settings.fov/(W.def.zoom||4);sc.updateProjectionMatrix();}
+    document.body.classList.toggle('scoped',!!scoped);
+    G.post.render(G.scene,G.camera,this.self&&!this.self.dead?(view?view.scene:G.vm.scene):null,view?view.camera:G.vm.camera,scoped?sc:undefined);
   }
   leave() {
     this.G.audio?.stopSpeech?.();this.voiceUntil=0;this.voiceSerial=(this.voiceSerial||0)+1;

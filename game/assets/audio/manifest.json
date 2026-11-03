@@ -720,67 +720,30 @@
    "assets/audio/loops/amb_boss_thrust_1.mp3"
   ]
  },
- "mus_menu": {
-  "group": "music",
-  "dur": 80,
+ "hit_confirm": {
+  "group": "sfx",
+  "dur": 0.5,
   "files": [
-   "assets/audio/music/mus_menu_1.mp3"
+   "assets/audio/sfx/hit_confirm_1.mp3",
+   "assets/audio/sfx/hit_confirm_2.mp3",
+   "assets/audio/sfx/hit_confirm_3.mp3"
   ]
  },
- "mus_stealth": {
-  "group": "music",
-  "dur": 90,
+ "hit_headshot": {
+  "group": "sfx",
+  "dur": 1,
   "files": [
-   "assets/audio/music/mus_stealth_1.mp3"
+   "assets/audio/sfx/hit_headshot_1.mp3",
+   "assets/audio/sfx/hit_headshot_2.mp3",
+   "assets/audio/sfx/hit_headshot_3.mp3"
   ]
  },
- "mus_tension": {
-  "group": "music",
-  "dur": 90,
+ "hit_killshot": {
+  "group": "sfx",
+  "dur": 0.9,
   "files": [
-   "assets/audio/music/mus_tension_1.mp3"
-  ]
- },
- "mus_combat": {
-  "group": "music",
-  "dur": 90,
-  "files": [
-   "assets/audio/music/mus_combat_1.mp3"
-  ]
- },
- "mus_boss": {
-  "group": "music",
-  "dur": 100,
-  "files": [
-   "assets/audio/music/mus_boss_1.mp3"
-  ]
- },
- "mus_defense": {
-  "group": "music",
-  "dur": 90,
-  "files": [
-   "assets/audio/music/mus_defense_1.mp3"
-  ]
- },
- "mus_extract": {
-  "group": "music",
-  "dur": 80,
-  "files": [
-   "assets/audio/music/mus_extract_1.mp3"
-  ]
- },
- "mus_victory": {
-  "group": "music",
-  "dur": 40,
-  "files": [
-   "assets/audio/music/mus_victory_1.mp3"
-  ]
- },
- "mus_death": {
-  "group": "music",
-  "dur": 14,
-  "files": [
-   "assets/audio/music/mus_death_1.mp3"
+   "assets/audio/sfx/hit_killshot_1.mp3",
+   "assets/audio/sfx/hit_killshot_2.mp3"
   ]
  }
 }

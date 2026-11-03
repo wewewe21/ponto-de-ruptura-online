@@ -138,8 +138,19 @@ export class FX {
     for (let i = 0; i < 8 * s; i++) this.norm.spawn(p.x, p.y, p.z, rand(-1.5, 1.5) * s, rand(2, 5) * s, rand(-1.5, 1.5) * s, rand(0.3, 0.7), rand(0.1, 0.25) * s, 0.7, 0.78, 0.82, 0.6, 12, 0.5, 0.5);
   }
   rainSplash(x, y, z) { this.add.spawn(x, y + 0.02, z, rand(-0.4, 0.4), rand(0.6, 1.4), rand(-0.4, 0.4), 0.18, 0.05, 0.45, 0.5, 0.55, 0.6, 9, 0, 0); }
-  muzzleSmoke(p, dir) {
-    for (let i = 0; i < 2; i++) this.norm.spawn(p.x, p.y, p.z, dir.x * rand(0.6, 1.5) + rand(-0.2, 0.2), dir.y + rand(0.2, 0.6), dir.z * rand(0.6, 1.5) + rand(-0.2, 0.2), rand(0.5, 1.0), rand(0.15, 0.3), 0.5, 0.5, 0.5, 0.18, -0.3, 2, 0.8);
+  // fumaça do cano: um jato rápido que sai da boca e abre, e nuvens leves que ficam subindo e se dissipando no ar.
+  // Quanto mais seguido o disparo, menos nuvens novas (não acumula uma parede de fumaça).
+  muzzleSmoke(p, dir, n = 2, s = 1) {
+    const now = performance.now(), gap = now - (this._smokeAt || 0); this._smokeAt = now;
+    const rapid = gap < 110, J = (k) => rand(-k, k);
+    // jato: gás quente saindo para a frente, desacelera depressa e vai abrindo
+    for (let i = 0; i < (rapid ? 1 : 2); i++) this.norm.spawn(p.x + dir.x * 0.04 * i, p.y + dir.y * 0.04 * i, p.z + dir.z * 0.04 * i,
+      dir.x * rand(2.2, 4) * s + J(0.15), dir.y * rand(2.2, 4) * s + J(0.15) + 0.1, dir.z * rand(2.2, 4) * s + J(0.15),
+      rand(0.5, 0.85), rand(0.08, 0.12) * s, 0.66, 0.65, 0.63, 0.3, -0.1, 2.6, 0.35 * s);
+    // nuvens que ficam no ar: sobem devagar, crescem e esmaecem
+    for (let i = 0; i < (rapid ? 1 : n); i++) this.norm.spawn(p.x + dir.x * rand(0, 0.2), p.y + dir.y * rand(0, 0.2), p.z + dir.z * rand(0, 0.2),
+      dir.x * rand(0.4, 1.1) + J(0.18), dir.y * rand(0.4, 1.1) + rand(0.15, 0.4), dir.z * rand(0.4, 1.1) + J(0.18),
+      rand(1.1, 1.9), rand(0.1, 0.15) * s, 0.62, 0.62, 0.61, 0.22, -0.12, 0.8, 0.22 * s);
   }
   shell(p, right, up) {
     this.add.spawn(p.x, p.y, p.z, right.x * rand(2, 3) + up.x * 1.5, right.y * 2 + up.y * rand(1.5, 2.5), right.z * rand(2, 3) + up.z * 1.5, 0.5, 0.025, 0.9, 0.7, 0.3, 0.8, 12, 0.2);

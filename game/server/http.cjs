@@ -117,9 +117,10 @@ async function createGameServer(options={}) {
         if(typeof value.roomId!=='string'||typeof value.name!=='string'||(value.token!==undefined&&typeof value.token!=='string')){send(ws,{t:'error',message:'Entrada inválida'});return;}
         const room=rooms.get(value.roomId);
         if(!room){send(ws,{t:'error',message:'Sala não encontrada'});return;}
-        try{const p=room.join(value.name,value.token);ws.room=room;ws.player=p;clearTimeout(joinTimeout);send(ws,{t:'welcome',id:p.id,token:p.token,state:room.snapshot()});}
+        try{const p=room.join(value.name,value.token,value.loadout);ws.room=room;ws.player=p;clearTimeout(joinTimeout);send(ws,{t:'welcome',id:p.id,token:p.token,state:room.snapshot()});}
         catch(error){send(ws,{t:'error',message:error.message});}return;
       }
+      if(value.t==='loadout'&&ws.player){ws.room.setLoadout(ws.player,value);return;}
       if(value.t==='input'&&ws.player){if(!ws.room.enqueue(ws.player,value))send(ws,{t:'error',message:'Comando inválido ou fora de ordem'});return;}
       send(ws,{t:'error',message:'Comando desconhecido'});if(++ws.badMessages>=3)ws.close(1008,'Comandos inválidos');
     });

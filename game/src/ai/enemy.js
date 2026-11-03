@@ -19,7 +19,7 @@ const CHATTER = [
   'O vale lembra, irmão. O vale lembra.', 'Liga o gerador de novo, tá um breu aqui.',
 ];
 const CALL = {
-  contact: ['Contato!', 'Ali! Ele tá ali!', 'Inimigo! Atirem!'], reload: ['Recarregando!', 'Me cobre, recarregando!'], grenade: ['Granada saindo!', 'Granada!'],
+  contact: ['Contato!', 'Ali! Ele tá ali!', 'Inimigo! Atirem!'], grenade: ['Granada saindo!', 'Granada!'],
   flank: ['Vou pelo flanco!', 'Flanqueando!'], retreat: ['Recuar! Recuar!', 'Tô ferido, recuando!'], down: ['Homem abatido!', 'Perdemos um!'],
   heard: ['Ouviu isso?', 'Que barulho foi esse?'], calm: ['Deve ter sido o vento.', 'Nada aqui.'], search: ['Onde ele foi?', 'Procurem! Ele tá por aqui!'],
   body: ['Corpo! Temos um corpo aqui!', 'Alarme! Mataram um dos nossos!'], blind: ['Não enxergo!', 'Meus olhos!'],
@@ -280,7 +280,7 @@ export class Enemy {
       return;
     }
     if (!this.wantShoot || this.fireCd > 0 || this.stagger > 0) return;
-    if (this.ammo <= 0) { this.reloading = def.reloadT; this.say('reload'); return; }
+    if (this.ammo <= 0) { this.reloading = def.reloadT; return; }
     if (this.burstLeft <= 0) { this.burstLeft = randInt(def.burst[0], def.burst[1]); }
     this.burstLeft--; this.ammo--;
     this.fireCd = this.burstLeft > 0 ? 60 / def.rpm : rand(def.pause[0], def.pause[1]);
@@ -560,7 +560,7 @@ export class Enemy {
     if (this.coverPhase === 'hide') {
       this.crouchT = this.cover.low ? 1 : 0.2;
       this.setMove(this.cover.pos, def.run);
-      if (this.ammo < def.mag * 0.4 && this.reloading <= 0) { this.reloading = def.reloadT; this.say('reload'); }
+      if (this.ammo < def.mag * 0.4 && this.reloading <= 0) { this.reloading = def.reloadT; }
       // fogo às cegas quando preso
       if (pinned && Math.random() < 0.02) { this.wantShoot = true; }
       if (this.coverT <= 0 && !pinned && this.reloading <= 0) { this.coverPhase = 'peek'; this.coverT = rand(1.5, 3.0); }

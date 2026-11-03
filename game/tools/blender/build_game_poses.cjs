@@ -11,6 +11,7 @@ const weapons = {};
 for (const id of WEAPONS) {
   const st = d.stations[id];
   weapons[id] = { gun: st.gun, pose: Object.fromEntries(bones.map((b) => [b.name, st.bones[b.name].pose])) };
+  if (st.model) weapons[id].model = st.model;   // posição/giro/escala do modelo dentro da arma, como deixado no Blender
 }
 fs.writeFileSync(dst, JSON.stringify({ version: 1, bones, rest, weapons }));
 console.log('ok', dst, fs.statSync(dst).size, 'bytes', bones.length, 'ossos', WEAPONS.join(','));

@@ -12,7 +12,6 @@ const LINES = {
   flankL: { TROVÃO: ['Flanqueando pela esquerda!'], FAÍSCA: ['Tem um vindo pela esquerda!'] },
   flankR: { TROVÃO: ['Flanqueando pela direita!'], FAÍSCA: ['Pela direita, pela direita!'] },
   clear: { TROVÃO: ['Limpo.', 'Área limpa. Avança.', 'Limpo. Recarrega enquanto dá.'], FAÍSCA: ['Limpo!', 'Acho que acabou. Por enquanto.'] },
-  reload: { TROVÃO: ['Recarregando, cobre!'], FAÍSCA: ['Trocando pente!'] },
   kill: { TROVÃO: ['Abatido.', 'Um a menos.', 'Boa, Eco.'], FAÍSCA: ['Esse já era!', 'Bela!'] },
   enemyReload: { TROVÃO: ['Ele tá recarregando, avança!'], FAÍSCA: ['Tá recarregando! Agora!'] },
   turret: { TROVÃO: ['Metralhadora montada! Não fica na linha dela!'], FAÍSCA: ['Ninho de MG! Flanqueia ou explode!'] },
@@ -238,7 +237,7 @@ export class Allies {
     this.cd[kind] = now;
     this.say(Math.random() < 0.55 ? 'TROVÃO' : 'FAÍSCA', kind);
   }
-  onPlayerReload() { if (this.G.director.anyAware() && Math.random() < 0.15) this.callout('reload'); }
+  onPlayerReload() { /* sem fala de recarga */ }
   onEnemyKilled(e) { if (Math.random() < 0.12 && this.G.director.anyAware()) this.callout('kill'); }
   update(dt) {
     const G = this.G;

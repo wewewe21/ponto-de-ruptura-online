@@ -63,7 +63,6 @@ export class GameAudio {
     this.revSend = C.createGain(); this.revSend.gain.value = 0.35;
     for (const k in this.rev) this.revSend.connect(this.rev[k].cv);
     this._startAmbience();
-    this._startMusic();
     this.bank = new SampleBank(C);
     this.bank.init().then(() => this._onBank());
   }
@@ -189,6 +188,9 @@ export class GameAudio {
   }
   hit(kind) {
     if (!this.ctx) return;
+    // online: confirmações mais fortes (acerto, headshot, abate); se o sample faltar, cai nos sons da campanha
+    const strong = { confirm: ['hit_confirm', 0.6, 0.5, 'hit'], headshot: ['hit_headshot', 1.0, 1.0, 'head'], killshot: ['hit_killshot', 0.9, 0.9, 'kill'] }[kind];
+    if (strong) { if (this._s(strong[0], this._out(null, strong[1]), { jitter: 0.03, maxDur: strong[2] })) return; kind = strong[3]; }
     if (this._s(kind === 'head' ? 'hit_head' : kind === 'kill' ? 'hit_kill' : kind === 'armor' ? 'hit_armor' : 'hit_body', this._out(null, kind === 'body' || !kind ? 0.22 : 0.35), { jitter: 0.03, maxDur: 0.5 })) return;
     const o = this._out(null, 0.6), t = this.t;
     if (kind === 'head') { this._tone(o, t, 0.12, 'triangle', 2800, 2400, 0.25); this._noise(o, t, 0.03, 'highpass', 5000, 0, 0.3); }
@@ -465,7 +467,8 @@ export class GameAudio {
   }
   // modo: menu | stealth | tension | combat | boss | defense | extract | victory | death | off
   setMusic(mode, force = false) {
-    this.musicMode = mode;
+    this.musicMode = mode;   // o jogo não tem mais música: só efeitos sonoros e falas
+    return;
     if (!this.ctx || !this._musicReady) return;
     const MAP = { menu: 'mus_menu', stealth: 'mus_stealth', tension: 'mus_tension', combat: 'mus_combat', boss: 'mus_boss', defense: 'mus_defense', extract: 'mus_extract', victory: 'mus_victory', death: 'mus_death', off: null };
     const name = MAP[mode];
@@ -497,6 +500,7 @@ export class GameAudio {
     });
   }
   stinger(kind = 'good') {
+    return;   // sem música
     if (!this.ctx) return;
     const t = this.t, o = this.musicBus;
     const chord = kind === 'good' ? [110, 138.6, 164.8, 220] : [98, 116.5, 146.8, 185];

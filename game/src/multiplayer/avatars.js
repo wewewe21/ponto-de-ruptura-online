@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-const SHOT_SOUND = { SD9: 'SD9', MK5: 'SD9', KR7: 'KR7', VK12: 'VK12', AX50: 'VK12', P19: 'P19' };
+const SHOT_SOUND = { SD9: 'SD9', MK5: 'SD9', KR7: 'KR7', VK12: 'VK12', AX50: 'VK12', P19: 'P19', DE50: 'VK12' };
 import { createSoldier } from '../actors/soldier.js';
 import { hasMeshSoldier } from '../actors/meshsoldier.js';
 import { BossAnimator } from '../actors/bossanim.js';
@@ -9,17 +9,17 @@ export const TEAM_COLORS = Object.freeze({ alpha: 0x51dcff, bravo: 0xffa455 });
 const angleDelta = (a, b) => Math.atan2(Math.sin(b - a), Math.cos(b - a));
 
 function nameLabel(player, robot) {
-  const canvas = document.createElement('canvas'); canvas.width = 512; canvas.height = 112;
+  // visual limpo: só o nome (com contorno) e um pontinho da cor da equipe; sem caixa
+  const canvas = document.createElement('canvas'); canvas.width = 256; canvas.height = 40;
   const ctx = canvas.getContext('2d'), color = player.team === 'alpha' ? '#51dcff' : '#ffa455';
-  ctx.fillStyle = 'rgba(3,10,17,.84)'; ctx.fillRect(5, 5, 502, 102);
-  ctx.fillStyle = color; ctx.fillRect(5, 5, 6, 102);
-  ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = 'bold 26px sans-serif';
-  ctx.fillText(`${String(player.team).toUpperCase()}${robot ? ' · COLOSSO' : ''}`, 256, 31);
-  ctx.font = 'bold 34px sans-serif'; ctx.fillStyle = '#fff';
-  ctx.fillText(String(player.name || 'Operador').slice(0, 24), 256, 76, 470);
+  const name = String(player.name || 'Operador').slice(0, 20) + (robot ? ' · MX-9' : '');
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = '600 21px sans-serif'; ctx.lineJoin = 'round';
+  ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(0,0,0,.75)'; ctx.strokeText(name, 128, 21, 232);
+  ctx.fillStyle = 'rgba(255,255,255,.92)'; ctx.fillText(name, 128, 21, 232);
+  ctx.fillStyle = color; ctx.beginPath(); ctx.arc(128, 36, 2.6, 0, Math.PI * 2); ctx.fill();
   const texture = new THREE.CanvasTexture(canvas); texture.colorSpace = THREE.SRGBColorSpace;
-  const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture, transparent: true, depthWrite: false, fog: false }));
-  sprite.scale.set(robot ? 3.7 : 2.7, robot ? 0.81 : 0.59, 1);
+  const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture, transparent: true, depthWrite: false, depthTest: true, fog: false }));
+  sprite.scale.set(robot ? 2.6 : 1.5, robot ? 0.4 : 0.235, 1); sprite.userData.base = [sprite.scale.x, sprite.scale.y];
   return sprite;
 }
 
@@ -145,9 +145,14 @@ export class RemoteAvatars {
       const speed = Math.hypot(avatar.pos.x - oldX, avatar.pos.z - oldZ) / Math.max(dt, 0.001);
       avatar.model.aimPitch = avatar.player.pitch || 0;
       avatar.model.setPose(avatar.pos, avatar.yaw); avatar.model.animate(dt, speed, avatar.player.crouch ? 1 : 0, this.time);
-      avatar.label.position.copy(avatar.pos).y += avatar.robot ? 5.65 : 2.2;
-      const labelSize = Math.max(1, Math.min(90, avatar.pos.distanceTo(this.G.camera.position)) / 18);
-      avatar.label.scale.set((avatar.robot ? 3.7 : 2.7) * labelSize, (avatar.robot ? 0.81 : 0.59) * labelSize, 1);
+      avatar.label.position.copy(avatar.pos).y += avatar.robot ? 5.5 : 2.12;
+      // só aparece de perto (some entre 18 e 28 m) e se não houver parede entre a câmera e a cabeça; não cresce com a distância
+      const cam = this.G.camera.position, lp = avatar.label.position, d = lp.distanceTo(cam), range = avatar.robot ? 55 : 28;
+      const clear = d < range && this.G.physics.los(cam.x, cam.y, cam.z, lp.x, lp.y - 0.2, lp.z);
+      const fade = clear ? THREE.MathUtils.clamp((range - d) / (range * 0.35), 0, 1) : 0;
+      const k = THREE.MathUtils.clamp(d / 9, 0.8, 1.6), base = avatar.label.userData.base;   // cresce só um pouco com a distância, para continuar legível de perto
+      avatar.label.scale.set(base[0] * k, base[1] * k, 1);
+      avatar.label.visible = !avatar.dead && fade > 0.02; avatar.label.material.opacity = fade * 0.9;
     }
     for (let i = this.corpses.length - 1; i >= 0; i--) {
       const corpse = this.corpses[i]; corpse.ttl -= dt;
@@ -166,6 +171,7 @@ export class RemoteAvatars {
         this.G.audio?.shot(event.robot ? 'RPL2' : (SHOT_SOUND[event.weapon] || 'KR7'), from, { vol: event.robot ? 0.9 : 0.6 });
       }
       this.G.fx?.flashLight(from, event.robot ? 0xffa060 : 0xffd5a0, event.robot ? 180 : 80, 0.04);
+      if (event.weapon !== 'KNIFE') { const dir = new THREE.Vector3().subVectors(to, from).normalize(); this.G.fx?.muzzleSmoke?.(from.clone().addScaledVector(dir, 0.9).add(new THREE.Vector3(0, -0.2, 0)), dir, event.weapon === 'AX50' ? 4 : event.weapon === 'VK12' ? 3 : 2, event.weapon === 'AX50' ? 1.5 : 1); }
     }
     const victim = this.avatars.get(event.hit);
     if (victim && !victim.robot) victim.model.hitFlash();
