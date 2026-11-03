@@ -167,6 +167,8 @@ export class GameAudio {
     if (MS[kind] && this._s(MS[kind], this._out(null, { ads: 0.25, swap: 0.35, shell: 0.25, beep: 0.4, interact: 0.45, laser: 0.4 }[kind] ?? 0.55), { jitter: 0.03 })) return;
     const o = this._out(null, 0.5), t = this.t;
     const M = {
+      lowAmmo: () => { this._tone(o, t, 0.07, 'triangle', 2300, 2100, 0.2, 0.002); this._tone(o, t + 0.01, 0.12, 'sine', 4600, 4400, 0.05, 0.002); },
+      lastRound: () => { this._tone(o, t, 0.1, 'triangle', 1500, 900, 0.3, 0.002); this._tone(o, t, 0.5, 'sine', 3300, 3100, 0.07, 0.003); this._noise(o, t, 0.05, 'bandpass', 2400, 2, 0.35); },
       magOut: () => { this._noise(o, t, 0.05, 'bandpass', 2200, 3, 0.4); this._tone(o, t, 0.03, 'triangle', 900, 700, 0.15); },
       magIn: () => { this._noise(o, t, 0.04, 'bandpass', 2800, 3, 0.5); this._tone(o, t + 0.02, 0.03, 'square', 1300, 1100, 0.18); },
       bolt: () => { this._noise(o, t, 0.06, 'bandpass', 3500, 2, 0.5); this._noise(o, t + 0.12, 0.05, 'bandpass', 2600, 2, 0.6); },

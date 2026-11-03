@@ -140,3 +140,9 @@ body.scoped #mp-voice-line,body.scoped #mp-toast,body.scoped .mp-weapon,body.sco
 .lo-bars {display:grid;grid-template-columns:54px 1fr;gap:2px 6px;align-items:center;margin-top:4px;font:500 10px var(--f-mono);color:#8fa3a2;letter-spacing:.1em;}
 .lo-bar {height:5px;background:rgba(255,255,255,.1);}.lo-bar i {display:block;height:100%;background:var(--amber);}
 #mp-loadout-sum {display:block;margin-top:6px;color:#aebfbd;font:500 13px var(--f-ui);}
+/* munição acabando (estilo COD): contador vermelho pulsando devagar + aviso pequeno */
+#w-mag.low {animation:lowpulse 1.1s ease-in-out infinite;}
+#w-reload.lowwarn {color:var(--red);font-size:11px;letter-spacing:.18em;animation:lowpulse 1.1s ease-in-out infinite !important;}
+#mp-ammo.low {color:#ff4a3a;animation:lowpulse 1.1s ease-in-out infinite;}
+#mp-reload-label.low {color:#ff4a3a;font-size:10px;letter-spacing:.16em;animation:lowpulse 1.1s ease-in-out infinite;}
+@keyframes lowpulse {0%,100% {opacity:1;}50% {opacity:.55;}}

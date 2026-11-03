@@ -3,6 +3,7 @@ import { stepBody } from '../../shared/movement.js';
 import { applyWorldFlags } from '../world/level.js';
 import { RemoteAvatars } from './avatars.js';
 import { RobotView } from './robot-view.js';
+import { VoiceChat } from './voice-chat.js';
 import { WEAPONS } from '../actors/weapons.js';
 import { codeLabel } from '../core/keybinds.js';
 // opções de loadout (o servidor valida a mesma lista em shared/rules.json): [id, descrição]
@@ -27,7 +28,7 @@ const escapeText = (s) => String(s).replace(/[&<>"']/g, (c) => ({'&':'&amp;','<'
 
 export class Multiplayer {
   constructor(G) {
-    this.G = G; this.active = false; this.connected = false; this.pending = []; this.seq = 0; this.acc = 0;
+    this.G = G; this.voiceChat = new VoiceChat(this); this.active = false; this.connected = false; this.pending = []; this.seq = 0; this.acc = 0;
     this.players = []; this.offset = 0; this.feed = []; this.ping = 0; this.intentionalClose = true;
     this.renderPos = new THREE.Vector3(); this.robotView = null; this.weatherKey = null;
     this.loadout = readLoadout(); this.lo = null; this.weapon = this.loadout.primary; this.weaponAt = 0;
@@ -48,7 +49,7 @@ export class Multiplayer {
     $('mp-loadout').onclick = () => this.openLoadout('match');
     $('lo-close').onclick = () => { $('loadout').hidden = true; };
     this.updateLoadoutSummary();
-    addEventListener('beforeunload', () => { this.intentionalClose = true; this.socket?.close(); });
+    addEventListener('beforeunload', () => { this.voiceChat.close(); this.intentionalClose = true; this.socket?.close(); });
     document.addEventListener('visibilitychange', () => {
       if (document.hidden && this.connected) this.socket.send(JSON.stringify(this.command(false)));
     });
@@ -131,6 +132,7 @@ export class Multiplayer {
         $('mp-connection').textContent = 'CONECTADO'; $('mp-connection').dataset.state = 'online';
       } else if (data.t === 'state') this.snapshot(data);
       else if (data.t === 'event') this.event(data.event);
+      else if (data.t === 'voice') this.voiceChat.signal(data);
       else if (data.t === 'error') {
         const message = data.message || 'A conexão com a sala foi recusada.';
         if (!this.active) { this.intentionalClose = true; this.joining = false; this.notice(message, 'error'); socket.close(); }
@@ -141,7 +143,7 @@ export class Multiplayer {
     socket.onclose = () => {
       clearTimeout(timeout);
       if (socket !== this.socket) return;
-      this.connected = false;
+      this.connected = false; this.voiceChat?.close();
       if (this.intentionalClose) return;
       $('mp-connection').textContent = 'RECONECTANDO…'; $('mp-connection').dataset.state = 'offline';
       if (++this.retries > 7) { if (this.active) this.leave(); this.joining = false; this.notice('Não foi possível reconectar. Escolha a sala novamente.', 'error'); return; }
@@ -235,6 +237,7 @@ export class Multiplayer {
     if (state.serverTime) this.offset = state.serverTime - Date.now();
     const self = state.players.find((p) => p.id === this.id); if (!self) return;
     const previous = this.self, previousRoom=this.room; this.self = self; this.players = state.players; this.room = state.room;
+    this.voiceChat?.sync(state.players);
     this.updateVoice(previous,self,previousRoom,state.room);
     const key = `${state.room.round}:${state.room.weather}`;
     if (this.weatherKey !== key) { this.weatherKey = key; this.G.weather.setMatchWeather(state.room.weather); }
@@ -352,6 +355,11 @@ export class Multiplayer {
         else {
           this.G.fx.tracer(origin,end,e.robot?0xff9c3d:0xffcf88,450,e.robot?9:4);
           this.G.audio.shot(e.robot?'KR7':(def?def.sound:'SD9'));
+          if(!e.robot&&def&&!def.melee){   // aviso sonoro de munição acabando (estimativa: o snapshot ainda não contou este tiro)
+            const now=performance.now(),max=(this.rules.weapons[e.weapon]||{}).mag||def.mag;
+            this.ammoEst=((this.ammoEstAt&&now-this.ammoEstAt<450&&this.ammoEstW===e.weapon)?this.ammoEst:(this.self.ammo|0))-1;this.ammoEstAt=now;this.ammoEstW=e.weapon;
+            this.G.weapons.ammoCue(Math.max(0,this.ammoEst),max);
+          }
           if(e.robot)this.robotView?.kick();else this.G.vm.kick(e.weapon==='AX50'?3.2:e.weapon==='VK12'?1.8:1);
           if(e.robot)this.G.player.pitch=Math.min(1.4,this.G.player.pitch+0.0035);
           else {
@@ -380,8 +388,10 @@ export class Multiplayer {
     $('mp-room-title').textContent=r.name;
     $('mp-weather').textContent=this.rules.weather.find(w=>w.id===r.weather)?.name||r.weather;
     $('mp-hp').textContent=`${s.hp} / ${s.maxHp}`;$('mp-health-fill').style.width=`${100*s.hp/s.maxHp}%`;
-    const wdef=WEAPONS[this.weapon];$('mp-ammo').textContent=!s.robot&&wdef&&wdef.melee?'—':s.ammo;$('mp-weapon-label').textContent=s.robot?'COLOSSO MX-9 · CANHÃO PESADO':(wdef?wdef.name:'CARABINA SD-9');
-    $('mp-reload-label').textContent=!s.robot&&wdef&&wdef.melee?'[1] [2] [3] ARMAS':s.reloadUntil>now?'RECARREGANDO…':`[${codeLabel(this.G.input.physical('KeyR'))}] RECARREGAR`;
+    const wdef=WEAPONS[this.weapon],lowMag=!s.robot&&wdef&&!wdef.melee&&s.ammo>0&&s.ammo<=Math.ceil((this.rules.weapons[this.weapon]?.mag||wdef.mag)*0.25)&&!(s.reloadUntil>now);
+    $('mp-ammo').classList.toggle('low',lowMag);$('mp-reload-label').classList.toggle('low',lowMag||(!s.robot&&wdef&&!wdef.melee&&s.ammo===0));
+    $('mp-ammo').textContent=!s.robot&&wdef&&wdef.melee?'—':s.ammo;$('mp-weapon-label').textContent=s.robot?'COLOSSO MX-9 · CANHÃO PESADO':(wdef?wdef.name:'CARABINA SD-9');
+    $('mp-reload-label').textContent=!s.robot&&wdef&&wdef.melee?'[1] [2] [3] ARMAS':s.reloadUntil>now?'RECARREGANDO…':(lowMag?'MUNIÇÃO BAIXA':s.ammo===0?'SEM MUNIÇÃO · RECARREGUE':`[${codeLabel(this.G.input.physical('KeyR'))}] RECARREGAR`);
     $('mp-points').textContent=s.points;$('mp-streak-count').textContent=`${s.streak} / ${this.rules.robotStreak}`;
     $('mp-streak-fill').style.width=`${Math.min(100,s.streak/this.rules.robotStreak*100)}%`;
     $('mp-robot').hidden=!s.robotReady;$('mp-robot').disabled=!this.robotView;
@@ -421,7 +431,7 @@ export class Multiplayer {
   }
   leave() {
     this.G.audio?.stopSpeech?.();this.voiceUntil=0;this.voiceSerial=(this.voiceSerial||0)+1;
-    const G=this.G;this.intentionalClose=true;this.active=false;this.connected=false;this.joining=false;clearTimeout(this.reconnectTimer);this.socket?.close();this.socket=null;
+    const G=this.G;this.voiceChat?.close();this.intentionalClose=true;this.active=false;this.connected=false;this.joining=false;clearTimeout(this.reconnectTimer);this.socket?.close();this.socket=null;
     this.avatars?.dispose();this.avatars=null;this.pending=[];this.self=null;this.players=[];this.weatherKey=null;
     if(this.boundary){G.scene.remove(this.boundary);this.boundary.geometry.dispose();this.boundary.material.dispose();this.boundary=null;}
     for(const saved of this.allyVisibility||[]){saved.ally.model.root.visible=saved.root;if(saved.ally.model.gun)saved.ally.model.gun.visible=saved.gun;}

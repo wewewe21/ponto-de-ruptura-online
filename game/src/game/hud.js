@@ -161,8 +161,10 @@ export class HUD {
       $('w-res').textContent = A.reserve;
       $('w-mag').classList.toggle('low', A.mag <= Math.ceil(d.mag * 0.25));
     }
-    $('w-reload').classList.toggle('on', !!W.reload || (A.mag === 0 && A.reserve > 0 && !d.laser));
-    $('w-reload').textContent = W.reload ? 'RECARREGANDO' : A.reserve <= 0 && A.mag === 0 ? 'SEM MUNIÇÃO' : 'RECARREGUE [R]';
+    const low = !W.reload && !d.melee && !d.laser && d.mag > 0 && A.mag > 0 && A.mag <= Math.ceil(d.mag * 0.25);   // pente acabando: aviso pequeno e vermelho
+    $('w-reload').classList.toggle('on', !!W.reload || low || (A.mag === 0 && !d.melee && !d.laser && d.mag > 0));
+    $('w-reload').classList.toggle('lowwarn', low || (!W.reload && A.mag === 0 && !d.melee && !d.laser));
+    $('w-reload').textContent = W.reload ? 'RECARREGANDO' : A.reserve <= 0 && A.mag === 0 ? 'SEM MUNIÇÃO' : low ? (A.reserve > 0 ? 'MUNIÇÃO BAIXA · R' : 'MUNIÇÃO BAIXA') : 'RECARREGUE [R]';
     $('g-frag').textContent = W.nades.frag;
     $('g-tac').textContent = W.nades[W.tactical];
     $('g-tac-name').textContent = W.tactical === 'flash' ? 'FLASH' : 'FUMAÇA';

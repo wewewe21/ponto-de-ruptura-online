@@ -32,7 +32,9 @@ export class BossAnimator {
     // rotação do nó pai do Hips (armadura) no espaço-modelo
     this.armQ = rest.Hips.worldQ.clone().multiply(rest.Hips.localQ.clone().invert());
     this.cur = { clip: null, t: 0, speed: 1, loop: true, done: false };
-    this.prev = null; this.fade = 0; this.fadeT = 0;
+    this.fromActive = false; this.fade = 0; this.fadeT = 0;   // transição: parte da pose que estava na tela (nunca dá salto)
+    this.poseQ = Array.from({ length: 30 }, () => new THREE.Quaternion()); this.fromQ = Array.from({ length: 30 }, () => new THREE.Quaternion());
+    this.poseRoot = null; this.fromRoot = null;
     this.srcQ = Array.from({ length: 30 }, () => new THREE.Quaternion());
     this.srcQ2 = Array.from({ length: 30 }, () => new THREE.Quaternion());
     this.G = Array.from({ length: 30 }, () => new THREE.Quaternion());
@@ -47,15 +49,29 @@ export class BossAnimator {
     const clip = this.clips[name];
     if (!clip) return;
     if (this.cur.clip === clip && !restart && this.cur.loop === loop) { this.cur.speed = speed; return; }
-    this.prev = this.cur.clip ? { ...this.cur } : null;
+    // congela a pose JÁ MISTURADA que está na tela como ponto de partida: trocar de clipe de novo no meio de uma transição continua suave
+    this.fromActive = !!(this.poseRoot && fade > 0);
+    if (this.fromActive) { for (let j = 0; j < 30; j++) this.fromQ[j].copy(this.poseQ[j]); this.fromRoot = this.poseRoot.slice(); }
     this.cur = { clip, t: 0, speed, loop, done: false };
     this.fade = fade; this.fadeT = 0;
   }
   get name() { return this.cur.clip ? this.cur.clip.name : null; }
   get done() { return this.cur.done; }
   get time01() { return this.cur.clip ? this.cur.t / this.cur.clip.dur : 0; }
+  _loopLen(c) { return Math.min(0.2, c.dur * 0.25); }
+  // clipes em laço: no fim, mistura com o começo (a volta do laço recomeça já nesse ponto), então não há estalo ao reiniciar
   _sample(st, out) {
-    const c = st.clip, f = Math.min(c.frames - 1.0001, Math.max(0, st.t * c.fps));
+    const c = st.clip; let r = this._sampleAt(c, st.t, out);
+    const L = st.loop ? this._loopLen(c) : 0;
+    if (L > 0 && st.t > c.dur - L) {
+      const t2 = st.t - (c.dur - L), w = t2 / L, e = w * w * (3 - 2 * w), r2 = this._sampleAt(c, t2, this.srcQ2);
+      for (let j = 0; j < 30; j++) out[j].slerp(this.srcQ2[j], e);
+      r = [r[0] + (r2[0] - r[0]) * e, r[1] + (r2[1] - r[1]) * e, r[2] + (r2[2] - r[2]) * e, r[3]];
+    }
+    return r;
+  }
+  _sampleAt(c, t, out) {
+    const f = Math.min(c.frames - 1.0001, Math.max(0, t * c.fps));
     const i = Math.floor(f), k = f - i, a = i * 120, b = Math.min(c.frames - 1, i + 1) * 120;
     for (let j = 0; j < 30; j++) {
       _qa.set(c.rot[a + j * 4], c.rot[a + j * 4 + 1], c.rot[a + j * 4 + 2], c.rot[a + j * 4 + 3]);
@@ -70,7 +86,7 @@ export class BossAnimator {
     const c = st.clip; if (!c) return;
     const t0 = st.t; st.t += dt * st.speed;
     let wrapped = false;
-    if (st.loop) { if (st.t >= c.dur) { st.t -= c.dur; wrapped = true; } }
+    if (st.loop) { if (st.t >= c.dur) { const period = c.dur - this._loopLen(c); st.t = this._loopLen(c) + (st.t - c.dur) % period; wrapped = true; } }
     else if (st.t >= c.dur - 1 / c.fps) { st.t = c.dur - 1 / c.fps; st.done = true; }
     if (notify && this.onEvent) this.onEvent(c.name, t0 / c.dur, st.t / c.dur, wrapped);
   }
@@ -79,14 +95,14 @@ export class BossAnimator {
     const { bones, rest } = this.rig;
     this._advance(this.cur, dt, true);
     let root = this._sample(this.cur, this.srcQ);
-    if (this.prev && this.fade > 0) {
-      this.fadeT += dt; this._advance(this.prev, dt, false);
-      const w = Math.min(1, this.fadeT / this.fade), e = w * w * (3 - 2 * w);
-      const r2 = this._sample(this.prev, this.srcQ2);
-      for (let j = 0; j < 30; j++) { _qa.copy(this.srcQ2[j]).slerp(this.srcQ[j], e); this.srcQ[j].copy(_qa); }
+    if (this.fromActive && this.fade > 0) {
+      this.fadeT += dt;
+      const w = Math.min(1, this.fadeT / this.fade), e = w * w * (3 - 2 * w), r2 = this.fromRoot;
+      for (let j = 0; j < 30; j++) { _qa.copy(this.fromQ[j]).slerp(this.srcQ[j], e); this.srcQ[j].copy(_qa); }
       root = [r2[0] + (root[0] - r2[0]) * e, r2[1] + (root[1] - r2[1]) * e, r2[2] + (root[2] - r2[2]) * e, root[3] && r2[3]];
-      if (w >= 1) { this.prev = null; this.fade = 0; }
+      if (w >= 1) { this.fromActive = false; this.fade = 0; }
     }
+    for (let j = 0; j < 30; j++) this.poseQ[j].copy(this.srcQ[j]); this.poseRoot = root.slice();   // pose final desta rodada (base da próxima transição)
     for (let j = 0; j < 30; j++) { if (SRC_PAR[j] < 0) this.G[j].copy(this.srcQ[j]); else this.G[j].copy(this.G[SRC_PAR[j]]).multiply(this.srcQ[j]); }
     for (const n of this.names) {
       const par = this.parentOf[n], own = this.extra[n];

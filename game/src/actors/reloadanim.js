@@ -34,7 +34,8 @@ export function reloadPose(id, t, empty, g, r) {
     // ferrolho do lado esquerdo: a mão esquerda segura a bola, levanta e puxa; troca o pente; fecha o ferrolho
     const k = tilt(0.1, 0.9);
     r.rz = 0.2 * k; r.rx = 0.07 * k; r.py = -0.02 * k;
-    r.lift = S(0.1, 0.22, t) * (1 - S(0.82, 0.92, t)); r.back = S(0.22, 0.34, t) * (1 - S(0.72, 0.8, t));
+    // Aguarda a mão chegar antes de mover o ferrolho e só o fecha depois que ela retorna.
+    r.lift = S(0.12, 0.22, t) * (1 - S(0.86, 0.94, t)); r.back = S(0.22, 0.32, t) * (1 - S(0.78, 0.86, t));
     const pivot = g.extra.boltPivot, ball = g.extra.boltBall;
     if (pivot && ball && g.leftHome) {
       const th = -r.lift * 1.2, c = Math.cos(th), s = Math.sin(th);
@@ -44,7 +45,7 @@ export function reloadPose(id, t, empty, g, r) {
     const magOff = g.magHand ? _a.copy(g.magHand(0)).sub(home) : _a.set(0, -0.05, 0.09);
     const mx = magOff.x, my = magOff.y, mz = magOff.z;
     keys(t, [[0.28, 0, 0, 0], [0.4, mx, my, mz], [0.46, mx, my, mz], [0.52, mx, my - 0.1, mz], [0.57, POUCH[0], POUCH[1], POUCH[2]], [0.6, POUCH[0], POUCH[1] + 0.02, POUCH[2]], [0.66, mx, my - 0.07, mz], [0.7, mx, my + 0.01, mz], [0.74, mx, my, mz]], r.L);
-    const wBall = S(0, 0.1, t) * (1 - S(0.28, 0.36, t)) + S(0.72, 0.78, t) * (1 - S(0.93, 1, t));
+    const wBall = S(0, 0.1, t) * (1 - S(0.28, 0.36, t)) + S(0.72, 0.78, t) * (1 - S(0.94, 1, t));
     const wMag = S(0.28, 0.4, t) * (1 - S(0.7, 0.76, t));
     const mag = r.L.clone();
     r.L.set(_b.x * wBall + mag.x * wMag, _b.y * wBall + mag.y * wMag, _b.z * wBall + mag.z * wMag);

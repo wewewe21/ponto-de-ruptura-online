@@ -94,7 +94,7 @@ async function createGameServer(options={}) {
     }catch(error){if(!res.headersSent)json(res,error.status||500,{error:error.status?error.message:'Erro interno'});else res.destroy();}
   });
   server.requestTimeout=10000;server.headersTimeout=15000;server.keepAliveTimeout=5000;
-  wss=new WebSocketServer({noServer:true,maxPayload:2048,perMessageDeflate:false});
+  wss=new WebSocketServer({noServer:true,maxPayload:32768,perMessageDeflate:false});
   server.on('upgrade',(req,socket,head)=>{
     let ok=false;
     try{const url=new URL(req.url,'http://localhost');ok=url.pathname==='/ws'&&wss.clients.size<rules.maxRooms*rules.maxPlayers+20;
@@ -112,7 +112,16 @@ async function createGameServer(options={}) {
       if(++ws.messages>65){ws.close(1008,'Limite de mensagens');return;}
       let value;
       try{if(isBinary)throw new Error();value=JSON.parse(data.toString());if(!value||typeof value!=='object'||Array.isArray(value))throw new Error();}
-      catch{send(ws,{t:'error',message:'Mensagem inválida'});if(++ws.badMessages>=3)ws.close(1008,'Mensagens inválidas');return;}
+      catch{if(data.length>2048){ws.close(1009,'Mensagem muito grande');return;}send(ws,{t:'error',message:'Mensagem inválida'});if(++ws.badMessages>=3)ws.close(1008,'Mensagens inválidas');return;}
+      if(value.t==='voice'&&ws.player){
+        const valid=typeof value.to==='string'&&value.to.length<=80&&['offer','answer','ice','stop'].includes(value.kind)&&['in','out'].includes(value.side)&&data.length<=16384;
+        if(!valid)return;
+        for(const peer of wss.clients)if(peer!==ws&&peer.room===ws.room&&peer.player?.id===value.to){
+          send(peer,{t:'voice',from:ws.player.id,kind:value.kind,side:value.side,description:value.description,candidate:value.candidate});break;
+        }
+        return;
+      }
+      if(data.length>2048){ws.close(1009,'Mensagem muito grande');return;}
       if(value.t==='join'&&!ws.player){
         if(typeof value.roomId!=='string'||typeof value.name!=='string'||(value.token!==undefined&&typeof value.token!=='string')){send(ws,{t:'error',message:'Entrada inválida'});return;}
         const room=rooms.get(value.roomId);

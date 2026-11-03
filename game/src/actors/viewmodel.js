@@ -178,6 +178,13 @@ const MUZZLE_FX = {
   AX50: { size: 0.42, dur: 0.07, light: 3.5 },
 };
 
+// sons da recarga nos momentos certos da animação: [t, som, só quando estava vazia]
+const RELOAD_CUES = {
+  AX50: [[0.17, 'bolt'], [0.31, 'bolt'], [0.5, 'magOut'], [0.66, 'magIn'], [0.82, 'bolt'], [0.9, 'bolt']],
+  pistol: [[0.34, 'magOut'], [0.68, 'magIn'], [0.8, 'bolt', true]],
+  rifle: [[0.3, 'magOut'], [0.66, 'magIn'], [0.82, 'bolt', true]],
+};
+
 export class ViewModel {
   constructor(T) {
     this.scene = new THREE.Scene();
@@ -342,6 +349,12 @@ export class ViewModel {
       } else {
         // coreografia de recarga com as duas mãos (reloadanim.js): inclinação da arma, mãos, pente, ferrolho e culatra
         const R = reloadPose(st.id, t, empty, g, this._rl || (this._rl = makeReloadState()));
+        if (this.onCue) {
+          const cues = RELOAD_CUES[st.id] || RELOAD_CUES[st.id === 'P19' || st.id === 'DE50' ? 'pistol' : 'rifle'];
+          if (t < (this._cueT ?? 0) - 0.2) this._cueT = -1;   // começou outra recarga
+          for (const [ct, snd, onlyEmpty] of cues) if (this._cueT < ct && t >= ct && (!onlyEmpty || empty)) this.onCue(snd);
+          this._cueT = t;
+        }
         rx += R.rx; rz += R.rz; py += R.py; pz += R.pz; px += R.px;
         if (g.setMagDrop) g.setMagDrop(R.magDrop);
         if (g.mag) g.mag.visible = R.magVisible;
@@ -350,6 +363,7 @@ export class ViewModel {
         handAnim = R;
       }
     }
+    if (!st.reload) this._cueT = -1;
     if (!st.reload && g.setMagDrop) g.setMagDrop(0);
     if (!st.reload && g.setBolt) g.setBolt(0, 0);
     if (!st.reload && g.mag) g.mag.visible = true;

@@ -172,8 +172,13 @@ export class Weapons {
     if (A.mag >= d.mag) return;
     const empty = A.mag === 0;
     this.reload = { t: 0, dur: empty ? d.reloadE : d.reloadT, empty, magOut: false, magIn: false, bolt: false };
-    this.G.audio.mech('magOut');
+    if (!this.G.vm?.onCue) this.G.audio.mech('magOut');
     this.G.allies && this.G.allies.onPlayerReload();
+  }
+  // aviso sonoro de munição acabando: "ting" nos últimos tiros do pente e um "clunk" metálico no último
+  ammoCue(left, max) {
+    if (!max || !this.G.audio) return;
+    if (left === 0) this.G.audio.mech('lastRound'); else if (left <= Math.ceil(max * 0.25)) this.G.audio.mech('lowAmmo');
   }
   _updateReload(dt) {
     const r = this.reload, d = this.def, A = this.A, G = this.G;
@@ -188,8 +193,7 @@ export class Weapons {
       return;
     }
     r.t += dt / r.dur;
-    if (r.t > 0.55 && !r.magIn) { r.magIn = true; G.audio.mech('magIn'); }
-    if (r.empty && r.t > 0.75 && !r.bolt) { r.bolt = true; G.audio.mech('bolt'); }
+    // os sons da recarga acompanham a animação das mãos (viewmodel.js)
     if (r.t >= 1) {
       const cap = d.mag + (r.empty || d.rocket ? 0 : 1);
       const need = Math.min(cap - A.mag, A.reserve);
@@ -203,7 +207,7 @@ export class Weapons {
   }
   fire() {
     const G = this.G, d = this.def, A = this.A, p = G.player, cam = G.camera;
-    A.mag--;
+    A.mag--; this.ammoCue(A.mag, d.mag);
     this.fireCd = 60 / d.rpm;
     this.lastShot = G.time;
     G.stats.shots++;

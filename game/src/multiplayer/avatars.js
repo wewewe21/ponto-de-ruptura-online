@@ -45,7 +45,15 @@ export class RobotAvatar {
   animate(dt, speed) {
     this.recoil *= Math.exp(-10 * dt); this.flashT = Math.max(0, this.flashT - dt);
     this.flash.material.opacity = this.flashT > 0 ? 1 : 0;
-    if (!this.dead) this.anim.play(speed > 3.1 ? 'run' : speed > 0.2 ? 'walk' : 'idle', { speed: speed > 0.2 ? THREE.MathUtils.clamp(speed / (speed > 3.1 ? 9.6 : 4.9), 0.45, 1.4) : 0.8, fade: 0.25 });
+    if (!this.dead) {
+      const sp = this._spd = (this._spd ?? speed) + (speed - (this._spd ?? speed)) * Math.min(1, dt * 6);
+      const g = this._gait || (this._gait = 'idle'); let gait = g;
+      if (g === 'idle') { if (sp > 0.5) gait = 'walk'; } else if (g === 'walk') { if (sp > 3.5) gait = 'run'; } else if (sp < 2.6) gait = 'walk';
+      this._lowT = sp < 0.22 ? (this._lowT || 0) + dt : 0; if (g !== 'idle' && this._lowT > 0.2) gait = 'idle';
+      this._gaitT = (this._gaitT || 0) + dt; if (gait !== g && this._gaitT < 0.3) gait = g; if (gait !== g) { this._gait = gait; this._gaitT = 0; }
+      const moving = this._gait !== 'idle';
+      this.anim.play(this._gait || 'idle', { speed: moving ? THREE.MathUtils.clamp(sp / (this._gait === 'run' ? 9.6 : 4.9), 0.45, 1.4) : 0.8, fade: 0.25 });
+    }
     this.rig.setHips(this.anim.update(dt)); this.root.updateMatrixWorld(true);
     if (!this.dead) {
       const yaw = this.root.rotation.y;
@@ -142,7 +150,10 @@ export class RemoteAvatars {
         avatar.pos.lerp(avatar.target, 1 - Math.exp(-16 * dt));
         avatar.yaw += angleDelta(avatar.yaw, avatar.player.yaw + Math.PI) * (1 - Math.exp(-20 * dt));
       }
-      const speed = Math.hypot(avatar.pos.x - oldX, avatar.pos.z - oldZ) / Math.max(dt, 0.001);
+      // velocidade estável: ignora teleportes e suaviza (os snapshots chegam 15×/s, a velocidade bruta oscila quadro a quadro)
+      const step = Math.hypot(avatar.pos.x - oldX, avatar.pos.z - oldZ), raw = step > 3 ? 0 : step / Math.max(dt, 0.001);
+      avatar.sp = (avatar.sp || 0) + (raw - (avatar.sp || 0)) * (1 - Math.exp(-dt / 0.14));
+      const speed = avatar.sp;
       avatar.model.aimPitch = avatar.player.pitch || 0;
       avatar.model.setPose(avatar.pos, avatar.yaw); avatar.model.animate(dt, speed, avatar.player.crouch ? 1 : 0, this.time);
       avatar.label.position.copy(avatar.pos).y += avatar.robot ? 5.5 : 2.12;

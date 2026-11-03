@@ -291,17 +291,30 @@ export class MeshSoldier {
     else if (this.hitT > 0) { this.crouch = lerp(this.crouch, crouchTarget, Math.min(1, dtt * 8)); }
     else {
       this.crouch = lerp(this.crouch, crouchTarget, Math.min(1, dtt * 8));
-      const c = this.crouch > 0.5, moving = speed > 0.35;
-      const want = c ? (moving ? 'crouch_walk' : 'crouch') : speed > 3.2 ? 'run' : moving ? 'walk' : 'idle';
+      // histerese: a marcha só muda quando a velocidade passa bem do limite (e fica um tempo), então não pisca entre andar/correr/parar
+      this.crouchOn = this.crouchOn ? this.crouch > 0.4 : this.crouch > 0.6;
+      const sp = this._spd = (this._spd ?? speed) + (speed - (this._spd ?? speed)) * Math.min(1, dtt * 6);   // velocidade suavizada (decide a marcha e a velocidade do clipe)
+      const g = this._gait || (this._gait = 'idle'), c = this.crouchOn;
+      let gait = g;
+      if (g === 'idle') { if (sp > 0.55) gait = 'walk'; }
+      else if (g === 'walk') { if (sp > 3.7) gait = 'run'; }
+      else if (g === 'run') { if (sp < 2.7) gait = 'walk'; }
+      this._lowT = sp < 0.25 ? (this._lowT || 0) + dtt : 0;   // parar só depois de ~0,2 s realmente parado
+      if (g !== 'idle' && this._lowT > 0.2) gait = 'idle';
+      this._gaitT = (this._gaitT || 0) + dtt;
+      if (gait !== g && this._gaitT < 0.3) gait = g;   // tempo mínimo entre trocas
+      if (gait !== g) { this._gait = gait; this._gaitT = 0; }
+      const moving = this._gait !== 'idle';
+      const want = c ? (moving ? 'crouch_walk' : 'crouch') : this._gait;
       const ref = want === 'run' ? 2.9 : want === 'crouch_walk' ? 1.1 : 1.48;
-      this.anim.play(want, { speed: moving ? clamp(speed / ref, 0.55, 1.5) : 1, fade: 0.25 });
+      this.anim.play(want, { speed: moving ? clamp(sp / ref, 0.55, 1.5) : 1, fade: 0.25 });
     }
     this.hips.position.y = this.dead ? 0.2 : this.hipsBase * (1 - this.crouch * 0.4);
     this.root.updateMatrixWorld(true);
     const off = this.anim.update(dtt);
     this.rig.setHips(off);
     this.root.updateMatrixWorld(true);
-    if (!this.dead && d < 40 && speed > 0.6 && this.crouch < 0.5 && A.audio) this._steps();
+    if (!this.dead && d < 40 && this._gait !== 'idle' && this.crouch < 0.5 && A.audio) this._steps();
     if (!this.dead && d < 75) this._gunAndArms();
     else if (this.dead) { this._dropGun(dtt); if (this.anim.done && this.deathT > 4) this._frozen = true; }
   }

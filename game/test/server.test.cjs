@@ -198,6 +198,19 @@ test('WebSocket payload/rate bounds, invalid path and heartbeat cleanup work',as
   assert.equal(app.wss.clients.has(silent),false);
   const bad=new WebSocket(wsurl.replace('/ws','/bad'));bad.on('error',()=>{});const [,response]=await once(bad,'unexpected-response');assert.equal(response.statusCode,403);bad.terminate();
 });
+test('voice signalling is delivered only to its intended player in the same room',async t=>{
+  const {app,wsurl}=await appHarness(t);const room=app.createRoom(),other=app.createRoom();
+  const a=await connect(wsurl),b=await connect(wsurl),c=await connect(wsurl);
+  t.after(()=>{a.terminate();b.terminate();c.terminate();});
+  async function join(ws,roomId,name){const p=message(ws,v=>v.t==='welcome');ws.send(JSON.stringify({t:'join',roomId,name}));return p;}
+  const one=await join(a,room.id,'one'),two=await join(b,room.id,'two'),three=await join(c,other.id,'three');
+  let leaked=false;c.on('message',raw=>{try{if(JSON.parse(raw).t==='voice')leaked=true;}catch{}});
+  const offer=message(b,v=>v.t==='voice');
+  a.send(JSON.stringify({t:'voice',to:two.id,from:'forged',kind:'offer',side:'in',description:{type:'offer',sdp:'v=0'}}));
+  assert.deepEqual(await offer,{t:'voice',from:one.id,kind:'offer',side:'in',description:{type:'offer',sdp:'v=0'}});
+  a.send(JSON.stringify({t:'voice',to:three.id,kind:'offer',side:'in',description:{type:'offer',sdp:'v=0'}}));
+  await new Promise(resolve=>setTimeout(resolve,100));assert.equal(leaked,false);
+});
 test('startup rejects an invalid manifest and room count is bounded',async t=>{
   await assert.rejects(createGameServer({world:{}}),/manifest/);
   const {app,url}=await appHarness(t,{rules:rules({maxRooms:2})});app.createRoom();assert.throws(()=>app.createRoom(),/Limite/);

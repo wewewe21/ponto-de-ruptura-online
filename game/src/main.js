@@ -117,6 +117,7 @@ async function boot() {
   G.post = new Post(renderer);
   G.fx = new FX(G);
   G.vm = new ViewModel(G.level.T);
+  G.vm.onCue = (sound) => G.audio.mech(sound);   // sons da recarga
   G.vm.scene.environment = G.scene.environment; G.vm.scene.environmentIntensity = 0.9;
   progress('Carregando armas', 78); await G.vm.useRifleModel(); await G.vm.useWeaponModels();
   progress('Carregando soldados', 82); try { await loadSoldierAssets(); } catch (e) { console.warn('Soldados 3D indisponíveis, usando o modelo simples.', e); }
@@ -321,6 +322,12 @@ function setupMenus() {
     if (sec === 'controls') G._controlsFrom = null;
   };
   $('settings-form').addEventListener('input', readSettings);
+  $('set-voice-chat').addEventListener('change', async (e) => {
+    const box=e.currentTarget, voice=G.multiplayer?.voiceChat;
+    if (!voice) { box.checked=false; return; }
+    if (box.checked) { box.disabled=true; const ok=await voice.enable(); box.checked=ok; box.disabled=false; }
+    else voice.disable();
+  });
   addEventListener('keydown', (e) => {
     if (G.state === 'dead' && G.deadT > 1.2 && (e.code === 'Space' || e.code === 'Enter')) respawn();
     if (G.state === 'paused' && e.code === 'Escape') { /* o navegador já soltou o ponteiro */ }
@@ -370,6 +377,8 @@ function fillSettings() {
   const s = G.settings;
   $('set-sens').value = s.sens; $('set-fov').value = s.fov; $('set-master').value = s.master;
   $('set-tts').checked = s.voices; $('set-diff').value = s.diff; $('set-scale').value = s.scale; $('set-shadows').checked = s.shadows; $('set-invert').checked = s.invertY; $('set-quality').value = s.quality || 'alta';
+  $('set-voice-chat').checked = !!G.multiplayer?.voiceChat?.stream;
+  G.multiplayer?.voiceChat?.status(G.multiplayer.connected ? ($('set-voice-chat').checked ? 'Microfone ligado para todos na sala.' : 'Microfone desligado. Você ainda pode ouvir a sala.') : 'Entre em uma sala para ativar o microfone.');
   updateSettingLabels();
 }
 function updateSettingLabels() {
