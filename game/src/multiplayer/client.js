@@ -150,6 +150,7 @@ export class Multiplayer {
     const url = new URL(location.href); url.searchParams.set('sala', this.roomId); history.replaceState(null, '', url);
     G.input.lock();
   }
+  muzzleWorld() { const G=this.G,m=G.vm.muzzleCam(new THREE.Vector3());return G.camera.localToWorld(m); }
   // acerto: mira amarela + marcador em X (vermelho e maior na eliminação)
   markHit(kill) {
     const c=$('mp-crosshair'),h=$('mp-hitmarker');
@@ -268,6 +269,7 @@ export class Multiplayer {
     this.renderPos.lerp(P.pos,1-Math.exp(-25*dt));if(this.renderPos.distanceTo(P.pos)>3)this.renderPos.copy(P.pos);
     G.camera.position.copy(this.renderPos);G.camera.position.y+=P.eyeH;
     G.camera.rotation.set(P.pitch,P.yaw,this.slideRoll||0,'YXZ');
+    G.weapons.recoil.update(dt,P);   // recuo da mira: sobe, segura e volta suave
     const W=G.weapons;W.adsT=THREE.MathUtils.damp(W.adsT,enabled&&I.mouse(2)&&(this.self.robot||!W.def.melee)?1:0,12,dt);
     const zoom=this.self.robot?1.25:(W.def.zoom||1.25);W.swap=Math.max(0,W.swap-dt/0.3);W.melee=Math.max(0,W.melee-dt/0.55);
     const targetFov=G.settings.fov/(W.def.scope&&!this.self.robot?1:(1+W.adsT*(zoom-1)))+(P.body.slideT>0?6:0);   // luneta: o zoom fica só na lenteG.camera.fov=THREE.MathUtils.damp(G.camera.fov,targetFov,12,dt);G.camera.updateProjectionMatrix();
@@ -300,8 +302,14 @@ export class Multiplayer {
         else {
           this.G.fx.tracer(origin,end,e.robot?0xff9c3d:0xffcf88,450,e.robot?9:4);
           this.G.audio.shot(e.robot?'KR7':(def?def.sound:'SD9'));
-          if(e.robot)this.robotView?.kick();else this.G.vm.kick(e.weapon==='AX50'?1.8:1);
-          this.G.player.pitch=Math.min(1.4,this.G.player.pitch+(e.robot?0.0035:e.weapon==='AX50'?0.012:0.006));
+          if(e.robot)this.robotView?.kick();else this.G.vm.kick(e.weapon==='AX50'?3.2:e.weapon==='VK12'?1.8:1);
+          if(e.robot)this.G.player.pitch=Math.min(1.4,this.G.player.pitch+0.0035);
+          else {
+            const r=(def&&def.recoil)||{up:1,side:0.2,rand:0.3},W=this.G.weapons,mult=(1-W.adsT*0.4)*(this.crouch?0.85:1),i=this.shotIdx=(Date.now()-(this.lastShotAt||0)>350?0:(this.shotIdx||0)+1);this.lastShotAt=Date.now();
+            const up=r.up*(i<6?1.15:0.85)*(1+(Math.random()-0.5)*r.rand),side=r.side*Math.sin(i*r.freq+r.phase)+(Math.random()-0.5)*r.rand*r.up*0.5;
+            W.recoil.kick(up*mult*Math.PI/180,side*mult*Math.PI/180,e.weapon);
+            this.G.fx.muzzleSmoke(this.muzzleWorld(),new THREE.Vector3().subVectors(end,origin).normalize(),e.weapon==='AX50'?5:3,e.weapon==='AX50'?1.6:1);
+          }
         }
         if(e.dealt??e.hit){this.markHit(!!e.head);this.G.audio.hit(e.head?'headshot':'confirm');}
       }

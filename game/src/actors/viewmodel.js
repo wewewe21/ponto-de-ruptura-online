@@ -165,6 +165,48 @@ function fallbackKnife() {
 
 const _dl = new THREE.Vector3();
 
+// efeitos de boca de cano por arma: size = tamanho do clarão (m), dur = duração (s), light = luz no cenário, smoke = nuvens de fumaça por tiro
+const MUZZLE_FX = {
+  default: { size: 0.2, dur: 0.05, light: 2.0, smoke: 1.2 },
+  SD9: { size: 0.1, dur: 0.04, light: 0.6, smoke: 1.4 },     // silenciada: clarão pequeno, mais fumaça
+  MK5: { size: 0.12, dur: 0.04, light: 0.7, smoke: 1.0 },
+  KR7: { size: 0.24, dur: 0.05, light: 2.0, smoke: 1.2 },
+  VK12: { size: 0.3, dur: 0.06, light: 2.6, smoke: 2.0 },
+  P19: { size: 0.18, dur: 0.045, light: 1.5, smoke: 1.0 },
+  AX50: { size: 0.42, dur: 0.07, light: 3.5, smoke: 4.5 },
+};
+
+// fumaça do cano no espaço da câmera da arma: nuvens que sobem devagar, crescem e somem
+class MuzzleSmoke {
+  constructor(scene, tex, n = 48) {
+    this.items = []; this.i = 0; this._p = new THREE.Vector3();
+    for (let k = 0; k < n; k++) {
+      const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, color: 0xcfd3d6, transparent: true, opacity: 0, depthWrite: false }));
+      s.visible = false; s.renderOrder = 4; scene.add(s); this.items.push({ s, life: 0, max: 1, v: new THREE.Vector3(), size: 0.05, grow: 0.2, a: 0.3 });
+    }
+  }
+  puff(muzzle, fx) {
+    muzzle.getWorldPosition(this._p);
+    let n = Math.floor(fx.smoke) + (Math.random() < fx.smoke % 1 ? 1 : 0);
+    while (n-- > 0) {
+      const it = this.items[this.i++ % this.items.length], big = fx.smoke > 3;
+      it.s.position.copy(this._p).add(this._p.clone().set((Math.random() - 0.5) * 0.02, (Math.random() - 0.5) * 0.02, -Math.random() * 0.04));
+      it.v.set((Math.random() - 0.5) * 0.08, 0.05 + Math.random() * 0.12, -(0.1 + Math.random() * (big ? 0.5 : 0.25)));
+      it.max = it.life = (big ? 1.4 : 0.9) + Math.random() * 0.8; it.size = 0.05 + Math.random() * 0.04; it.grow = (big ? 0.28 : 0.16) + Math.random() * 0.1; it.a = big ? 0.42 : 0.28;
+      it.s.scale.setScalar(it.size); it.s.material.rotation = Math.random() * 6; it.s.visible = true;
+    }
+  }
+  update(dt) {
+    for (const it of this.items) {
+      if (it.life <= 0) continue;
+      it.life -= dt; if (it.life <= 0) { it.s.visible = false; continue; }
+      const t = it.life / it.max; it.v.multiplyScalar(Math.max(0, 1 - 1.6 * dt));
+      it.s.position.addScaledVector(it.v, dt); it.size += it.grow * dt; it.grow *= Math.max(0, 1 - 1.2 * dt);
+      it.s.scale.setScalar(it.size); it.s.material.opacity = Math.max(0, it.a * Math.min(1, t * 2.2) * Math.min(1, (1 - t) * 10));
+    }
+  }
+}
+
 export class ViewModel {
   constructor(T) {
     this.scene = new THREE.Scene();
@@ -173,6 +215,7 @@ export class ViewModel {
     this.dir = new THREE.DirectionalLight(0xc8d4ff, 0.5); this.dir.position.set(0.5, 1, 0.3);
     this.flashL = new THREE.PointLight(0xffb060, 0, 3, 2); this.flashL.position.set(0.1, -0.05, -0.8);
     this.scene.add(this.hemi, this.dir, this.flashL);
+    this.smoke = new MuzzleSmoke(this.scene, T.smoke || T.soft);
     this.rig = new THREE.Group();
     this.scene.add(this.rig);
     this.guns = {};
@@ -210,8 +253,10 @@ export class ViewModel {
     if (this.currentId === id) this.current = gm;
   }
   _flash(gm) {
-    const fl = new THREE.Sprite(new THREE.SpriteMaterial({ map: this.T.flash, color: 0xffd090, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true }));
-    fl.scale.setScalar(0.22); fl.visible = false; gm.muzzle.add(fl); gm.flash = fl;
+    const mk = (color) => new THREE.Sprite(new THREE.SpriteMaterial({ map: this.T.flash, color, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true }));
+    const fl = mk(0xff9a3c), core = mk(0xffe6b0); fl.material.opacity = 0.85; core.material.opacity = 0.7;   // estrela alaranjada + núcleo quase branco
+    fl.scale.setScalar(0.22); core.scale.setScalar(0.1); fl.visible = core.visible = false;
+    gm.muzzle.add(fl, core); gm.flash = fl; gm.flashCore = core;
   }
   // Troca os fuzis procedurais pelo modelo GLB (se falhar, mantém os procedurais).
   async useRifleModel() {
@@ -250,12 +295,19 @@ export class ViewModel {
   kick(power = 1) {
     this.s.kickZ += 0.045 * power; this.s.kickR += 0.06 * power; this.s.kickY += (Math.random() - 0.5) * 0.02 * power;
     const g = this.current;
-    if (g && g.flash) { g.flash.visible = true; g.flash.material.rotation = Math.random() * 6; g.flash.scale.setScalar((0.16 + Math.random() * 0.12) * (this.currentId === 'SD9' || this.currentId === 'MK5' ? 0.4 : 1)); this.flashT = 0.04; }
-    this.flashL.intensity = this.currentId === 'SD9' || this.currentId === 'MK5' ? 0.6 : 3;
+    const fx = MUZZLE_FX[this.currentId] || MUZZLE_FX.default;
+    if (g && g.flash) {
+      g.flash.visible = true; g.flash.material.rotation = Math.random() * 6; g.flash.scale.setScalar(fx.size * (0.8 + Math.random() * 0.4));
+      if (g.flashCore) { g.flashCore.visible = true; g.flashCore.material.rotation = Math.random() * 6; g.flashCore.scale.setScalar(fx.size * 0.45 * (0.8 + Math.random() * 0.4)); }
+      this.flashT = fx.dur;
+    }
+    this.flashL.intensity = fx.light;
+    if (g && g.muzzle && fx.smoke > 0) this.smoke.puff(g.muzzle, fx);
   }
   aspect(a) { this.camera.aspect = a; this.camera.updateProjectionMatrix(); }
   // st: estado vindo do controlador de armas
   update(dt, st) {
+    this.smoke.update(dt);
     const S = this.s;
     let g = this.current;
     if (!g) return;
@@ -263,7 +315,7 @@ export class ViewModel {
     const quick = st.melee > 0 && st.id !== 'KNIFE' && this.guns.KNIFE;
     if (quick) { g = this.guns.KNIFE; for (const k in this.guns) this.guns[k].group.visible = false; g.group.visible = true; }
     else if (g !== this.current || !g.group.visible) { for (const k in this.guns) this.guns[k].group.visible = this.guns[k] === g; }
-    if (this.flashT > 0) { this.flashT -= dt; if (this.flashT <= 0) { if (this.current.flash) this.current.flash.visible = false; this.flashL.intensity = 0; } }
+    if (this.flashT > 0) { this.flashT -= dt; if (this.flashT <= 0) { if (this.current.flash) this.current.flash.visible = false; if (this.current.flashCore) this.current.flashCore.visible = false; this.flashL.intensity = 0; } }
     S.kickZ = damp(S.kickZ, 0, 14, dt); S.kickR = damp(S.kickR, 0, 12, dt); S.kickY = damp(S.kickY, 0, 10, dt);
     S.swayX = damp(S.swayX, clamp(-st.mouseDX * 0.0006, -0.04, 0.04), 8, dt);
     S.swayY = damp(S.swayY, clamp(st.mouseDY * 0.0006, -0.04, 0.04), 8, dt);
