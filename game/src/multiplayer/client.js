@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { stepBody } from '../../shared/movement.js';
+import { SprintTap } from '../../shared/tactical.js';
 import { applyWorldFlags } from '../world/level.js';
 import { RemoteAvatars } from './avatars.js';
 import { RobotView } from './robot-view.js';
@@ -33,6 +34,7 @@ export class Multiplayer {
     this.renderPos = new THREE.Vector3(); this.robotView = null; this.weatherKey = null;
     this.loadout = readLoadout(); this.lo = null; this.weapon = this.loadout.primary; this.weaponAt = 0;
     this.lastFire = 0; this.crouch = false; this.jumpQueued = false; this.reloadQueued = false; this.robotQueued = false;
+    this.tacticalTap = new SprintTap(); this.tacticalQueued = false;
     this.refreshController = null; this.refreshTimer = null;
     $('btn-online').onclick = () => this.openLobby();
     $('mp-back').onclick = () => this.closeLobby();
@@ -153,6 +155,7 @@ export class Multiplayer {
   }
   enter() {
     const G = this.G; this.active = true; clearInterval(this.refreshTimer); this.refreshController?.abort();
+    this.tacticalTap.reset(); this.tacticalQueued=false;
     G.mission.timers = []; G.dialog.clear(); G.director.clearAll(); G.boss?.reset();
     this.allyVisibility = G.allies.list.map((ally) => ({ally,root:ally.model.root.visible,gun:ally.model.gun?.visible}));
     for (const ally of G.allies.list) { ally.model.root.visible = false; if (ally.model.gun) ally.model.gun.visible = false; }
@@ -246,7 +249,7 @@ export class Multiplayer {
     this.pending = teleport || self.dead || state.room.phase === 'intermission' ? [] : this.pending.filter((x) => x.seq > self.seq);
     const body = this.G.player.body;
     Object.assign(body,{x:self.x,y:self.y,z:self.z,vy:self.vy||0,onGround:self.onGround, r:self.robot?this.rules.robot.radius:this.rules.human.radius,h:self.robot?this.rules.robot.height:(self.crouch?1.05:this.rules.human.height),
-      crouched:!!self.crouch,slideT:self.slideT||0,sdx:self.sdx||0,sdz:self.sdz||0,sprinting:!!self.sprinting});
+      crouched:!!self.crouch,slideT:self.slideT||0,sdx:self.sdx||0,sdz:self.sdz||0,sprinting:!!self.sprinting,tacticalT:self.tacticalT||0,tacticalCooldown:self.tacticalCooldown||0});
     for (const input of this.pending) stepBody(this.G.physics,body,input,1/this.rules.tickRate,self.robot,this.rules);
     if (self.loadout && (!this.lo || self.loadout.primary!==this.lo.primary || self.loadout.secondary!==this.lo.secondary)) { this.lo = { ...self.loadout }; if (!self.robot) this.applyWeapon(self.weapon || this.lo.primary, true); }
     if (teleport && !self.robot && !self.dead && self.weapon) this.applyWeapon(self.weapon, true);   // reaparece com a arma do loadout
@@ -283,20 +286,21 @@ export class Multiplayer {
   command(enabled) {
     const I=this.G.input,P=this.G.player;
     return {t:'input',seq:++this.seq,forward:enabled?Number(I.down('KeyW'))-Number(I.down('KeyS')):0,right:enabled?Number(I.down('KeyD'))-Number(I.down('KeyA')):0,yaw:P.yaw,pitch:P.pitch,view:this.snapAt?Math.round(this.snapAt-50):undefined,
-      sprint:!!(enabled&&I.down('ShiftLeft')),crouch:!!(enabled&&this.crouch),jump:!!(enabled&&this.jumpQueued),shoot:!!(enabled&&I.mouse(0)),reload:!!(enabled&&this.reloadQueued),weapon:this.weapon,activateRobot:!!(enabled&&this.robotQueued&&this.robotView)};
+      sprint:!!(enabled&&I.down('ShiftLeft')),tactical:!!(enabled&&this.tacticalQueued&&!this.self.robot),crouch:!!(enabled&&this.crouch),jump:!!(enabled&&this.jumpQueued),shoot:!!(enabled&&I.mouse(0)),reload:!!(enabled&&this.reloadQueued),weapon:this.weapon,activateRobot:!!(enabled&&this.robotQueued&&this.robotView)};
   }
   update(dt) {
     if (!this.self) return;
     const G=this.G,P=G.player,I=G.input,now=this.now(),cfg=this.self.robot?this.rules.robot:this.rules.human;
     G.time+=dt; this.menu=!I.locked;
     const enabled=this.connected&&I.locked&&!this.self.dead&&this.room.phase!=='intermission';
+    if(this.tacticalTap.update(dt,enabled&&I.pressed('ShiftLeft'))&&!this.self.robot)this.tacticalQueued=true;
     if (enabled) {
       const Wd=G.weapons.def,zm=this.self.robot?1.25:(Wd.zoom||1.25),adsK=G.weapons.adsT>0?THREE.MathUtils.lerp(1,1/zm*1.15,G.weapons.adsT):1;   // mesma sensibilidade do campo de visão normal, proporcional ao zoom
       const sens=0.0017*G.settings.sens*adsK;
       P.yaw-=I.mouseDX*sens; P.pitch=Math.max(-1.4,Math.min(1.4,P.pitch-I.mouseDY*sens*(G.settings.invertY?-1:1)));
       const sliding=P.body.slideT>0;
       // como na campanha: correr levanta (antes de agachar, para agachar correndo virar deslize); pular levanta e cancela o deslize
-      if (this.crouch&&!sliding&&I.down('ShiftLeft')&&I.down('KeyW')&&!this.self.robot) this.crouch=false;
+      if (this.crouch&&P.body.crouched&&!sliding&&I.down('ShiftLeft')&&I.down('KeyW')&&!this.self.robot) this.crouch=false;
       if (I.pressed('KeyC')||I.pressed('ControlLeft')) this.crouch=!this.crouch;
       if (this.crouch&&I.pressed('Space')) this.crouch=false;
       this.jumpQueued ||= I.pressed('Space'); this.reloadQueued ||= I.pressed('KeyR'); this.robotQueued ||= I.pressed('KeyB');
@@ -309,11 +313,12 @@ export class Multiplayer {
       this.acc-=fixed; const input=this.command(enabled);
       if(this.connected&&this.socket.readyState===WebSocket.OPEN&&this.room.phase!=='intermission'){ this.socket.send(JSON.stringify(input));if(!this.self.dead)this.pending.push(input);if(this.pending.length>90)this.pending.shift(); }
       if(!this.self.dead&&this.room.phase!=='intermission')stepBody(G.physics,P.body,input,fixed,this.self.robot,this.rules);
-      this.jumpQueued=false;this.reloadQueued=false;this.robotQueued=false;
+      this.jumpQueued=false;this.reloadQueued=false;this.robotQueued=false;this.tacticalQueued=false;
     }
     P.pos.set(P.body.x,P.body.y,P.body.z);
-    const speed=enabled&&((I.down('KeyW')||I.down('KeyS')||I.down('KeyA')||I.down('KeyD')))?(I.down('ShiftLeft')?cfg.sprint:cfg.speed):0;
-    P.hSpeed=speed;P.sprinting=enabled&&I.down('ShiftLeft')&&I.down('KeyW');P.sprintT=THREE.MathUtils.damp(P.sprintT,P.sprinting?1:0,10,dt);
+    const speed=enabled&&((I.down('KeyW')||I.down('KeyS')||I.down('KeyA')||I.down('KeyD')))?(P.body.tacticalT>0?cfg.tacticalSprint:I.down('ShiftLeft')?cfg.sprint:cfg.speed):0;
+    P.hSpeed=speed;P.sprinting=!!P.body.sprinting;P.sprintT=THREE.MathUtils.damp(P.sprintT,P.sprinting?1:0,10,dt);
+    P.tacticalPose=THREE.MathUtils.damp(P.tacticalPose||0,!this.self.robot&&P.body.tacticalT>0?1:0,9,dt);
     const slideNow=!this.self.robot&&P.body.slideT>0,crouchNow=!this.self.robot&&P.body.crouched;
     P.stance=crouchNow?'crouch':'stand';
     const eyeTarget=this.self.robot?cfg.eye:(crouchNow?0.98:cfg.eye)-(slideNow?0.25:0);   // a câmera desce suavemente ao agachar e mais ainda ao deslizar
@@ -323,7 +328,7 @@ export class Multiplayer {
     G.camera.position.copy(this.renderPos);G.camera.position.y+=P.eyeH;
     G.camera.rotation.set(P.pitch,P.yaw,this.slideRoll||0,'YXZ');
     G.weapons.recoil.update(dt,P);   // recuo da mira: sobe, segura e volta suave
-    const W=G.weapons;W.adsT=THREE.MathUtils.damp(W.adsT,enabled&&I.mouse(2)&&(this.self.robot||!W.def.melee)?1:0,12,dt);
+    const W=G.weapons;W.adsT=THREE.MathUtils.damp(W.adsT,enabled&&I.mouse(2)&&(this.self.robot||(!W.def.melee&&!P.sprinting))?1:0,12,dt);
     const zoom=this.self.robot?1.25:(W.def.zoom||1.25);W.swap=Math.max(0,W.swap-dt/0.3);W.melee=Math.max(0,W.melee-dt/0.55);
     const targetFov=G.settings.fov/(W.def.scope&&!this.self.robot?1:(1+W.adsT*(zoom-1)))+(P.body.slideT>0?6:0);   // luneta: o zoom fica só na lenteG.camera.fov=THREE.MathUtils.damp(G.camera.fov,targetFov,12,dt);G.camera.updateProjectionMatrix();
     const reloading=this.self.reloadUntil>now;
@@ -431,6 +436,7 @@ export class Multiplayer {
   }
   leave() {
     this.G.audio?.stopSpeech?.();this.voiceUntil=0;this.voiceSerial=(this.voiceSerial||0)+1;
+    this.tacticalTap?.reset();this.tacticalQueued=false;
     const G=this.G;this.voiceChat?.close();this.intentionalClose=true;this.active=false;this.connected=false;this.joining=false;clearTimeout(this.reconnectTimer);this.socket?.close();this.socket=null;
     this.avatars?.dispose();this.avatars=null;this.pending=[];this.self=null;this.players=[];this.weatherKey=null;
     if(this.boundary){G.scene.remove(this.boundary);this.boundary.geometry.dispose();this.boundary.material.dispose();this.boundary=null;}

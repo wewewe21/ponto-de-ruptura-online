@@ -29,7 +29,7 @@
     "secondary": ["P19", "DE50"],
     "default": {"primary": "SD9", "secondary": "P19"}
   },
-  "human": {"hp":100,"radius":0.32,"height":1.8,"eye":1.65,"speed":4.2,"sprint":6.8,"mag":30,"reloadSeconds":2.1,"rpm":600,"damage":26,"range":180},
+  "human": {"hp":100,"radius":0.32,"height":1.8,"eye":1.65,"speed":4.2,"sprint":6.8,"tacticalSprint":9,"mag":30,"reloadSeconds":2.1,"rpm":600,"damage":26,"range":180},
   "robot": {"hp":900,"radius":0.9,"height":4.8,"eye":4.1,"speed":2.8,"sprint":4.4,"mag":100,"reloadSeconds":3.5,"rpm":480,"damage":38,"range":220},
   "arena": {"minX":-250,"maxX":-145,"minZ":24,"maxZ":108},
   "weather": [

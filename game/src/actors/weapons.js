@@ -478,7 +478,7 @@ export class Weapons {
   vmState(input, time) {
     const p = this.G.player, d = this.def;
     return {
-      id: d.id, adsT: this.adsT, sprintT: p.sprintT, crouch: p.stance !== 'stand' ? 1 : 0, speed: p.hSpeed, onGround: p.body.onGround,
+      id: d.id, adsT: this.adsT, sprintT: p.sprintT, tacticalT: p.tacticalPose || 0, crouch: p.stance !== 'stand' ? 1 : 0, speed: p.hSpeed, onGround: p.body.onGround,
       mouseDX: input.mouseDX, mouseDY: input.mouseDY, lean: p.leanT, time,
       reload: this.reload ? { t: this.reload.t, empty: this.reload.empty, shellPhase: this.reload.shellPhase } : null,
       swap: this.swap, melee: this.melee, meleeSeq: this.meleeSeq, grenade: this.grenade, grenadeHold: !!this.cooking,

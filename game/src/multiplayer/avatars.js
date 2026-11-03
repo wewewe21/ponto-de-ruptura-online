@@ -155,7 +155,8 @@ export class RemoteAvatars {
       avatar.sp = (avatar.sp || 0) + (raw - (avatar.sp || 0)) * (1 - Math.exp(-dt / 0.14));
       const speed = avatar.sp;
       avatar.model.aimPitch = avatar.player.pitch || 0;
-      avatar.model.setPose(avatar.pos, avatar.yaw); avatar.model.animate(dt, speed, avatar.player.crouch ? 1 : 0, this.time);
+      avatar.model.setPose(avatar.pos, avatar.yaw); avatar.model.animate(dt, speed, avatar.player.crouch ? 1 : 0, this.time,
+        avatar.robot ? undefined : { sliding: avatar.player.slideT > 0, tactical: avatar.player.tacticalT > 0 });
       avatar.label.position.copy(avatar.pos).y += avatar.robot ? 5.5 : 2.12;
       // só aparece de perto (some entre 18 e 28 m) e se não houver parede entre a câmera e a cabeça; não cresce com a distância
       const cam = this.G.camera.position, lp = avatar.label.position, d = lp.distanceTo(cam), range = avatar.robot ? 55 : 28;

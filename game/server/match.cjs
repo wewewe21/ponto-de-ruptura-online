@@ -36,7 +36,7 @@ function validateInput(v) {
   const clean = { seq: v.seq, forward: v.forward, right: v.right, yaw: v.yaw % (Math.PI * 2), pitch: v.pitch };
   if (v.view !== undefined) { if (typeof v.view !== 'number' || !Number.isFinite(v.view)) return null; clean.view = v.view; }
   if (v.weapon !== undefined) { if (typeof v.weapon !== 'string' || v.weapon.length > 8) return null; clean.weapon = v.weapon; }
-  for (const k of ['jump','sprint','crouch','shoot','reload','activateRobot']) {
+  for (const k of ['jump','sprint','tactical','crouch','shoot','reload','activateRobot']) {
     if (v[k] !== undefined && typeof v[k] !== 'boolean') return null;
     clean[k] = v[k] === true;
   }
@@ -251,7 +251,7 @@ class Room {
       let input=p.input;
       if(!input||now-input.receivedAt>250)input={forward:0,right:0,yaw:p.yaw,pitch:p.pitch};
       p.yaw=input.yaw;p.pitch=input.pitch;
-      this.stepBody(this.physics,p.body,{...input,jump:fresh&&input.jump},dt,p.robot,this.rules);
+      this.stepBody(this.physics,p.body,{...input,jump:fresh&&input.jump,tactical:fresh&&input.tactical},dt,p.robot,this.rules);
       (p.hist||(p.hist=[])).push({t:now,x:p.body.x,y:p.body.y,z:p.body.z,h:p.body.h});while(p.hist.length&&now-p.hist[0].t>1000)p.hist.shift();
       if(p.body.y < -80){if(this.phase==='playing')this.kill(null,p,now);else this.spawn(p,now);continue;}
       if(fresh&&input.activateRobot)this.activate(p,now);
@@ -264,7 +264,7 @@ class Room {
   }
   snapshot() {
     return {t:'state',serverTime:this.now(),room:{id:this.id,name:this.name,phase:this.phase,round:this.round,endsAt:this.endsAt,nextRoundAt:this.nextRoundAt,weather:this.weather,scores:{...this.scores},scoreLimit:this.rules.scoreLimit},
-      players:[...this.players.values()].filter(p=>p.connected).map(p=>({id:p.id,name:p.name,team:p.team,x:p.body.x,y:p.body.y,z:p.body.z,vy:p.body.vy,onGround:p.body.onGround,yaw:p.yaw,pitch:p.pitch,hp:p.hp,maxHp:p.maxHp,robot:p.robot,dead:p.dead,respawnAt:p.respawnAt,protectedUntil:p.protectedUntil,kills:p.kills,deaths:p.deaths,points:p.points,streak:p.streak,streakPoints:p.streakPoints,robotReady:p.robotReady,ammo:p.ammo,weapon:p.weapon,reloadUntil:p.reloadUntil,seq:p.seq,loadout:p.loadout,loadoutNext:p.loadoutNext,crouch:!!p.body.crouched,slideT:p.body.slideT||0,sdx:p.body.sdx||0,sdz:p.body.sdz||0,sprinting:!!p.body.sprinting}))};
+      players:[...this.players.values()].filter(p=>p.connected).map(p=>({id:p.id,name:p.name,team:p.team,x:p.body.x,y:p.body.y,z:p.body.z,vy:p.body.vy,onGround:p.body.onGround,yaw:p.yaw,pitch:p.pitch,hp:p.hp,maxHp:p.maxHp,robot:p.robot,dead:p.dead,respawnAt:p.respawnAt,protectedUntil:p.protectedUntil,kills:p.kills,deaths:p.deaths,points:p.points,streak:p.streak,streakPoints:p.streakPoints,robotReady:p.robotReady,ammo:p.ammo,weapon:p.weapon,reloadUntil:p.reloadUntil,seq:p.seq,loadout:p.loadout,loadoutNext:p.loadoutNext,crouch:!!p.body.crouched,slideT:p.body.slideT||0,sdx:p.body.sdx||0,sdz:p.body.sdz||0,sprinting:!!p.body.sprinting,tacticalT:p.body.tacticalT||0,tacticalCooldown:p.body.tacticalCooldown||0}))};
   }
 }
 module.exports={Room,Match:Room,loadEngine,chooseWeather,validateWorld,validateInput,rayBox,rayCylinder,raySphere,HIT};

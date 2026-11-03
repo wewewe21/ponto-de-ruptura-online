@@ -2,6 +2,7 @@
 // água/afogamento, queda, vida com regeneração, visibilidade para a IA, câmera.
 import * as THREE from 'three';
 import { clamp, lerp, damp, rand } from '../core/utils.js';
+import { SprintTap, stepTactical } from '../../shared/tactical.js';
 
 const EYE = { stand: 1.65, crouch: 0.98, prone: 0.38 };
 const HEIGHT = { stand: 1.8, crouch: 1.2, prone: 0.6 };
@@ -25,6 +26,7 @@ export class Player {
     this.vel.set(0, 0, 0); this.hSpeed = 0;
     this.hp = 100; this.regenT = 0; this.dead = false; this.locked = false;
     this.sprinting = false; this.sprintT = 0; this.slide = 0; this.slideDir = new THREE.Vector3();
+    this.tacticalTap = new SprintTap(); this.tacticalPose = 0; b.tacticalT = 0; b.tacticalCooldown = 0;
     this.lean = 0; this.leanT = 0;
     this.mantle = null;
     this.stepDist = 0; this.muzzleT = 0; this.muzzleLight = 0;
@@ -97,11 +99,15 @@ export class Player {
     this.pitch = clamp(this.pitch, -1.5, 1.5);
 
     // ---------- postura ----------
+    const jumpPressed = can && input.pressed('Space');
+    let slideJump = false;
     if (can && (input.pressed('KeyC') || input.pressed('ControlLeft'))) {
       if (this.sprinting && b.onGround && this.slide <= 0) {
         this.slide = 0.8; this.slideDir.copy(this.forward); this.setStance('crouch'); G.audio.footstep('grass', 1.5);
-      } else this.setStance(this.stance === 'crouch' ? 'stand' : 'crouch');
+      } else if (this.slide > 0) { this.slide = 0; this.setStance('stand'); }
+      else this.setStance(this.stance === 'crouch' ? 'stand' : 'crouch');
     }
+    if (jumpPressed && this.slide > 0) { this.slide = 0; slideJump = this.setStance('stand'); }
     if (can && input.pressed('KeyZ')) this.setStance(this.stance === 'prone' ? 'crouch' : 'prone');
 
     // ---------- movimento ----------
@@ -117,12 +123,15 @@ export class Player {
     if (wantSprint && this.stance === 'crouch') this.setStance('stand');
     this.sprinting = wantSprint && this.stance === 'stand' && b.onGround && !W.cooking;
     this.sprintT = damp(this.sprintT, this.sprinting ? 1 : 0, 10, dt);
+    const tacticalRequest = this.tacticalTap.update(dt, can && input.pressed('ShiftLeft'));
+    this.tactical = stepTactical(b, tacticalRequest, this.sprinting && !W.cooking, dt);
+    this.tacticalPose = damp(this.tacticalPose, this.tactical ? 1 : 0, 9, dt);
     // água
     const wl = P.waterLevel(b.x, b.z);
     const depth = wl - b.y;
     this.inWater = depth > 0.05;
     const waterSlow = depth > 0 ? clamp(1 - depth * 0.45, 0.45, 1) : 1;
-    let speed = (this.sprinting ? 6.8 : SPEED[this.stance]) * (1 - W.adsT * 0.4) * (W.def.move || 1) * waterSlow;
+    let speed = (this.tactical ? 9 : this.sprinting ? 6.8 : SPEED[this.stance]) * (1 - W.adsT * 0.4) * (W.def.move || 1) * waterSlow;
     if (this.slide > 0) {
       this.slide -= dt;
       const s = 9 * Math.max(0, this.slide / 0.8);
@@ -138,8 +147,9 @@ export class Player {
       if (hs > lim) { this.vel.x *= lim / hs; this.vel.z *= lim / hs; }
     }
     // pulo / mantle
-    if (can && input.pressed('Space')) {
-      if (!this.tryMantle() && b.onGround && this.stance !== 'prone') {
+    if (jumpPressed) {
+      if (slideJump && b.onGround) { b.vy = 4.6; b.onGround = false; }
+      else if (!this.tryMantle() && b.onGround && this.stance !== 'prone') {
         if (this.stance === 'crouch') this.setStance('stand');
         else { b.vy = 4.6; b.onGround = false; }
       } else if (this.stance === 'prone') this.setStance('crouch');

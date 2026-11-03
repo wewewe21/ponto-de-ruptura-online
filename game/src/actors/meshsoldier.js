@@ -272,7 +272,7 @@ export class MeshSoldier {
     if (this.glint) this.glint.visible = false;
   }
   // speed: m/s, crouchTarget 0..1
-  animate(dt, speed, crouchTarget, time) {
+  animate(dt, speed, crouchTarget, time, motion = {}) {
     if (this.flashT > 0) { this.flashT -= dt; if (this.flashT <= 0) this.flash.visible = false; }
     if (this._hf > 0) { this._hf -= dt; if (this._hf <= 0) this.mat.emissive.setHex(0x000000); }
     if (this._frozen) return;   // cadáver já assentado: não recalcula mais
@@ -284,6 +284,8 @@ export class MeshSoldier {
     this._skip = (this._skip || 0) + 1;
     if (this._skip < step && !this.dead) return;
     this._skip = 0; const dtt = this._acc; this._acc = 0;
+    this.slidePose = lerp(this.slidePose || 0, !this.dead && motion.sliding ? 1 : 0, 1 - Math.exp(-dtt * 12));
+    this.tacticalPose = lerp(this.tacticalPose || 0, !this.dead && motion.tactical && !motion.sliding ? 1 : 0, 1 - Math.exp(-dtt * 10));
     this.mesh.visible = (d < 260 || !cam) && this.root.visible; this.gun.visible = this.mesh.visible && !this.hideGun;
     if (!this.mesh.visible) return;
     if (this.hitT > 0) this.hitT -= dtt;
@@ -305,7 +307,7 @@ export class MeshSoldier {
       if (gait !== g && this._gaitT < 0.3) gait = g;   // tempo mínimo entre trocas
       if (gait !== g) { this._gait = gait; this._gaitT = 0; }
       const moving = this._gait !== 'idle';
-      const want = c ? (moving ? 'crouch_walk' : 'crouch') : this._gait;
+      const want = motion.sliding ? 'idle' : c ? (moving ? 'crouch_walk' : 'crouch') : this._gait;
       const ref = want === 'run' ? 2.9 : want === 'crouch_walk' ? 1.1 : 1.48;
       this.anim.play(want, { speed: moving ? clamp(sp / ref, 0.55, 1.5) : 1, fade: 0.25 });
     }
@@ -313,6 +315,14 @@ export class MeshSoldier {
     this.root.updateMatrixWorld(true);
     const off = this.anim.update(dtt);
     this.rig.setHips(off);
+    if (!this.dead && this.slidePose > 0.001) {
+      // Posição baixa, uma perna à frente e a outra recolhida; mistura com o clipe na entrada e saída.
+      const k=this.slidePose, axis=new THREE.Vector3(1,0,0);
+      for(const [name,angle] of [['LeftUpLeg',-1.2],['LeftLeg',0.15],['RightUpLeg',-1.05],['RightLeg',1.65],['Spine',-0.2]]) {
+        if(this.bones[name])this.bones[name].quaternion.slerp(new THREE.Quaternion().setFromAxisAngle(axis,angle),k);
+      }
+      this.bones.Hips.position.y -= 0.38*k;
+    }
     this.root.updateMatrixWorld(true);
     if (!this.dead && d < 40 && this._gait !== 'idle' && this.crouch < 0.5 && A.audio) this._steps();
     if (!this.dead && d < 75) this._gunAndArms();
@@ -332,11 +342,11 @@ export class MeshSoldier {
     const yaw = this.root.rotation.y;
     const chest = b.Spine2.getWorldPosition(new THREE.Vector3());
     const Ry = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), yaw);
-    const Rp = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), -this.aimPitch);
+    const Rp = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), -this.aimPitch - (this.tacticalPose || 0) * 1.05);
     const R = Ry.clone().multiply(Rp);
     const pistol = CFG[this.style].gun === 'pistol';
     const c = this.crouch;
-    const mount = chest.clone().add(new THREE.Vector3(pistol ? -0.18 : -0.12, pistol ? -0.1 : -0.2 - c * 0.05, pistol ? 0.4 : 0.32).applyQuaternion(Ry));
+    const mount = chest.clone().add(new THREE.Vector3((pistol ? -0.18 : -0.12) - (this.tacticalPose || 0) * 0.12, pistol ? -0.1 : -0.2 - c * 0.05, pistol ? 0.4 : 0.32).applyQuaternion(Ry));
     g.position.copy(mount);
     g.quaternion.copy(R);
     g.updateMatrixWorld(true);

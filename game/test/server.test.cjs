@@ -26,7 +26,7 @@ test('balanced team joins, capacity, reconnect reservation and public flattened 
   assert.equal(c.name,'Charlie');assert.throws(()=>h.room.join('Fifth'),/cheia/);
   h.room.disconnect(c.id);assert.equal(h.room.join('changed',c.token).id,c.id);
   const state=h.room.snapshot();assert.equal(state.t,'state');assert.equal(state.room.phase,'playing');
-  const keys=['id','name','team','x','y','z','vy','onGround','yaw','pitch','hp','maxHp','robot','dead','respawnAt','protectedUntil','kills','deaths','points','streak','streakPoints','robotReady','ammo','weapon','reloadUntil','seq','loadout','loadoutNext','crouch','slideT','sdx','sdz','sprinting'].sort();
+  const keys=['id','name','team','x','y','z','vy','onGround','yaw','pitch','hp','maxHp','robot','dead','respawnAt','protectedUntil','kills','deaths','points','streak','streakPoints','robotReady','ammo','weapon','reloadUntil','seq','loadout','loadoutNext','crouch','slideT','sdx','sdz','sprinting','tacticalT','tacticalCooldown'].sort();
   assert.deepEqual(Object.keys(state.players[0]).sort(),keys);assert.equal(JSON.stringify(state).includes(h.a.token),false);
 });
 test('shared authoritative movement collides, obeys arena and acknowledges one queued command per tick',async()=>{
@@ -247,6 +247,15 @@ test('crouching halves speed and lowers the body, sprint+crouch starts a decayin
   const z1=b.z;run({crouch:true},30);assert(Math.abs((z1-b.z)-rules.human.speed*0.5)<0.2);   // agachado: metade da velocidade
   run({crouch:false},2);assert.equal(b.h,rules.human.height);assert.equal(b.crouched,false);
   run({sprint:true},10);run({sprint:true,crouch:true},2);assert(b.slideT>0);run({sprint:true,crouch:false},1);assert.equal(b.slideT,0);   // levantar cancela
+});
+test('tactical sprint is server timed, replicated to peers and cannot bypass cooldown',async()=>{
+  const h=await harness();const p=h.a;let seq=0;
+  const send=extra=>{assert(h.room.enqueue(p,command(seq++,{forward:1,sprint:true,...extra})));h.tick();};
+  send({tactical:true});assert(p.body.tacticalT>0);assert(p.body.tacticalCooldown>0);
+  const state=h.room.snapshot().players.find(x=>x.id===p.id);assert(state.tacticalT>0);assert(state.tacticalCooldown>0);
+  send({crouch:true});assert(p.body.slideT>0);assert.equal(p.body.tacticalT,0);
+  send({crouch:false,jump:true,tactical:true});assert.equal(p.body.slideT,0);assert.equal(p.body.tacticalT,0);assert.equal(p.body.onGround,false);
+  assert.equal(validateInput(command(seq,{tactical:'yes'})),null);
 });
 test('aiming at the head centre is a headshot (the body cylinder must not shadow the head sphere), standing and crouched',async()=>{
   const h=await harness();h.b.protectedUntil=0;const a=h.a.body,b=h.b.body,eye=baseRules.human.eye;

@@ -321,6 +321,10 @@ export class ViewModel {
     if (bp) { rx += bp.euler.x * (1 - ads); ry += bp.euler.y * (1 - ads); rz += bp.euler.z * (1 - ads); } else { ry += 0.1 * (1 - ads); rx += 0.015 * (1 - ads); }
     // corrida
     px += sp * -0.06; py += sp * -0.05; pz += sp * 0.04; ry += sp * 0.75; rx += sp * -0.3; rz += sp * 0.25;
+    // Corrida tática: arma junto ao lado direito, cano para cima; os braços acompanham a arma por IK.
+    const tac = (st.tacticalT || 0) * (1 - ads);
+    px += tac * 0.25; py -= tac * 0.02; pz += tac * 0.06;
+    rx += tac * 1.48; ry -= tac * 0.6; rz -= tac * 0.23;
     // sway / bob / coice / pouso
     px += bx + S.swayX * (1 - ads * 0.7); py += by + S.swayY * (1 - ads * 0.7) - S.land;
     pz += S.kickZ * (1 - ads * 0.5); rx += S.kickR * (1 - ads * 0.4); py += S.kickR * 0.02 * ads; px += S.kickY;
