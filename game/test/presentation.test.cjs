@@ -175,13 +175,14 @@ test('forearm filter rejects pure shoulders/upper arms/root and mixed body fragm
   arms.dispose(); geometry.dispose();
 });
 
-test('first-person uses original arm triangles and a stable aimed gun; resizes and recoils', () => {
+test('first-person shows only the stable aimed robot gun; resizes and recoils', () => {
   const source = robotFixture(), assets = robots.cloneRobotAssets(source);
   const view = new robots.RobotView(weatherGame(), assets);
-  assert.equal(view.rig.mesh.geometry.index.count, 3);
+  assert.equal(view.rig.model.parent, null, 'body and arms are not drawn in the view scene');
+  assert.equal(view.gun.parent, view.scene);
   assert.equal(source.rig.mesh.geometry.index, null);
   view.update(1 / 60, { adsT: 1, speed: 4.4, yaw: 0.1, pitch: 0.2 });
-  assert.ok(Math.abs(view.gun.position.x) < 0.05); assert.ok(view.gun.position.z < -1);
+  assert.ok(view.gun.position.x > 0.15 && view.gun.position.x < 0.3); assert.ok(view.gun.position.z < -1);
   const muzzle = view.gun.localToWorld(view.gun.userData.anchors.muzzle.clone());
   assert.ok(muzzle.z < view.gun.position.z, 'gun muzzle faces into the world');
   const before = view.gun.position.z; view.kick(); view.update(1 / 60, {});
@@ -201,6 +202,38 @@ test('remote robot gun follows the hand from the first death frame and the share
   avatar.animate(1 / 60, 0); assert.equal(avatar.anim.name, 'die');
   assert.equal(source.gun.parent, null); assert.equal(source.rig.bones.RightHand.rotation.x, 0);
   avatar.dispose(); assert.equal(G.scene.children.length, 0);
+});
+
+test('robot drops with the campaign landing pose and emits impact once for observers', () => {
+  const source=robotFixture(),G=weatherGame();let impacts=0,smoke=0;
+  source.clips.land={...source.clips.idle,name:'land'};
+  G.fx={explosion(){impacts++;},smokeCloud(){smoke++;},sparks(){},addEmitter(e){return e;}};
+  G.audio={thud(){},explosion(){}};G.player={pos:new THREE.Vector3(0,0,0),shake(){}};
+  const avatar=new avatars.RobotAvatar(G,source),base=new THREE.Vector3(2,0,3),drop={dropId:1000,impactMs:2800,durationMs:5000};
+  avatar.setPose(base,0);avatar.animate(.016,0,0,0,{...drop,dropElapsed:100});
+  assert(avatar.root.position.y>30);assert.equal(avatar.anim.name,'land');assert.equal(impacts,0);assert.equal(avatar.trails.length,2);
+  avatar.setPose(base,0);avatar.animate(.016,0,0,0,{...drop,dropElapsed:2800});
+  assert.equal(avatar.root.position.y,0);assert.equal(impacts,1);assert.equal(smoke,1);assert.equal(avatar.trails,null);
+  avatar.setPose(base,0);avatar.animate(.016,0,0,0,{...drop,dropElapsed:3200});assert.equal(impacts,1);
+  avatar.setPose(base,0);avatar.animate(.016,0,0,0,{...drop,dropElapsed:5001});assert.equal(avatar.anim.name,'idle');
+  avatar.dispose();assert.equal(G.scene.children.length,0);
+});
+
+test('only the pilot gets the temporary cinematic camera and it is cleaned up afterwards',async()=>{
+  const {Multiplayer}=await import('../src/multiplayer/client.js'),source=robotFixture(),G=weatherGame(),oldDocument=global.document;
+  source.clips.land={...source.clips.idle,name:'land'};G.fx={explosion(){},smokeCloud(){},sparks(){},addEmitter(e){return e;}};
+  G.audio={thud(){},explosion(){}};G.player={pos:new THREE.Vector3(),shake(){}};G.post={uniforms:{uFade:{value:0}}};
+  const classes=new Set(),nodes={'mp-hud':{classList:{add:x=>classes.add(x),remove:x=>classes.delete(x)}},'mp-robot-intro':{hidden:true}};
+  global.document={getElementById:id=>nodes[id]};
+  try{
+    const self={robot:true,dead:false,robotDropAt:100000,x:2,y:0,z:3,yaw:0};
+    const mp=Object.assign(Object.create(Multiplayer.prototype),{G,self,rules:{robot:{dropDurationMs:5000,dropImpactMs:2800}},robotView:{template:source}});
+    assert(mp.updatePilotDrop(101400,.016));assert(mp.pilotDrop);assert(classes.has('robot-intro'));assert.equal(nodes['mp-robot-intro'].hidden,false);
+    assert(mp.pilotDrop.avatar.root.position.y>0);assert.notDeepEqual(G.camera.position.toArray(),[0,0,0]);
+    assert(mp.updatePilotDrop(104900,.016));assert(G.post.uniforms.uFade.value>.5);
+    assert.equal(mp.updatePilotDrop(105001,.016),false);assert.equal(mp.pilotDrop,null);assert(!classes.has('robot-intro'));
+    mp.self={robot:false,dead:false,robotDropAt:100000};assert.equal(mp.updatePilotDrop(101400,.016),false);assert.equal(G.scene.children.length,0);
+  }finally{global.document=oldDocument;}
 });
 
 test('remote shot actor uses event.player while ignoring own authoritative echo', () => {

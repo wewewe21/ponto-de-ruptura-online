@@ -157,7 +157,7 @@ class Room {
     }
     const cfg=this.rules.human;
     p.body={x:chosen[0],y:chosen[1],z:chosen[2],vy:0,r:cfg.radius,h:cfg.height,step:0.5,onGround:true};
-    p.yaw=chosen[3];p.pitch=0;p.hp=cfg.hp;p.maxHp=cfg.hp;p.robot=false;p.dead=false;
+    p.yaw=chosen[3];p.pitch=0;p.hp=cfg.hp;p.maxHp=cfg.hp;p.robot=false;p.dead=false;p.robotDropAt=0;p.robotDropUntil=0;
     p.respawnAt=0;p.protectedUntil=now+this.rules.spawnProtectionSeconds*1000;
     p.loadout=p.loadoutNext||p.loadout||this.sanitizeLoadout(null);p.loadoutNext=null;   // o loadout escolhido vale a cada reaparecimento
     p.weapon=p.loadout.primary;p.ammoBy=this.freshAmmo();p.lastShotBy={};p.ammo=p.ammoBy[p.weapon];p.switchUntil=0;
@@ -179,14 +179,16 @@ class Room {
   activate(p,now) {
     if(this.phase!=='playing'||!p.robotReady||p.robot||p.dead)return false;
     const cfg=this.rules.robot,b=p.body;
-    if(this.physics.boxBlocked(b.x-cfg.radius,b.y+0.65,b.z-cfg.radius,b.x+cfg.radius,b.y+cfg.height,b.z+cfg.radius))return false;
+    // O trajeto de queda inteiro precisa estar livre; evita atravessar telhados ou torres.
+    if(!b.onGround||this.physics.boxBlocked(b.x-cfg.radius,b.y+0.65,b.z-cfg.radius,b.x+cfg.radius,b.y+cfg.height+(cfg.dropHeight||32),b.z+cfg.radius))return false;
     p.robotReady=false;p.streak=0;p.streakPoints=0;p.robot=true;p.hp=cfg.hp;p.maxHp=cfg.hp;
-    b.r=cfg.radius;b.h=cfg.height;b.step=0.6;p.ammo=cfg.mag;p.reloadUntil=0;p.lastShot=now;
-    p.protectedUntil=0;this.emit('robot',{player:p.id,active:true});return true;
+    b.r=cfg.radius;b.h=cfg.height;b.step=0.6;b.vy=0;p.ammo=cfg.mag;p.reloadUntil=0;p.lastShot=now;
+    p.robotDropAt=now;p.robotDropUntil=now+(cfg.dropDurationMs||5000);p.protectedUntil=p.robotDropUntil;
+    this.emit('robot',{player:p.id,active:true,dropAt:now});return true;
   }
   kill(killer,victim,now=this.now(),head=false) {
     if(this.phase!=='playing'||victim.dead || (killer && killer.team === victim.team))return;
-    const wasRobot=victim.robot;victim.hp=0;victim.dead=true;victim.deaths++;victim.respawnAt=now+this.rules.respawnSeconds*1000;
+    const wasRobot=victim.robot;victim.hp=0;victim.dead=true;victim.deaths++;victim.respawnAt=now+this.rules.respawnSeconds*1000;victim.robotDropAt=0;victim.robotDropUntil=0;
     victim.streak=0;victim.streakPoints=0;victim.robotReady=false;victim.queue=[];victim.input=null;victim.reloadUntil=0;
     if(killer&&killer.team!==victim.team&&killer.id!==victim.id) {
       killer.kills++;killer.points+=this.rules.killPoints;this.scores[killer.team]++;
@@ -206,7 +208,7 @@ class Room {
   }
   shoot(p,now) {
     const cfg=this.combat(p),melee=!!cfg.melee;
-    if((this.phase!=='playing'&&this.phase!=='waiting')||p.dead||p.reloadUntil||(!melee&&p.ammo<=0)||now<(p.switchUntil||0)||now-p.lastShot+0.001<60000/cfg.rpm)return false;
+    if((this.phase!=='playing'&&this.phase!=='waiting')||p.dead||now<(p.robotDropUntil||0)||p.reloadUntil||(!melee&&p.ammo<=0)||now<(p.switchUntil||0)||now-p.lastShot+0.001<60000/cfg.rpm)return false;
     p.lastShot=now;if(!melee)p.ammo--;p.protectedUntil=0;
     const eye=(p.robot?this.rules.robot:this.rules.human).eye;
     const origin=[p.body.x,p.body.y+(p.robot?eye:Math.min(eye,p.body.h-0.15)),p.body.z];
@@ -250,11 +252,13 @@ class Room {
       if(p.queue.length){p.input=p.queue.shift();p.seq=p.input.seq;fresh=true;}
       let input=p.input;
       if(!input||now-input.receivedAt>250)input={forward:0,right:0,yaw:p.yaw,pitch:p.pitch};
+      if(p.robot&&now<(p.robotDropUntil||0)){p.input=null;continue;}
       p.yaw=input.yaw;p.pitch=input.pitch;
       this.stepBody(this.physics,p.body,{...input,jump:fresh&&input.jump,tactical:fresh&&input.tactical},dt,p.robot,this.rules);
       (p.hist||(p.hist=[])).push({t:now,x:p.body.x,y:p.body.y,z:p.body.z,h:p.body.h});while(p.hist.length&&now-p.hist[0].t>1000)p.hist.shift();
       if(p.body.y < -80){if(this.phase==='playing')this.kill(null,p,now);else this.spawn(p,now);continue;}
-      if(fresh&&input.activateRobot)this.activate(p,now);
+      if(fresh&&input.activateRobot&&!this.activate(p,now)&&p.robotReady&&!p.robot)this.emit('robotBlocked',{player:p.id});
+      if(p.robot&&now<(p.robotDropUntil||0)){p.input=null;continue;}
       if(fresh&&input.weapon)this.switchWeapon(p,input.weapon,now);
       const cfg=this.combat(p);
       if(fresh&&input.reload&&!p.reloadUntil&&!cfg.melee&&p.ammo<cfg.mag)p.reloadUntil=now+cfg.reloadSeconds*1000;
@@ -264,7 +268,7 @@ class Room {
   }
   snapshot() {
     return {t:'state',serverTime:this.now(),room:{id:this.id,name:this.name,phase:this.phase,round:this.round,endsAt:this.endsAt,nextRoundAt:this.nextRoundAt,weather:this.weather,scores:{...this.scores},scoreLimit:this.rules.scoreLimit},
-      players:[...this.players.values()].filter(p=>p.connected).map(p=>({id:p.id,name:p.name,team:p.team,x:p.body.x,y:p.body.y,z:p.body.z,vy:p.body.vy,onGround:p.body.onGround,yaw:p.yaw,pitch:p.pitch,hp:p.hp,maxHp:p.maxHp,robot:p.robot,dead:p.dead,respawnAt:p.respawnAt,protectedUntil:p.protectedUntil,kills:p.kills,deaths:p.deaths,points:p.points,streak:p.streak,streakPoints:p.streakPoints,robotReady:p.robotReady,ammo:p.ammo,weapon:p.weapon,reloadUntil:p.reloadUntil,seq:p.seq,loadout:p.loadout,loadoutNext:p.loadoutNext,crouch:!!p.body.crouched,slideT:p.body.slideT||0,sdx:p.body.sdx||0,sdz:p.body.sdz||0,sprinting:!!p.body.sprinting,tacticalT:p.body.tacticalT||0,tacticalCooldown:p.body.tacticalCooldown||0}))};
+      players:[...this.players.values()].filter(p=>p.connected).map(p=>({id:p.id,name:p.name,team:p.team,x:p.body.x,y:p.body.y,z:p.body.z,vy:p.body.vy,onGround:p.body.onGround,yaw:p.yaw,pitch:p.pitch,hp:p.hp,maxHp:p.maxHp,robot:p.robot,robotDropAt:p.robotDropAt||0,dead:p.dead,respawnAt:p.respawnAt,protectedUntil:p.protectedUntil,kills:p.kills,deaths:p.deaths,points:p.points,streak:p.streak,streakPoints:p.streakPoints,robotReady:p.robotReady,ammo:p.ammo,weapon:p.weapon,reloadUntil:p.reloadUntil,seq:p.seq,loadout:p.loadout,loadoutNext:p.loadoutNext,crouch:!!p.body.crouched,slideT:p.body.slideT||0,sdx:p.body.sdx||0,sdz:p.body.sdz||0,sprinting:!!p.body.sprinting,tacticalT:p.body.tacticalT||0,tacticalCooldown:p.body.tacticalCooldown||0}))};
   }
 }
 module.exports={Room,Match:Room,loadEngine,chooseWeather,validateWorld,validateInput,rayBox,rayCylinder,raySphere,HIT};

@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { clone as cloneSkeleton } from 'three/addons/utils/SkeletonUtils.js';
 import { loadBossModel, loadBossGun } from '../actors/bossmodel.js';
-import { BossAnimator, loadBossClips } from '../actors/bossanim.js';
+import { loadBossClips } from '../actors/bossanim.js';
 import { solveArm, worldQ, HAND_R, HAND_L } from '../actors/ik.js';
 
 let assetsPromise;
@@ -107,12 +107,11 @@ export function disposeRobotAssets({ rig, gun }) {
   rig.model.removeFromParent(); gun.removeFromParent();
 }
 
-// enquadramento em primeira pessoa do Colosso (espaço da câmera): escala do corpo/arma e onde a arma fica na tela.
-// Os ombros do robô ficam bem afastados do olho; o corpo é ampliado e a arma segurada mais perto e mais central para que as duas mãos alcancem.
-export const ROBOT_LAYOUT = { body: 0.75, gun: 0.62, hip: [0.1, -0.74, -1.2], ads: [0, -0.52, -1.2], gripL: -0.25 };
+// Enquadramento do canhão em primeira pessoa, independente do corpo do robô.
+export const ROBOT_LAYOUT = { gun: 0.85, hip: [0.35, -0.55, -1.25], ads: [0.22, -0.64, -1.35] };
 
 export class RobotView {
-  static async create(G) { return new RobotView(G, cloneRobotAssets(await loadRobotAssets())); }
+  static async create(G) { const template=await loadRobotAssets();const view=new RobotView(G, cloneRobotAssets(template));view.template=template;return view; }
   constructor(G, assets) {
     this.G = G; this.assets = assets; this.rig = assets.rig; this.gun = assets.gun;
     this.scene = new THREE.Scene(); this.scene.environment = G.scene.environment;
@@ -120,14 +119,11 @@ export class RobotView {
     this.camera = new THREE.PerspectiveCamera(65, G.camera.aspect || 1, 0.12, 12);
     this.hemi = new THREE.HemisphereLight(0xcce6ff, 0x55534a, 3.2);
     this.dir = new THREE.DirectionalLight(0xffead2, 3.5); this.dir.position.set(-2, 4, 3);
-    this.scene.add(this.hemi, this.dir, this.rig.model, this.gun);
-    this.armGeometry = robotArmGeometry(this.rig.mesh); this.rig.mesh.geometry = this.armGeometry;
-    this.rig.mesh.castShadow = false;
-    this.rig.model.rotation.y = Math.PI;
+    // Primeira pessoa: só o canhão, sem a malha do corpo ou dos braços atravessando a câmera.
+    this.scene.add(this.hemi, this.dir, this.gun);
     // The view scene is camera-relative. The world eye itself stays in main's movement code.
     this.eye = G.rules?.robot?.eye ?? 4.1;
     this._layout();
-    this.anim = new BossAnimator(this.rig, assets.clips); this.anim.play('idle', { fade: 0 });
     this.time = 0; this.recoil = 0; this.flashT = 0; this.reloadT = 0; this.lastYaw = null; this.lastPitch = null;
     this.sway = new THREE.Vector2();
     this.flash = new THREE.Sprite(new THREE.SpriteMaterial({ map: G.level?.T?.flash || null, color: 0xffd1a0, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending }));
@@ -136,8 +132,7 @@ export class RobotView {
   }
   _layout() {
     const L = ROBOT_LAYOUT;
-    this.rig.model.scale.setScalar(L.body); this.rig.model.position.y = -this.eye * L.body;
-    this.gun.scale.setScalar(L.gun); this.gun.userData.anchors.gripL.z = L.gripL;
+    this.gun.scale.setScalar(L.gun);
   }
   kick() { this.recoil = Math.min(1.4, this.recoil + 0.85); this.flashT = 0.055; }
   resize(aspect) { this.camera.aspect = aspect; this.camera.updateProjectionMatrix(); }
@@ -151,21 +146,18 @@ export class RobotView {
     const look = this.lastPitch === null ? 0 : pitch - this.lastPitch;
     this.lastYaw = yaw; this.lastPitch = pitch;
     this.sway.lerp(new THREE.Vector2(THREE.MathUtils.clamp(turn * -0.4, -0.04, 0.04), THREE.MathUtils.clamp(look * -0.3, -0.03, 0.03)), 1 - Math.exp(-14 * dt));
-    this.anim.play(move > 0.12 ? 'walk' : 'idle', { speed: move > 0.12 ? 0.6 + move * 0.4 : 0.7, fade: 0.25 });
-    this.rig.setHips(this.anim.update(dt));
     const bob = Math.sin(this.time * 7) * 0.018 * move * (1 - ads * 0.75);
     this.reloadT = THREE.MathUtils.damp(this.reloadT, reloading ? 1 : 0, 9, dt);
     const reload = this.reloadT * (0.22 + Math.sin(this.time * 4) * 0.035);
     // First-person framing keeps the original heavy gun readable below the aim line.
     this.gun.position.set(THREE.MathUtils.lerp(L.hip[0], L.ads[0], ads) + this.sway.x, THREE.MathUtils.lerp(L.hip[1], L.ads[1], ads) + bob - reload + this.sway.y, THREE.MathUtils.lerp(L.hip[2], L.ads[2], ads) + this.recoil * 0.1);
     this.gun.rotation.set(this.recoil * -0.035 + reload * 0.5, Math.PI, reload * -0.6);
-    this.rig.model.updateMatrixWorld(true); poseRobotArms(this.rig, this.gun, Math.PI);
     // Shot flashes come from authoritative kick events; holding the trigger adds only servo vibration.
     if (shooting && !reloading) this.gun.position.y += Math.sin(this.time * 90) * 0.002;
     this.scene.updateMatrixWorld(true);
   }
   dispose() {
     this.flash.removeFromParent(); this.flash.material.dispose();
-    this.armGeometry.dispose(); disposeRobotAssets(this.assets); this.scene.clear();
+    disposeRobotAssets(this.assets); this.scene.clear();
   }
 }

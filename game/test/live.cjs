@@ -46,7 +46,7 @@ async function localCheck(){
     const p=room.players.get(a.id),q=room.players.get(b.id);assert.notEqual(p.team,q.team);await weaponCheck(a,b);
     let lane;
     for(let x=-240;x<=-155&&!lane;x+=5)for(let z=40;z<=96&&!lane;z+=5){
-      const clear=(x,z)=>!room.physics.boxBlocked(x-.95,.1,z-.95,x+.95,4.8,z+.95);
+      const clear=(x,z)=>!room.physics.boxBlocked(x-.95,.1,z-.95,x+.95,4.8+rules.robot.dropHeight,z+.95);
       if(clear(x,z)&&clear(x,z-6)&&!room.physics.raycast(x,1.65,z,0,0,-1,6,{}))lane={x,z};
     }
     assert.ok(lane,'real map has an open firing lane');
@@ -57,10 +57,12 @@ async function localCheck(){
     await until(()=>a.state.players.find(x=>x.id===a.id)?.robotReady,'robot reward snapshot');assert.equal(p.streakPoints,800);
     place();a.controls.activateRobot=true;await until(()=>p.robot,'robot activation');assert.equal(p.hp,900);assert.equal(p.robotReady,false);assert.equal(p.streak,0);
     await until(()=>b.state.players.find(x=>x.id===a.id)?.robot,'remote robot snapshot');
+    assert.equal(b.state.players.find(x=>x.id===a.id).robotDropAt,p.robotDropAt);
+    await until(()=>Date.now()>=p.robotDropUntil,'robot landing',rules.robot.dropDurationMs+2000);
     await eliminate();assert.equal(p.streak,0);assert.equal(p.robotReady,false);
     await until(()=>!q.dead,'attacker respawn');place();b.controls.pitch=Math.atan2(2.5-rules.human.eye,6);b.controls.shoot=true;
-    await until(()=>p.hp<900,'robot takes authoritative player damage');b.controls.shoot=false;room.kill(q,p);await until(()=>a.state.players.find(x=>x.id===a.id)?.dead,'destroyed robot snapshot');
-    await until(()=>!p.dead,'pilot respawn');assert.equal(p.robot,false);assert.equal(p.hp,100);assert.equal(p.streak,0);assert.equal(p.robotReady,false);
+    await until(()=>p.hp<900,'robot takes authoritative player damage');b.controls.shoot=false;room.kill(q,p);await until(()=>a.events.some(e=>e.type==='robot'&&e.destroyed&&e.player===a.id),'destroyed robot event');
+    await until(()=>!p.dead,'pilot respawn');await until(()=>a.state.players.find(x=>x.id===a.id)?.robot===false,'pilot snapshot');assert.equal(p.robot,false);assert.equal(p.hp,100);assert.equal(p.streak,0);assert.equal(p.robotReady,false);
     for(let i=0;i<rules.robotStreak;i++)await eliminate();assert.equal(p.robotReady,true,'pilot can earn again after destruction');
     const previous=room.round;room.endRound();await until(()=>room.round>previous,'next round');await until(()=>a.state.room.round===room.round&&b.state.room.round===room.round,'shared round snapshots');
     assert.equal(a.state.room.weather,b.state.room.weather);assert.equal(p.kills,0);assert.equal(p.streak,0);assert.equal(p.robot,false);

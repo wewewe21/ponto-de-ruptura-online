@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { stepBody } from '../../shared/movement.js';
 import { SprintTap } from '../../shared/tactical.js';
 import { applyWorldFlags } from '../world/level.js';
-import { RemoteAvatars } from './avatars.js';
+import { RemoteAvatars, RobotAvatar, robotDropHeight } from './avatars.js';
 import { RobotView } from './robot-view.js';
 import { VoiceChat } from './voice-chat.js';
 import { WEAPONS } from '../actors/weapons.js';
@@ -164,7 +164,7 @@ export class Multiplayer {
     G.state = 'multiplayer'; G.hud.show(false); G.weapons.reset(); this.lo = { ...this.loadout }; this.applyWeapon(this.lo.primary, true);
     for (const id of ['title','briefing','pause','death','victory','settings','controls','chapters','mp-lobby','fullmap']) $(id).hidden = true;
     $('mp-hud').hidden = false; this.menu = true;
-    this.avatars = new RemoteAvatars(G);
+    this.avatars = new RemoteAvatars(G,()=>this.now());
     this.makeBoundary();
     G.audio.init(); G.audio.tts=G.settings.voices; G.audio.setVolumes(); G.audio.setMusic('combat');
     this.voiceUntil=0;this.voicePriority=0;this.voiceSerial=0;
@@ -247,6 +247,7 @@ export class Multiplayer {
     const teleport = this.firstSnapshot || !previous || self.robot !== previous.robot || self.dead !== previous.dead || this.round !== state.room.round;
     this.snapAt = state.serverTime || this.snapAt; this.round = state.room.round; this.seq = Math.max(this.seq, self.seq);
     this.pending = teleport || self.dead || state.room.phase === 'intermission' ? [] : this.pending.filter((x) => x.seq > self.seq);
+    if(this.dropActive(self))this.pending=[];
     const body = this.G.player.body;
     Object.assign(body,{x:self.x,y:self.y,z:self.z,vy:self.vy||0,onGround:self.onGround, r:self.robot?this.rules.robot.radius:this.rules.human.radius,h:self.robot?this.rules.robot.height:(self.crouch?1.05:this.rules.human.height),
       crouched:!!self.crouch,slideT:self.slideT||0,sdx:self.sdx||0,sdz:self.sdz||0,sprinting:!!self.sprinting,tacticalT:self.tacticalT||0,tacticalCooldown:self.tacticalCooldown||0});
@@ -288,11 +289,47 @@ export class Multiplayer {
     return {t:'input',seq:++this.seq,forward:enabled?Number(I.down('KeyW'))-Number(I.down('KeyS')):0,right:enabled?Number(I.down('KeyD'))-Number(I.down('KeyA')):0,yaw:P.yaw,pitch:P.pitch,view:this.snapAt?Math.round(this.snapAt-50):undefined,
       sprint:!!(enabled&&I.down('ShiftLeft')),tactical:!!(enabled&&this.tacticalQueued&&!this.self.robot),crouch:!!(enabled&&this.crouch),jump:!!(enabled&&this.jumpQueued),shoot:!!(enabled&&I.mouse(0)),reload:!!(enabled&&this.reloadQueued),weapon:this.weapon,activateRobot:!!(enabled&&this.robotQueued&&this.robotView)};
   }
+  dropActive(self=this.self, now=this.now()) {
+    return !!(self?.robot&&!self.dead&&this.room?.phase!=='intermission'&&self.robotDropAt&&now<self.robotDropAt+(this.rules.robot.dropDurationMs||5000));
+  }
+  updatePilotDrop(now,dt) {
+    const G=this.G,self=this.self,active=this.dropActive(self,now);
+    if(active&&this.robotView?.template&&!this.pilotDrop){
+      this.pilotDrop={id:self.robotDropAt,avatar:new RobotAvatar(G,this.robotView.template)};
+      $('mp-hud').classList.add('robot-intro');$('mp-robot-intro').hidden=false;
+    }
+    if(!active||this.pilotDrop?.id!==self?.robotDropAt){
+      if(this.pilotDrop){this.pilotDrop.avatar.dispose();this.pilotDrop=null;this.pilotFadeUntil=now+350;}
+      $('mp-hud').classList.remove('robot-intro');$('mp-robot-intro').hidden=true;
+      return false;
+    }
+    if(!this.pilotDrop)return false;
+    const impact=this.rules.robot.dropImpactMs||2800,duration=this.rules.robot.dropDurationMs||5000;
+    const elapsed=Math.max(0,now-self.robotDropAt),ground=new THREE.Vector3(self.x,self.y,self.z),yaw=self.yaw+Math.PI;
+    const avatar=this.pilotDrop.avatar;avatar.setPose(ground,yaw);
+    avatar.animate(dt,0,0,0,{dropElapsed:elapsed,dropId:self.robotDropAt,impactMs:impact,durationMs:duration,dropHeight:this.rules.robot.dropHeight});
+    const forward=new THREE.Vector3(Math.sin(yaw),0,Math.cos(yaw)),side=new THREE.Vector3(forward.z,0,-forward.x);
+    const height=robotDropHeight(elapsed,impact,this.rules.robot.dropHeight||32),cam=G.camera;
+    const cameraPos=ground.clone().addScaledVector(forward,14).addScaledVector(side,5);cameraPos.y+=4+height*.35;
+    const target=ground.clone().add(new THREE.Vector3(0,height+2.8,0));
+    if(elapsed>impact){
+      const settle=THREE.MathUtils.smoothstep(elapsed,impact,impact+650);
+      const close=ground.clone().addScaledVector(forward,9).addScaledVector(side,3);close.y+=2.3;
+      cameraPos.lerp(close,settle);target.y=ground.y+2.9;
+      const enter=THREE.MathUtils.smoothstep(elapsed,impact+650,duration-250);
+      const cockpit=ground.clone().addScaledVector(forward,0.8);cockpit.y+=3.3;
+      cameraPos.lerp(cockpit,enter);target.y=ground.y+3.25;
+    }
+    cam.position.copy(cameraPos);cam.lookAt(target);cam.fov=58;cam.updateProjectionMatrix();
+    G.post.uniforms.uFade.value=THREE.MathUtils.smoothstep(elapsed,duration-500,duration-80);
+    return true;
+  }
   update(dt) {
     if (!this.self) return;
     const G=this.G,P=G.player,I=G.input,now=this.now(),cfg=this.self.robot?this.rules.robot:this.rules.human;
     G.time+=dt; this.menu=!I.locked;
-    const enabled=this.connected&&I.locked&&!this.self.dead&&this.room.phase!=='intermission';
+    const dropping=this.dropActive(this.self,now);
+    const enabled=this.connected&&I.locked&&!this.self.dead&&this.room.phase!=='intermission'&&!dropping;
     if(this.tacticalTap.update(dt,enabled&&I.pressed('ShiftLeft'))&&!this.self.robot)this.tacticalQueued=true;
     if (enabled) {
       const Wd=G.weapons.def,zm=this.self.robot?1.25:(Wd.zoom||1.25),adsK=G.weapons.adsT>0?THREE.MathUtils.lerp(1,1/zm*1.15,G.weapons.adsT):1;   // mesma sensibilidade do campo de visão normal, proporcional ao zoom
@@ -311,8 +348,8 @@ export class Multiplayer {
     const fixed=1/this.rules.tickRate;
     while(this.acc>=fixed) {
       this.acc-=fixed; const input=this.command(enabled);
-      if(this.connected&&this.socket.readyState===WebSocket.OPEN&&this.room.phase!=='intermission'){ this.socket.send(JSON.stringify(input));if(!this.self.dead)this.pending.push(input);if(this.pending.length>90)this.pending.shift(); }
-      if(!this.self.dead&&this.room.phase!=='intermission')stepBody(G.physics,P.body,input,fixed,this.self.robot,this.rules);
+      if(this.connected&&this.socket.readyState===WebSocket.OPEN&&this.room.phase!=='intermission'){ this.socket.send(JSON.stringify(input));if(!this.self.dead&&!dropping)this.pending.push(input);if(this.pending.length>90)this.pending.shift(); }
+      if(!this.self.dead&&!dropping&&this.room.phase!=='intermission')stepBody(G.physics,P.body,input,fixed,this.self.robot,this.rules);
       this.jumpQueued=false;this.reloadQueued=false;this.robotQueued=false;this.tacticalQueued=false;
     }
     P.pos.set(P.body.x,P.body.y,P.body.z);
@@ -330,7 +367,8 @@ export class Multiplayer {
     G.weapons.recoil.update(dt,P);   // recuo da mira: sobe, segura e volta suave
     const W=G.weapons;W.adsT=THREE.MathUtils.damp(W.adsT,enabled&&I.mouse(2)&&(this.self.robot||(!W.def.melee&&!P.sprinting))?1:0,12,dt);
     const zoom=this.self.robot?1.25:(W.def.zoom||1.25);W.swap=Math.max(0,W.swap-dt/0.3);W.melee=Math.max(0,W.melee-dt/0.55);
-    const targetFov=G.settings.fov/(W.def.scope&&!this.self.robot?1:(1+W.adsT*(zoom-1)))+(P.body.slideT>0?6:0);   // luneta: o zoom fica só na lenteG.camera.fov=THREE.MathUtils.damp(G.camera.fov,targetFov,12,dt);G.camera.updateProjectionMatrix();
+    const targetFov=G.settings.fov/(W.def.scope&&!this.self.robot?1:(1+W.adsT*(zoom-1)))+(P.body.slideT>0?6:0);
+    G.camera.fov=THREE.MathUtils.damp(G.camera.fov,targetFov,12,dt);G.camera.updateProjectionMatrix();
     const reloading=this.self.reloadUntil>now;
     const reloadSecs=(this.self.robot?cfg:(this.rules.weapons&&this.rules.weapons[this.self.weapon])||cfg).reloadSeconds;
     W.reload=reloading?{t:Math.max(0,1-(this.self.reloadUntil-now)/(reloadSecs*1000)),empty:this.self.ammo===0}:null;
@@ -340,12 +378,13 @@ export class Multiplayer {
     const daylight=this.room.weather?.startsWith('day_');
     G.vm.hemi.intensity=daylight?2.3:1.3;G.vm.dir.intensity=daylight?3:1.8;
     this.avatars?.update(dt);
+    const pilotCinematic=this.updatePilotDrop(now,dt);
     G.level.update(dt,G.time);G.weather.indoor=false;G.weather.update(dt);G.lights.update(dt,G.time);G.fx.update(dt);
     G.moon.position.set(P.pos.x-50,P.pos.y+110,P.pos.z-35);G.moon.target.position.copy(P.pos);
     G.audio.listener(G.camera);G.audio.setRain(G.weather.intensity,false);
     P.damagePulse=THREE.MathUtils.damp(P.damagePulse,0,3,dt);
     const U=G.post.uniforms;U.uTime.value=G.time;U.uNVG.value=G.nvg?1:0;U.uDamage.value=P.damagePulse;U.uLowHealth.value=!this.self.dead?Math.max(0,(cfg.hp*0.35-this.self.hp)/(cfg.hp*0.35)):0;
-    U.uFade.value=this.self.dead?0.3:0;U.uExposure.value=daylight?1:1.2;U.uFocus.value=W.def.scope&&!this.self.robot?0:W.adsT;U.uScope.value=!this.self.robot&&W.def.scope&&W.adsT>0.92?1:0;U.uUnder.value=0;U.uFlash.value=0;
+    if(!pilotCinematic)U.uFade.value=this.self.dead?0.3:Math.max(0,((this.pilotFadeUntil||0)-now)/350);U.uExposure.value=daylight?1:1.2;U.uFocus.value=W.def.scope&&!this.self.robot?0:W.adsT;U.uScope.value=!this.self.robot&&W.def.scope&&W.adsT>0.92?1:0;U.uUnder.value=0;U.uFlash.value=0;
     $('mp-scoreboard').hidden=!(I.down('Tab')||this.room.phase==='intermission');
     this.updateHud();
   }
@@ -379,6 +418,8 @@ export class Multiplayer {
     } else if(e.type==='kill') {
       this.feed.unshift({text:`${e.name||'Ambiente'}  ›  ${e.victimName||'Soldado'}`,time:this.now()});this.feed=this.feed.slice(0,4);
       if(e.killer===this.id){this.toast('+100 · ALVO ELIMINADO');this.markHit(true);if(!e.head)this.G.audio.hit('killshot');this.speakMatch('kill',0);}
+    } else if(e.type==='robotBlocked'&&e.player===this.id){
+      this.toast('Para chamar o Colosso, fique no chão em uma área com espaço livre.');
     } else if(e.type==='robot'&&e.active&&e.player!==this.id){
       const pilot=this.players.find(p=>p.id===e.player);if(pilot)this.speakMatch(pilot.team===this.self?.team?'friendlyRobot':'enemyRobot',3);
     }
@@ -432,12 +473,12 @@ export class Multiplayer {
     const W=G.weapons,sc=G.scopeCam,scoped=!view&&G.post.uniforms.uScope.value>0.5&&W.def.scope;
     if(scoped){sc.position.copy(G.camera.position);sc.quaternion.copy(G.camera.quaternion);sc.aspect=G.camera.aspect;sc.fov=G.settings.fov/(W.def.zoom||4);sc.updateProjectionMatrix();}
     document.body.classList.toggle('scoped',!!scoped);
-    G.post.render(G.scene,G.camera,this.self&&!this.self.dead?(view?view.scene:G.vm.scene):null,view?view.camera:G.vm.camera,scoped?sc:undefined);
+    G.post.render(G.scene,G.camera,this.self&&!this.self.dead&&!this.pilotDrop?(view?view.scene:G.vm.scene):null,view?view.camera:G.vm.camera,scoped?sc:undefined);
   }
   leave() {
     this.G.audio?.stopSpeech?.();this.voiceUntil=0;this.voiceSerial=(this.voiceSerial||0)+1;
     this.tacticalTap?.reset();this.tacticalQueued=false;
-    const G=this.G;this.voiceChat?.close();this.intentionalClose=true;this.active=false;this.connected=false;this.joining=false;clearTimeout(this.reconnectTimer);this.socket?.close();this.socket=null;
+    const G=this.G;this.pilotDrop?.avatar.dispose();this.pilotDrop=null;this.pilotFadeUntil=0;$('mp-hud').classList?.remove('robot-intro');$('mp-robot-intro').hidden=true;this.voiceChat?.close();this.intentionalClose=true;this.active=false;this.connected=false;this.joining=false;clearTimeout(this.reconnectTimer);this.socket?.close();this.socket=null;
     this.avatars?.dispose();this.avatars=null;this.pending=[];this.self=null;this.players=[];this.weatherKey=null;
     if(this.boundary){G.scene.remove(this.boundary);this.boundary.geometry.dispose();this.boundary.material.dispose();this.boundary=null;}
     for(const saved of this.allyVisibility||[]){saved.ally.model.root.visible=saved.root;if(saved.ally.model.gun)saved.ally.model.gun.visible=saved.gun;}

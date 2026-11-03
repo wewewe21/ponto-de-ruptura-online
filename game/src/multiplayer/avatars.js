@@ -8,6 +8,12 @@ import { cloneRobotAssets, loadRobotAssets, poseRobotArms, disposeRobotAssets } 
 export const TEAM_COLORS = Object.freeze({ alpha: 0x51dcff, bravo: 0xffa455 });
 const angleDelta = (a, b) => Math.atan2(Math.sin(b - a), Math.cos(b - a));
 
+// Mesma curva acelerada e clipe de aterrissagem usados na chegada do chefe da campanha.
+export function robotDropHeight(elapsed, impactMs = 2800, height = 32) {
+  const k = THREE.MathUtils.clamp(elapsed / impactMs, 0, 1);
+  return height * (1 - k * k);
+}
+
 function nameLabel(player, robot) {
   // visual limpo: só o nome (com contorno) e um pontinho da cor da equipe; sem caixa
   const canvas = document.createElement('canvas'); canvas.width = 256; canvas.height = 40;
@@ -42,10 +48,24 @@ export class RobotAvatar {
     this.rig.bones.RightHand.attach(this.gun);
     this.anim.play('die', { loop: false, speed: 0.85, fade: 0.15, restart: true });
   }
-  animate(dt, speed) {
+  animate(dt, speed, _crouch, _time, motion = {}) {
     this.recoil *= Math.exp(-10 * dt); this.flashT = Math.max(0, this.flashT - dt);
     this.flash.material.opacity = this.flashT > 0 ? 1 : 0;
-    if (!this.dead) {
+    const elapsed=motion.dropElapsed, impactMs=motion.impactMs||2800, durationMs=motion.durationMs||5000;
+    const dropping=!this.dead&&Number.isFinite(elapsed)&&elapsed>=0&&elapsed<durationMs;
+    if(dropping){
+      if(this.dropId!==motion.dropId){this.dropId=motion.dropId;this.dropLanded=false;this.dropStarted=false;}
+      const height=robotDropHeight(elapsed,impactMs,motion.dropHeight||32);this.root.position.y+=height;
+      if(elapsed<impactMs){
+        if(!this.dropStarted){this.dropStarted=true;this.anim.play('land',{speed:0,fade:0,restart:true});if(this.anim.cur.clip)this.anim.cur.t=Math.min(1.88,this.anim.cur.clip.dur-1/this.anim.cur.clip.fps);}
+        if(!this.trails&&this.G.fx?.addEmitter)this.trails=[0,1].map(()=>this.G.fx.addEmitter({kind:'fire',pos:new THREE.Vector3(),t:1,scale:0.9}));
+      }else if(!this.dropLanded){
+        this.dropLanded=true;this.stopTrails();
+        this.anim.play('land',{loop:false,speed:0.9,fade:0,restart:true});if(this.anim.cur.clip)this.anim.cur.t=Math.min(1.95,this.anim.cur.clip.dur-1/this.anim.cur.clip.fps);
+        if(elapsed-impactMs<900)this.landingImpact(this.root.position);
+      }
+    } else if (!this.dead) {
+      this.stopTrails();
       const sp = this._spd = (this._spd ?? speed) + (speed - (this._spd ?? speed)) * Math.min(1, dt * 6);
       const g = this._gait || (this._gait = 'idle'); let gait = g;
       if (g === 'idle') { if (sp > 0.5) gait = 'walk'; } else if (g === 'walk') { if (sp > 3.5) gait = 'run'; } else if (sp < 2.6) gait = 'walk';
@@ -64,16 +84,24 @@ export class RobotAvatar {
       poseRobotArms(this.rig, this.gun, yaw);
     }
     this.root.updateMatrixWorld(true);
+    if(dropping&&this.trails)for(const [i,name] of ['LeftFoot','RightFoot'].entries()){this.rig.bones[name]?.getWorldPosition(this.trails[i].pos);this.trails[i].t=1;}
+  }
+  stopTrails(){if(this.trails){for(const e of this.trails)e.t=0;this.trails=null;}}
+  landingImpact(position){
+    const p=position.clone(),G=this.G;
+    G.fx?.explosion?.(p,0.8);G.fx?.smokeCloud?.(p,3);G.fx?.sparks?.(p.clone().add(new THREE.Vector3(0,.4,0)),50,1.5);
+    G.audio?.thud?.(p,3);G.audio?.explosion?.(p,1.3);
+    const distance=G.player?.pos?.distanceTo(p)??Infinity;if(distance<25)G.player?.shake?.(Math.max(0,1-distance/25));
   }
   dispose() {
-    this.flash.removeFromParent(); this.flash.material.dispose(); disposeRobotAssets(this.assets);
+    this.stopTrails();this.flash.removeFromParent(); this.flash.material.dispose(); disposeRobotAssets(this.assets);
   }
 }
 
 export class RemoteAvatars {
-  constructor(G) {
+  constructor(G, now = () => Date.now()) {
     this.G = G; this.avatars = new Map(); this.players = []; this.corpses = [];
-    this.time = 0; this.disposed = false; this.robotTemplate = null; this.robotLoading = false; this.retryAt = 0;
+    this.time = 0; this.now=now;this.disposed = false; this.robotTemplate = null; this.robotLoading = false; this.retryAt = 0;
   }
   _robotAssets() {
     if (this.robotTemplate || this.robotLoading || this.time < this.retryAt) return;
@@ -155,8 +183,9 @@ export class RemoteAvatars {
       avatar.sp = (avatar.sp || 0) + (raw - (avatar.sp || 0)) * (1 - Math.exp(-dt / 0.14));
       const speed = avatar.sp;
       avatar.model.aimPitch = avatar.player.pitch || 0;
+      const drop=avatar.robot&&avatar.player.robotDropAt?{dropElapsed:Math.max(0,this.now()-avatar.player.robotDropAt),dropId:avatar.player.robotDropAt,impactMs:this.G.multiplayer?.rules?.robot?.dropImpactMs,durationMs:this.G.multiplayer?.rules?.robot?.dropDurationMs,dropHeight:this.G.multiplayer?.rules?.robot?.dropHeight}:undefined;
       avatar.model.setPose(avatar.pos, avatar.yaw); avatar.model.animate(dt, speed, avatar.player.crouch ? 1 : 0, this.time,
-        avatar.robot ? undefined : { sliding: avatar.player.slideT > 0, tactical: avatar.player.tacticalT > 0 });
+        avatar.robot ? drop : { sliding: avatar.player.slideT > 0, tactical: avatar.player.tacticalT > 0 });
       avatar.label.position.copy(avatar.pos).y += avatar.robot ? 5.5 : 2.12;
       // só aparece de perto (some entre 18 e 28 m) e se não houver parede entre a câmera e a cabeça; não cresce com a distância
       const cam = this.G.camera.position, lp = avatar.label.position, d = lp.distanceTo(cam), range = avatar.robot ? 55 : 28;

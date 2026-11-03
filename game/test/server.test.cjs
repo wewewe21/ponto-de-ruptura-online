@@ -26,7 +26,7 @@ test('balanced team joins, capacity, reconnect reservation and public flattened 
   assert.equal(c.name,'Charlie');assert.throws(()=>h.room.join('Fifth'),/cheia/);
   h.room.disconnect(c.id);assert.equal(h.room.join('changed',c.token).id,c.id);
   const state=h.room.snapshot();assert.equal(state.t,'state');assert.equal(state.room.phase,'playing');
-  const keys=['id','name','team','x','y','z','vy','onGround','yaw','pitch','hp','maxHp','robot','dead','respawnAt','protectedUntil','kills','deaths','points','streak','streakPoints','robotReady','ammo','weapon','reloadUntil','seq','loadout','loadoutNext','crouch','slideT','sdx','sdz','sprinting','tacticalT','tacticalCooldown'].sort();
+  const keys=['id','name','team','x','y','z','vy','onGround','yaw','pitch','hp','maxHp','robot','robotDropAt','dead','respawnAt','protectedUntil','kills','deaths','points','streak','streakPoints','robotReady','ammo','weapon','reloadUntil','seq','loadout','loadoutNext','crouch','slideT','sdx','sdz','sprinting','tacticalT','tacticalCooldown'].sort();
   assert.deepEqual(Object.keys(state.players[0]).sort(),keys);assert.equal(JSON.stringify(state).includes(h.a.token),false);
 });
 test('shared authoritative movement collides, obeys arena and acknowledges one queued command per tick',async()=>{
@@ -113,6 +113,23 @@ test('death loses an unused robot reward and activation refuses insufficient hea
   const h=await harness({robotStreak:1,robotPoints:100});eliminate(h);assert(h.a.robotReady);
   h.room.physics.add(-2,2,6,2,3,10);assert.equal(h.room.activate(h.a,h.now()),false);assert(h.a.robotReady);
   h.room.kill(h.b,h.a,h.now());assert.equal(h.a.robotReady,false);assert.equal(h.a.streakPoints,0);
+});
+test('robot activation rejects obstacles along the descent and does not consume the reward',async()=>{
+  const h=await harness(),p=h.a;p.robotReady=true;
+  h.room.physics.add(-2,12,6,2,14,10);assert.equal(h.room.activate(p,h.now()),false);assert.equal(p.robotReady,true);
+  const open=await harness(),q=open.a;q.robotReady=true;q.body.onGround=false;
+  assert.equal(open.room.activate(q,open.now()),false);assert.equal(q.robotReady,true);
+});
+test('robot arrival is synchronized, stationary and protected until the pilot takes control',async()=>{
+  const h=await harness(),p=h.a,enemy=h.b; p.robotReady=true;
+  const start=h.now(),before={x:p.body.x,y:p.body.y,z:p.body.z};assert(h.room.activate(p,start));
+  assert.equal(p.robotDropAt,start);assert.equal(p.protectedUntil,start+baseRules.robot.dropDurationMs);
+  assert.equal(h.room.snapshot().players.find(x=>x.id===p.id).robotDropAt,start);
+  assert(h.room.enqueue(p,command(1,{forward:1,sprint:true,shoot:true,reload:true})));h.tick();
+  assert.deepEqual({x:p.body.x,y:p.body.y,z:p.body.z},before);assert.equal(p.ammo,baseRules.robot.mag);assert.equal(p.reloadUntil,0);
+  aim(enemy,p);h.advance(200);assert(h.room.shoot(enemy,h.now()));assert.equal(p.hp,baseRules.robot.hp);
+  h.advance(baseRules.robot.dropDurationMs);assert(h.room.enqueue(p,command(2,{forward:1,shoot:true})));h.tick();
+  assert.notEqual(p.body.z,before.z);assert.equal(p.ammo,baseRules.robot.mag-1);
 });
 test('weighted weather frequencies, score end, intermission and round reset are deterministic',async()=>{
   const r=rules(),counts={};for(let i=0;i<1000;i++){const id=chooseWeather(r,()=>i/1000);counts[id]=(counts[id]||0)+1;}
