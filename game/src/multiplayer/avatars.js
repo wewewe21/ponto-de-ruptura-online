@@ -171,7 +171,7 @@ export class RemoteAvatars {
         this.G.audio?.shot(event.robot ? 'RPL2' : (SHOT_SOUND[event.weapon] || 'KR7'), from, { vol: event.robot ? 0.9 : 0.6 });
       }
       this.G.fx?.flashLight(from, event.robot ? 0xffa060 : 0xffd5a0, event.robot ? 180 : 80, 0.04);
-      if (event.weapon !== 'KNIFE') { const dir = new THREE.Vector3().subVectors(to, from).normalize(); this.G.fx?.muzzleSmoke?.(from.clone().addScaledVector(dir, 0.9).add(new THREE.Vector3(0, -0.2, 0)), dir, event.weapon === 'AX50' ? 5 : 3, event.weapon === 'AX50' ? 1.6 : 1); }
+      if (event.weapon !== 'KNIFE') { const dir = new THREE.Vector3().subVectors(to, from).normalize(); this.G.fx?.muzzleSmoke?.(from.clone().addScaledVector(dir, 0.9).add(new THREE.Vector3(0, -0.2, 0)), dir, event.weapon === 'AX50' ? 3 : 2, event.weapon === 'AX50' ? 1.3 : 1); }
     }
     const victim = this.avatars.get(event.hit);
     if (victim && !victim.robot) victim.model.hitFlash();

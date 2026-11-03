@@ -308,7 +308,7 @@ export class Multiplayer {
             const r=(def&&def.recoil)||{up:1,side:0.2,rand:0.3},W=this.G.weapons,mult=(1-W.adsT*0.4)*(this.crouch?0.85:1),i=this.shotIdx=(Date.now()-(this.lastShotAt||0)>350?0:(this.shotIdx||0)+1);this.lastShotAt=Date.now();
             const up=r.up*(i<6?1.15:0.85)*(1+(Math.random()-0.5)*r.rand),side=r.side*Math.sin(i*r.freq+r.phase)+(Math.random()-0.5)*r.rand*r.up*0.5;
             W.recoil.kick(up*mult*Math.PI/180,side*mult*Math.PI/180,e.weapon);
-            this.G.fx.muzzleSmoke(this.muzzleWorld(),new THREE.Vector3().subVectors(end,origin).normalize(),e.weapon==='AX50'?5:3,e.weapon==='AX50'?1.6:1);
+            this.G.fx.muzzleSmoke(this.muzzleWorld(),new THREE.Vector3().subVectors(end,origin).normalize(),e.weapon==='AX50'?3:2,e.weapon==='AX50'?1.3:1);
           }
         }
         if(e.dealt??e.hit){this.markHit(!!e.head);this.G.audio.hit(e.head?'headshot':'confirm');}

@@ -138,8 +138,9 @@ export class FX {
     for (let i = 0; i < 8 * s; i++) this.norm.spawn(p.x, p.y, p.z, rand(-1.5, 1.5) * s, rand(2, 5) * s, rand(-1.5, 1.5) * s, rand(0.3, 0.7), rand(0.1, 0.25) * s, 0.7, 0.78, 0.82, 0.6, 12, 0.5, 0.5);
   }
   rainSplash(x, y, z) { this.add.spawn(x, y + 0.02, z, rand(-0.4, 0.4), rand(0.6, 1.4), rand(-0.4, 0.4), 0.18, 0.05, 0.45, 0.5, 0.55, 0.6, 9, 0, 0); }
-  muzzleSmoke(p, dir, n = 3, s = 1) {
-    for (let i = 0; i < n; i++) this.norm.spawn(p.x, p.y, p.z, dir.x * rand(0.8, 2.2) * s + rand(-0.2, 0.2), dir.y * rand(0.8, 2) * s + rand(0.25, 0.7), dir.z * rand(0.8, 2.2) * s + rand(-0.2, 0.2), rand(0.8, 1.6), rand(0.12, 0.22) * s, 0.6, 0.6, 0.6, 0.3, -0.3, 2.2, 0.7 * s);
+  // fumaça do cano: poucas nuvens pequenas e bem fracas, para dar vida sem atrapalhar a mira
+  muzzleSmoke(p, dir, n = 2, s = 1) {
+    for (let i = 0; i < n; i++) this.norm.spawn(p.x, p.y, p.z, dir.x * rand(0.5, 1.3) + rand(-0.12, 0.12), dir.y * rand(0.5, 1.3) + rand(0.12, 0.35), dir.z * rand(0.5, 1.3) + rand(-0.12, 0.12), rand(0.5, 0.95), rand(0.025, 0.045) * s, 0.7, 0.7, 0.7, 0.07, -0.15, 2.2, 0.16 * s);
   }
   shell(p, right, up) {
     this.add.spawn(p.x, p.y, p.z, right.x * rand(2, 3) + up.x * 1.5, right.y * 2 + up.y * rand(1.5, 2.5), right.z * rand(2, 3) + up.z * 1.5, 0.5, 0.025, 0.9, 0.7, 0.3, 0.8, 12, 0.2);

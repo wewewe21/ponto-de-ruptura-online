@@ -250,7 +250,7 @@ export class Weapons {
     const mc = G.vm.muzzleCam(new THREE.Vector3());
     const mw = cam.localToWorld(mc.clone());
     if (!d.sup) G.fx.muzzleFlash(mw, d.rocket ? 3 : 1); else G.fx.muzzleFlash(mw, 0.15);
-    G.fx.muzzleSmoke(mw, fwd);
+    G.fx.muzzleSmoke(mw, fwd, d.id === 'AX50' ? 3 : 2, d.id === 'AX50' ? 1.3 : 1);
     if (!d.rocket && d.id !== 'BRK8') {
       const right = _v.set(1, 0, 0).applyQuaternion(cam.quaternion).clone(), upv = _v2.set(0, 1, 0).applyQuaternion(cam.quaternion).clone();
       G.fx.shell(cam.localToWorld(new THREE.Vector3(0.12, -0.1, -0.35)), right, upv);
