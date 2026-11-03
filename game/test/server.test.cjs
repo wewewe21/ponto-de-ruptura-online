@@ -265,13 +265,15 @@ test('crouching halves speed and lowers the body, sprint+crouch starts a decayin
   run({crouch:false},2);assert.equal(b.h,rules.human.height);assert.equal(b.crouched,false);
   run({sprint:true},10);run({sprint:true,crouch:true},2);assert(b.slideT>0);run({sprint:true,crouch:false},1);assert.equal(b.slideT,0);   // levantar cancela
 });
-test('tactical sprint is server timed, replicated to peers and cannot bypass cooldown',async()=>{
+test('tactical sprint stays active indefinitely, is replicated, and can be restarted immediately',async()=>{
   const h=await harness();const p=h.a;let seq=0;
   const send=extra=>{assert(h.room.enqueue(p,command(seq++,{forward:1,sprint:true,...extra})));h.tick();};
-  send({tactical:true});assert(p.body.tacticalT>0);assert(p.body.tacticalCooldown>0);
-  const state=h.room.snapshot().players.find(x=>x.id===p.id);assert(state.tacticalT>0);assert(state.tacticalCooldown>0);
+  send({tactical:true});assert(p.body.tacticalT>0);assert.equal(p.body.tacticalCooldown,0);
+  for(let i=0;i<300;i++)send({});assert.equal(p.body.tacticalT,1);
+  const state=h.room.snapshot().players.find(x=>x.id===p.id);assert(state.tacticalT>0);assert.equal(state.tacticalCooldown,0);
   send({crouch:true});assert(p.body.slideT>0);assert.equal(p.body.tacticalT,0);
-  send({crouch:false,jump:true,tactical:true});assert.equal(p.body.slideT,0);assert.equal(p.body.tacticalT,0);assert.equal(p.body.onGround,false);
+  send({crouch:false,tactical:true});assert.equal(p.body.slideT,0);assert.equal(p.body.tacticalT,1);
+  send({sprint:false});assert.equal(p.body.tacticalT,0);
   assert.equal(validateInput(command(seq,{tactical:'yes'})),null);
 });
 test('aiming at the head centre is a headshot (the body cylinder must not shadow the head sphere), standing and crouched',async()=>{

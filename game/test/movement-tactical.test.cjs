@@ -9,17 +9,18 @@ test('double tap respects the time window and must be repeated for another activ
   assert.equal(tap.update(.016,true),false);assert.equal(tap.update(.5,false),false);assert.equal(tap.update(.016,true),false);
 });
 
-test('shared movement applies faster temporary tactical sprint, cooldown, slide cancel and robot restrictions',async()=>{
+test('shared movement keeps tactical sprint indefinitely, with no cooldown and unchanged slide and robot restrictions',async()=>{
   const {stepBody}=await import('../shared/movement.js');
   const physics={boxBlocked:()=>false,moveBody(b,dx,dz){b.x+=dx;b.z+=dz;}};
   const make=()=>({x:-200,y:0,z:60,vy:0,onGround:true});
   const normal=make(),fast=make();const inp={forward:1,right:0,yaw:0,sprint:true};
   stepBody(physics,normal,inp,.1,false,rules);stepBody(physics,fast,{...inp,tactical:true},.1,false,rules);
   assert(fast.tacticalT>0);assert(fast.z<normal.z);assert(Math.abs(normal.z-fast.z-.22)<1e-8);
+  for(let i=0;i<300;i++)stepBody(physics,fast,inp,.1,false,rules);
+  assert.equal(fast.tacticalT,1,'still tactical after 30 seconds');assert.equal(fast.tacticalCooldown,0);
   stepBody(physics,fast,{...inp,crouch:true},.1,false,rules);assert(fast.slideT>0);assert.equal(fast.tacticalT,0);
-  stepBody(physics,fast,{...inp,crouch:false,tactical:true},.1,false,rules);assert.equal(fast.slideT,0);assert.equal(fast.tacticalT,0,'cooldown prevents immediate retry');
-  for(let i=0;i<50;i++)stepBody(physics,fast,inp,.1,false,rules);
-  stepBody(physics,fast,{...inp,tactical:true},.1,false,rules);assert(fast.tacticalT>0);
+  stepBody(physics,fast,{...inp,crouch:false,tactical:true},.1,false,rules);assert.equal(fast.slideT,0);assert.equal(fast.tacticalT,1,'can reactivate without waiting');
+  stepBody(physics,fast,{...inp,sprint:false},.1,false,rules);assert.equal(fast.tacticalT,0,'releasing sprint ends it');
   const robot=make();stepBody(physics,robot,{...inp,tactical:true},.1,true,rules);assert.equal(robot.tacticalT,0);
   const delayed=make();stepBody(physics,delayed,{...inp,crouch:true},.1,false,rules);assert(delayed.slideT>0,'slide works when a prior sprint packet was delayed');
 });

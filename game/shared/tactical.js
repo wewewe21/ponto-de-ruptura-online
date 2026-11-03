@@ -1,4 +1,4 @@
-// Duplo toque na tecla configurada de corrida, seguido de uma corrida curta e recuperável.
+// Duplo toque na tecla configurada de corrida ativa a corrida tática enquanto ela for mantida.
 export class SprintTap {
   constructor() { this.elapsed = Infinity; }
   update(dt, pressed) {
@@ -10,15 +10,8 @@ export class SprintTap {
   }
   reset() { this.elapsed = Infinity; }
 }
-export const TACTICAL_DURATION = 2.5;
-export const TACTICAL_RECOVERY = 4.5;
-export function stepTactical(body, request, sprinting, dt) {
-  body.tacticalCooldown = Math.max(0, (body.tacticalCooldown || 0) - dt);
-  body.tacticalT = Math.max(0, (body.tacticalT || 0) - dt);
-  if (!sprinting) body.tacticalT = 0;
-  if (request && sprinting && body.tacticalCooldown <= 0) {
-    body.tacticalT = TACTICAL_DURATION;
-    body.tacticalCooldown = TACTICAL_RECOVERY;
-  }
+export function stepTactical(body, request, sprinting) {
+  body.tacticalCooldown = 0; // mantém o campo de rede existente compatível com os clientes
+  body.tacticalT = sprinting && (request || body.tacticalT > 0) ? 1 : 0;
   return body.tacticalT > 0;
 }
