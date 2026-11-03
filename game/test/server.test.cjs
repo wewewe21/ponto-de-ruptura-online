@@ -234,3 +234,12 @@ test('crouching halves speed and lowers the body, sprint+crouch starts a decayin
   run({crouch:false},2);assert.equal(b.h,rules.human.height);assert.equal(b.crouched,false);
   run({sprint:true},10);run({sprint:true,crouch:true},2);assert(b.slideT>0);run({sprint:true,crouch:false},1);assert.equal(b.slideT,0);   // levantar cancela
 });
+test('aiming at the head centre is a headshot (the body cylinder must not shadow the head sphere), standing and crouched',async()=>{
+  const h=await harness();h.b.protectedUntil=0;const a=h.a.body,b=h.b.body,eye=baseRules.human.eye;
+  const shootAt=(y)=>{b.x=a.x;b.z=a.z-10;b.y=a.y;h.a.yaw=0;h.a.pitch=Math.atan2(b.y+y-(a.y+eye),10);h.advance(300);assert(h.room.shoot(h.a,h.now()));const e=h.room.events.filter(e=>e.type==='shot').pop();h.b.hp=100;return e;};
+  b.h=1.8;for(const y of [1.5,1.6,1.65,1.72,1.8]){const e=shootAt(y);assert.equal(e.hit,h.b.id,'hit '+y);assert.equal(e.head,true,'head '+y);}
+  for(const y of [0.3,0.9,1.3]){const e=shootAt(y);assert.equal(e.hit,h.b.id,'body '+y);assert.equal(e.head,false,'body '+y);}
+  b.crouched=true;b.h=1.05;h.b.hist=[];   // agachado: cabeça ~0,9
+  const crouchShot=(y)=>{b.x=a.x;b.z=a.z-10;b.y=a.y;b.crouched=true;b.h=1.05;h.a.yaw=0;h.a.pitch=Math.atan2(b.y+y-(a.y+eye),10);h.advance(300);assert(h.room.shoot(h.a,h.now()));return h.room.events.filter(e=>e.type==='shot').pop();};
+  assert.equal(crouchShot(0.92).head,true);assert.equal(crouchShot(0.4).head,false);
+});

@@ -43,7 +43,7 @@ function validateInput(v) {
   return clean;
 }
 // Acerto do soldado: tronco/pernas = cilindro vertical, cabeça = esfera (bem mais justo que a caixa inteira, que pegava os cantos vazios).
-const HIT = { bodyR: 0.3, headR: 0.18, headDrop: 0.15 };
+const HIT = { bodyR: 0.3, headR: 0.19, headDrop: 0.15 };
 function raySphere(o, d, cx, cy, cz, r, limit) {
   const ox = o[0] - cx, oy = o[1] - cy, oz = o[2] - cz, b = ox * d[0] + oy * d[1] + oz * d[2], c = ox * ox + oy * oy + oz * oz - r * r;
   const disc = b * b - c; if (disc < 0) return null;
@@ -203,7 +203,7 @@ class Room {
       const b=other.body,q=this.rewound(other,when);let t=null,isHead=false;
       if(other.robot)t=rayBox(origin,dir,[q.x-b.r,q.y,q.z-b.r],[q.x+b.r,q.y+q.h,q.z+b.r],distance);
       else {
-        const th=raySphere(origin,dir,q.x,q.y+q.h-HIT.headDrop,q.z,HIT.headR,distance),tb=rayCylinder(origin,dir,q.x,q.z,HIT.bodyR,q.y,q.y+q.h-HIT.headDrop,distance);
+        const th=raySphere(origin,dir,q.x,q.y+q.h-HIT.headDrop,q.z,HIT.headR,distance),tb=rayCylinder(origin,dir,q.x,q.z,HIT.bodyR,q.y,q.y+q.h-HIT.headDrop-HIT.headR,distance);
         if(th!==null&&(tb===null||th<=tb)){t=th;isHead=true;}else t=tb;
       }
       if(t!==null&&t<distance){distance=t;victim=other;head=isHead;}
