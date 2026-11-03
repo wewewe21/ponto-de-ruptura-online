@@ -266,12 +266,13 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     <header class="mp-lobby-header"><div><div class="kicker">PONTO DE RUPTURA · MULTIPLAYER</div><h2>ENTRE NA <em>OPERAÇÃO.</em></h2><p>Dois times. Uma subestação. O próximo Colosso pode ser você.</p></div><button class="btn" id="mp-back">← MENU</button></header>
     <div class="mp-lobby-grid"><main>
       <div class="mp-field"><label for="mp-player-name">SEU NOME DE COMBATE</label><input id="mp-player-name" maxlength="24" placeholder="Soldado" autocomplete="nickname"></div>
+      <div class="mp-field"><label>SEU LOADOUT</label><button class="btn" id="mp-loadout-btn" type="button">ESCOLHER ARMAS</button><small id="mp-loadout-sum"></small></div>
       <div class="mp-list-heading"><h3>SALAS ABERTAS</h3><button class="mp-text-button" id="mp-refresh">↻ ATUALIZAR</button></div>
       <p id="mp-status" role="status" aria-live="polite">Buscando salas…</p>
       <div id="mp-room-list" class="mp-room-list"></div>
       <form id="mp-create"><div class="mp-field"><label for="mp-room-name">OU CRIE SUA SALA</label><input id="mp-room-name" maxlength="32" placeholder="Nome da sala" autocomplete="off"></div><button class="btn primary" id="mp-create-button" type="submit">CRIAR E ENTRAR ↗</button></form>
     </main><aside class="mp-brief"><span class="mp-brief-number">MX—9</span><div class="kicker">DOMINE O COLOSSO</div><h3>FAÇA A SEQUÊNCIA.<br>MUDE A PARTIDA.</h3><p>Consiga <b>8 abates seguidos</b> e pressione <kbd>B</kbd> para pilotar o robô gigante com 900 de blindagem e armamento pesado.</p><p>Perdeu o Colosso? Você retorna como soldado e precisa conquistar outra sequência.</p><div class="mp-rule"><b>12</b><span>JOGADORES POR SALA</span></div><div class="mp-rule"><b>50</b><span>ABATES PARA VENCER</span></div><div class="mp-rule"><b>10'</b><span>POR PARTIDA</span></div><small>Entrada automática no time com menos jogadores. Clima compartilhado por partida, com mais dias abertos e pouca chuva.</small></aside></div>
-    <footer class="mp-lobby-footer">1 PRIMÁRIAS · 2 PISTOLA · 3 FACA · 4 SNIPER · R RECARREGAR · TAB PLACAR · B COLOSSO <span>TECLADO + MOUSE</span></footer>
+    <footer class="mp-lobby-footer">1 PRINCIPAL · 2 SECUNDÁRIA · 3 FACA · RODA DO MOUSE TROCA · R RECARREGAR · TAB PLACAR · B COLOSSO <span>TECLADO + MOUSE</span></footer>
   </div>
 </section>
 
@@ -288,7 +289,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
   <div class="mp-weapon"><small id="mp-weapon-label">CARABINA SD-9</small><strong id="mp-ammo">30</strong><span id="mp-reload-label">[R] RECARREGAR</span></div>
   <div id="mp-waiting"><b>ÁREA DE AQUECIMENTO</b><span>Aguardando outro jogador para começar. Convide um amigo pelo link da sala.</span></div>
   <div id="mp-dead" hidden><div><small>VOCÊ FOI ELIMINADO</small><h2>RETORNANDO EM <b id="mp-respawn-time">3</b></h2><p>A sequência foi reiniciada.</p></div></div>
-  <div id="mp-pause"><div><div class="kicker">DEATHMATCH ONLINE</div><h2>PRONTO PARA<br>ENTRAR?</h2><p id="mp-capture-hint">A partida continua enquanto este menu está aberto.</p><button class="btn primary" id="mp-resume">JOGAR · TRAVAR MOUSE</button><button class="btn" id="mp-controls">CONTROLES · TECLAS</button><button class="btn" id="mp-settings">CONFIGURAÇÕES · ÁUDIO · GRÁFICOS</button><button class="btn" id="mp-copy">COPIAR CONVITE DA SALA</button><button class="btn" id="mp-leave">SAIR DA SALA</button></div></div>
+  <div id="mp-pause"><div><div class="kicker">DEATHMATCH ONLINE</div><h2>PRONTO PARA<br>ENTRAR?</h2><p id="mp-capture-hint">A partida continua enquanto este menu está aberto.</p><button class="btn primary" id="mp-resume">JOGAR · TRAVAR MOUSE</button><button class="btn" id="mp-loadout">LOADOUT · ARMAS</button><button class="btn" id="mp-controls">CONTROLES · TECLAS</button><button class="btn" id="mp-settings">CONFIGURAÇÕES · ÁUDIO · GRÁFICOS</button><button class="btn" id="mp-copy">COPIAR CONVITE DA SALA</button><button class="btn" id="mp-leave">SAIR DA SALA</button></div></div>
   <div id="mp-intermission" hidden><h2 id="mp-result">FIM DA PARTIDA</h2><p id="mp-next-round"></p></div>
   <div id="mp-scoreboard" hidden><header><div class="kicker">SUBESTAÇÃO · DEATHMATCH</div><h2>PLACAR DA PARTIDA</h2></header><div class="mp-score-tables"><section><h3 class="alpha">MARTELO</h3><table><thead><tr><th>SOLDADO</th><th>A</th><th>M</th><th>PTS</th></tr></thead><tbody id="mp-rows-alpha"></tbody></table></section><section><h3 class="bravo">AFOGADOS</h3><table><thead><tr><th>SOLDADO</th><th>A</th><th>M</th><th>PTS</th></tr></thead><tbody id="mp-rows-bravo"></tbody></table></section></div><p>8 ABATES SEGUIDOS → COLOSSO MX-9 · [B] ATIVAR</p></div>
 </div>
@@ -373,7 +374,6 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
       <label class="chk" data-tab="game">Inverter eixo Y<input type="checkbox" id="set-invert"></label>
       <label class="chk" data-tab="game">Dificuldade (campanha)<select id="set-diff"><option value="recruta">Recruta</option><option value="regular">Regular</option><option value="veterano">Veterano</option></select></label>
       <label data-tab="audio">Volume geral<input type="range" id="set-master" min="0" max="1" step="0.05"><output id="lbl-master"></output></label>
-      <label data-tab="audio">Música<input type="range" id="set-music" min="0" max="1" step="0.05"><output id="lbl-music"></output></label>
       <label class="chk" data-tab="audio">Vozes dos personagens (português Brasil)<input type="checkbox" id="set-tts"></label>
       <label data-tab="video">Resolução de render<input type="range" id="set-scale" min="0.5" max="1" step="0.05"><output id="lbl-scale"></output></label>
       <label class="chk" data-tab="video">Qualidade gráfica<select id="set-quality"><option value="alta">Alta (bloom + oclusão)</option><option value="media">Média (bloom)</option><option value="baixa">Baixa</option></select></label>
@@ -381,6 +381,18 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     </form>
     <button class="btn" id="btn-set-controls">TECLAS E CONTROLES</button>
     <button class="btn" data-back>VOLTAR</button>
+  </div>
+</section>
+
+<section id="loadout" class="screen solid" hidden>
+  <div class="menu wide">
+    <div class="kicker">LOADOUT</div>
+    <h2>ESCOLHA SUAS ARMAS</h2>
+    <p class="hint" id="lo-note"></p>
+    <h4 class="lo-h">ARMA PRINCIPAL</h4><div class="lo-grid" id="lo-primary"></div>
+    <h4 class="lo-h">ARMA SECUNDÁRIA</h4><div class="lo-grid" id="lo-secondary"></div>
+    <p class="hint">A faca é sempre a mesma. Troca de arma: 1 principal · 2 secundária · 3 faca · roda do mouse.</p>
+    <button class="btn primary" id="lo-close">PRONTO</button>
   </div>
 </section>
 

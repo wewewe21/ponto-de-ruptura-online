@@ -12,5 +12,4 @@ export const MP_VOICE_LINES = {
   kill: ['ECO', 'Alvo neutralizado.'],
   death: ['ATALAIA', 'Operador abatido. Preparando retorno.'],
   respawn: ['ECO', 'De volta à operação.'],
-  reload: ['ECO', 'Recarregando!'],
 };

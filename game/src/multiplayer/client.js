@@ -3,9 +3,22 @@ import { stepBody } from '../../shared/movement.js';
 import { applyWorldFlags } from '../world/level.js';
 import { RemoteAvatars } from './avatars.js';
 import { RobotView } from './robot-view.js';
-import { WEAPONS, ARSENAL as PRIMARIES } from '../actors/weapons.js';
+import { WEAPONS } from '../actors/weapons.js';
 import { codeLabel } from '../core/keybinds.js';
-const WHEEL_ORDER = ['SD9', 'MK5', 'KR7', 'VK12', 'P19', 'KNIFE', 'AX50'];
+// opções de loadout (o servidor valida a mesma lista em shared/rules.json): [id, descrição]
+export const LOADOUT_OPTIONS = {
+  primary: [['SD9', 'Carabina equilibrada, boa em qualquer distância'], ['KR7', 'Fuzil de dano alto, um pouco mais lento'], ['MK5', 'Submetralhadora: cadência altíssima, curto alcance'], ['VK12', 'DMR semiautomático de tiro forte'], ['AX50', 'Sniper com luneta: um tiro no corpo quase mata, na cabeça mata']],
+  secondary: [['P19', 'Glock: rápida e leve, dano menor'], ['DE50', 'Pistola pesada: lenta, dano alto; na cabeça é um tiro só']],
+};
+const DEFAULT_LOADOUT = { primary: 'SD9', secondary: 'P19' };
+function readLoadout() {
+  try {
+    const l = JSON.parse(localStorage.getItem('pdr-loadout') || 'null');
+    const ok = (list, id) => list.some(([x]) => x === id);
+    if (l && ok(LOADOUT_OPTIONS.primary, l.primary) && ok(LOADOUT_OPTIONS.secondary, l.secondary)) return { primary: l.primary, secondary: l.secondary };
+  } catch (e) {}
+  return { ...DEFAULT_LOADOUT };
+}
 import { MP_VOICE_LINES } from './voice-lines.js';
 
 const $ = (id) => document.getElementById(id);
@@ -17,7 +30,7 @@ export class Multiplayer {
     this.G = G; this.active = false; this.connected = false; this.pending = []; this.seq = 0; this.acc = 0;
     this.players = []; this.offset = 0; this.feed = []; this.ping = 0; this.intentionalClose = true;
     this.renderPos = new THREE.Vector3(); this.robotView = null; this.weatherKey = null;
-    this.weapon = 'SD9'; this.lastPrimary = 'SD9'; this.weaponAt = 0;
+    this.loadout = readLoadout(); this.lo = null; this.weapon = this.loadout.primary; this.weaponAt = 0;
     this.lastFire = 0; this.crouch = false; this.jumpQueued = false; this.reloadQueued = false; this.robotQueued = false;
     this.refreshController = null; this.refreshTimer = null;
     $('btn-online').onclick = () => this.openLobby();
@@ -31,6 +44,10 @@ export class Multiplayer {
     $('mp-copy').onclick = () => this.copyInvite();
     $('mp-robot').onclick = () => { this.robotQueued = true; G.input.lock(); };
     $('mp-player-name').value = localStorage.getItem('pdr-player-name') || '';
+    $('mp-loadout-btn').onclick = () => this.openLoadout('lobby');
+    $('mp-loadout').onclick = () => this.openLoadout('match');
+    $('lo-close').onclick = () => { $('loadout').hidden = true; };
+    this.updateLoadoutSummary();
     addEventListener('beforeunload', () => { this.intentionalClose = true; this.socket?.close(); });
     document.addEventListener('visibilitychange', () => {
       if (document.hidden && this.connected) this.socket.send(JSON.stringify(this.command(false)));
@@ -103,7 +120,7 @@ export class Multiplayer {
     clearTimeout(this.reconnectTimer);
     const socket = this.socket = new WebSocket(`${location.protocol === 'https:' ? 'wss:' : 'ws:'}//${location.host}/ws`);
     const timeout = setTimeout(() => { if (socket.readyState !== WebSocket.OPEN) socket.close(); }, 20000);
-    socket.onopen = () => { if (socket !== this.socket || this.intentionalClose) { socket.close(); return; } clearTimeout(timeout); socket.send(JSON.stringify({t:'join',roomId:this.roomId,name:this.name,token:this.token||undefined})); };
+    socket.onopen = () => { if (socket !== this.socket || this.intentionalClose) { socket.close(); return; } clearTimeout(timeout); socket.send(JSON.stringify({t:'join',roomId:this.roomId,name:this.name,token:this.token||undefined,loadout:this.loadout})); };
     socket.onmessage = (m) => {
       if (socket !== this.socket || this.intentionalClose) return;
       let data; try { data = JSON.parse(m.data); } catch { return; }
@@ -139,7 +156,7 @@ export class Multiplayer {
     for (const ally of G.allies.list) { ally.model.root.visible = false; if (ally.model.gun) ally.model.gun.visible = false; }
     applyWorldFlags(G, {}); G.nvg = false; G.cinematic = false; G.player.zone = null;
     for (const key of ['uSuppress','uGlare','uFlash','uLowHealth','uUnder','uScope','uDamage','uFade']) G.post.uniforms[key].value = 0;
-    G.state = 'multiplayer'; G.hud.show(false); G.weapons.reset(); G.vm.set('SD9'); this.weapon = 'SD9'; this.lastPrimary = 'SD9'; this.applyWeapon('SD9', true);
+    G.state = 'multiplayer'; G.hud.show(false); G.weapons.reset(); this.lo = { ...this.loadout }; this.applyWeapon(this.lo.primary, true);
     for (const id of ['title','briefing','pause','death','victory','settings','controls','chapters','mp-lobby','fullmap']) $(id).hidden = true;
     $('mp-hud').hidden = false; this.menu = true;
     this.avatars = new RemoteAvatars(G);
@@ -159,22 +176,53 @@ export class Multiplayer {
   }
   // troca a arma na tela (o servidor valida e passa a usar o dano/cadência/munição dela)
   applyWeapon(id, instant = false) {
-    const G=this.G,W=G.weapons; this.weapon=id; this.weaponAt=performance.now();
-    if (PRIMARIES.includes(id)) { this.lastPrimary=id; W.slots.primary=id; W.cur='primary'; }
-    else if (id==='P19') W.cur='secondary'; else if (id==='KNIFE') W.cur='melee'; else { W.slots.special=id; W.cur='special'; }
+    const G=this.G,W=G.weapons,lo=this.lo||this.loadout||DEFAULT_LOADOUT; this.weapon=id; this.weaponAt=performance.now();
+    W.slots.primary=lo.primary; W.slots.secondary=lo.secondary;   // só a principal, a secundária e a faca do loadout
+    if (id===lo.secondary) W.cur='secondary'; else if (id==='KNIFE') W.cur='melee'; else { if (id!==lo.primary) W.slots.primary=id; W.cur='primary'; }
+    for (const x of [lo.primary, lo.secondary]) if (!W.ammo[x]) W.ammo[x]={mag:0,reserve:0};
     if (!W.ammo[id]) W.ammo[id]={mag:0,reserve:0};
     W.swap=instant?0:0.9; W.swapTo=null; W.reload=null; G.vm.set(W.id);
   }
   selectWeapon(input) {
     if (this.self.robot) return;
     let want = null;
-    if (input.pressed('Digit1')) want = PRIMARIES.includes(this.weapon) ? PRIMARIES[(PRIMARIES.indexOf(this.weapon) + 1) % PRIMARIES.length] : this.lastPrimary;
-    else if (input.pressed('Digit2')) want = 'P19';
+    const lo = this.lo || this.loadout || DEFAULT_LOADOUT, order = [lo.primary, lo.secondary, 'KNIFE'];
+    if (input.pressed('Digit1')) want = lo.primary;
+    else if (input.pressed('Digit2')) want = lo.secondary;
     else if (input.pressed('Digit3')) want = 'KNIFE';
-    else if (input.pressed('Digit4')) want = 'AX50';
-    if (!want && input.wheel) { const n = WHEEL_ORDER.length, i = WHEEL_ORDER.indexOf(this.weapon); want = WHEEL_ORDER[(i + Math.sign(input.wheel) + n) % n]; }
+    if (!want && input.wheel) { const n = order.length, i = Math.max(0, order.indexOf(this.weapon)); want = order[(i + Math.sign(input.wheel) + n) % n]; }
     if (want && want !== this.weapon) {
       this.applyWeapon(want); this.G.audio.mech('swap'); this.reloadQueued = false;
+    }
+  }
+  // ---------- loadout ----------
+  updateLoadoutSummary() {
+    const el = $('mp-loadout-sum'); if (!el) return;
+    el.textContent = `${WEAPONS[this.loadout.primary].name} + ${WEAPONS[this.loadout.secondary].name} + faca`;
+  }
+  openLoadout(from) {
+    this.loadoutFrom = from; $('loadout').hidden = false; this.renderLoadout();
+  }
+  chooseLoadout(slot, id) {
+    this.loadout = { ...this.loadout, [slot]: id };
+    try { localStorage.setItem('pdr-loadout', JSON.stringify(this.loadout)); } catch (e) {}
+    this.updateLoadoutSummary();
+    if (this.connected && this.socket && this.socket.readyState === WebSocket.OPEN) this.socket.send(JSON.stringify({ t: 'loadout', primary: this.loadout.primary, secondary: this.loadout.secondary }));
+    this.renderLoadout();
+  }
+  renderLoadout() {
+    const rules = this.rules && this.rules.weapons, inMatch = this.active && this.connected;
+    const pending = inMatch && this.room && this.room.phase !== 'waiting' && this.lo && (this.lo.primary !== this.loadout.primary || this.lo.secondary !== this.loadout.secondary);
+    $('lo-note').textContent = inMatch ? (pending ? 'Escolha salva: vale quando você reaparecer (depois de ser eliminado ou na próxima rodada).' : 'Escolha suas armas. Na partida, a mudança vale quando você reaparecer.') : 'Escolha suas armas antes de entrar: você já aparece com elas.';
+    const bar = (v, max) => `<div class="lo-bar"><i style="width:${Math.max(6, Math.min(100, (v / max) * 100))}%"></i></div>`;
+    for (const slot of ['primary', 'secondary']) {
+      const box = $('lo-' + slot); box.replaceChildren();
+      for (const [id, desc] of LOADOUT_OPTIONS[slot]) {
+        const d = WEAPONS[id], r = rules && rules[id], b = document.createElement('button'); b.type = 'button'; b.className = 'lo-card' + (this.loadout[slot] === id ? ' on' : '');
+        const stats = r ? `<div class="lo-bars"><span>DANO</span>${bar(r.damage, 110)}<span>CABEÇA</span>${bar(r.damage * (r.head || 1.5), 130)}<span>CADÊNCIA</span>${bar(r.rpm, 900)}</div>` : '';
+        b.innerHTML = `<b>${d.name}</b><small>${desc}</small>${stats}`;
+        b.onclick = () => this.chooseLoadout(slot, id); box.appendChild(b);
+      }
     }
   }
   makeBoundary() {
@@ -197,6 +245,9 @@ export class Multiplayer {
     Object.assign(body,{x:self.x,y:self.y,z:self.z,vy:self.vy||0,onGround:self.onGround, r:self.robot?this.rules.robot.radius:this.rules.human.radius,h:self.robot?this.rules.robot.height:(self.crouch?1.05:this.rules.human.height),
       crouched:!!self.crouch,slideT:self.slideT||0,sdx:self.sdx||0,sdz:self.sdz||0,sprinting:!!self.sprinting});
     for (const input of this.pending) stepBody(this.G.physics,body,input,1/this.rules.tickRate,self.robot,this.rules);
+    if (self.loadout && (!this.lo || self.loadout.primary!==this.lo.primary || self.loadout.secondary!==this.lo.secondary)) { this.lo = { ...self.loadout }; if (!self.robot) this.applyWeapon(self.weapon || this.lo.primary, true); }
+    if (teleport && !self.robot && !self.dead && self.weapon) this.applyWeapon(self.weapon, true);   // reaparece com a arma do loadout
+    this.loadoutNext = self.loadoutNext; if ($('loadout')?.hidden === false) this.renderLoadout();
     if (teleport) { this.G.player.yaw=self.yaw;this.G.player.pitch=self.pitch;this.renderPos.set(body.x,body.y,body.z);this.acc=0;this.crouch=false; }
     if (previous && self.hp < previous.hp) this.G.player.damagePulse = Math.min(0.65, this.G.player.damagePulse + 0.35);
     if (!previous?.robotReady && self.robotReady) this.toast('COLOSSO DISPONÍVEL · pressione B para assumir o controle');
@@ -225,8 +276,7 @@ export class Multiplayer {
     if(previous&&!previous.robot&&self.robot)this.speakMatch('pilot',4);
     if(previous&&!previous.dead&&self.dead)this.speakMatch(self.robot?'destroyed':'death',4);
     if(previous?.dead&&!self.dead)this.speakMatch('respawn',1);
-    if(previous&&!self.robot&&!self.dead&&self.reloadUntil>this.now()&&!(previous.reloadUntil>this.now())){if(!this.G.weapons.def.scope)this.speakMatch('reload',0);}
-  }
+      }
   command(enabled) {
     const I=this.G.input,P=this.G.player;
     return {t:'input',seq:++this.seq,forward:enabled?Number(I.down('KeyW'))-Number(I.down('KeyS')):0,right:enabled?Number(I.down('KeyD'))-Number(I.down('KeyA')):0,yaw:P.yaw,pitch:P.pitch,view:this.snapAt?Math.round(this.snapAt-50):undefined,
@@ -331,7 +381,7 @@ export class Multiplayer {
     $('mp-weather').textContent=this.rules.weather.find(w=>w.id===r.weather)?.name||r.weather;
     $('mp-hp').textContent=`${s.hp} / ${s.maxHp}`;$('mp-health-fill').style.width=`${100*s.hp/s.maxHp}%`;
     const wdef=WEAPONS[this.weapon];$('mp-ammo').textContent=!s.robot&&wdef&&wdef.melee?'—':s.ammo;$('mp-weapon-label').textContent=s.robot?'COLOSSO MX-9 · CANHÃO PESADO':(wdef?wdef.name:'CARABINA SD-9');
-    $('mp-reload-label').textContent=!s.robot&&wdef&&wdef.melee?'[1] [2] [3] [4] ARMAS':s.reloadUntil>now?'RECARREGANDO…':`[${codeLabel(this.G.input.physical('KeyR'))}] RECARREGAR`;
+    $('mp-reload-label').textContent=!s.robot&&wdef&&wdef.melee?'[1] [2] [3] ARMAS':s.reloadUntil>now?'RECARREGANDO…':`[${codeLabel(this.G.input.physical('KeyR'))}] RECARREGAR`;
     $('mp-points').textContent=s.points;$('mp-streak-count').textContent=`${s.streak} / ${this.rules.robotStreak}`;
     $('mp-streak-fill').style.width=`${Math.min(100,s.streak/this.rules.robotStreak*100)}%`;
     $('mp-robot').hidden=!s.robotReady;$('mp-robot').disabled=!this.robotView;

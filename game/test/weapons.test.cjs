@@ -3,8 +3,8 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 
-function input(key) {
-  return { enabled: true, wheel: 0, pressed: code => code === key, down: () => false, mouse: () => false, mousePressed: () => false };
+function input(key, wheel = 0) {
+  return { enabled: true, wheel, pressed: code => code === key, down: () => false, mouse: () => false, mousePressed: () => false };
 }
 function context() {
   return { time: 0, player: { dead: false, locked: false, sprinting: false, hSpeed: 0, stance: 'stand', body: { onGround: true } },
@@ -30,17 +30,19 @@ test('multiplayer keys select the same arsenal and send the selected ID to the a
   const { Weapons, ARSENAL } = await import('../src/actors/weapons.js');
   const { Multiplayer } = await import('../src/multiplayer/client.js');
   const G = context(); G.weapons = new Weapons(G);
-  const mp = Object.assign(Object.create(Multiplayer.prototype), { G, self: { robot: false }, weapon: 'SD9', lastPrimary: 'SD9', seq: 0 });
+  const mp = Object.assign(Object.create(Multiplayer.prototype), { G, self: { robot: false }, weapon: 'SD9', loadout: { primary: 'MK5', secondary: 'DE50' }, seq: 0 });
   G.input = input(null);
   const press = (key, id) => {
     mp.selectWeapon(input(key)); assert.equal(mp.weapon, id); assert.equal(G.weapons.id, id); assert.equal(G.vm.id, id);
     assert.equal(mp.command(false).weapon, id);
   };
-  mp.applyWeapon('SD9', true);
-  for (const id of [...ARSENAL.slice(1), ARSENAL[0]]) press('Digit1', id);
-  press('Digit2','P19'); press('Digit3','KNIFE'); press('Digit4','AX50'); press('Digit1','SD9');
+  mp.lo = { ...mp.loadout }; mp.applyWeapon('MK5', true);                          // loadout: principal MK5 + secundária DE50 + faca
+  press('Digit2','DE50'); press('Digit3','KNIFE'); press('Digit1','MK5');
+  mp.selectWeapon(input(null, 1)); assert.equal(mp.weapon,'DE50');                     // roda do mouse: principal → secundária → faca
+  mp.selectWeapon(input(null, 1)); assert.equal(mp.weapon,'KNIFE'); mp.selectWeapon(input(null, 1)); assert.equal(mp.weapon,'MK5');
+  mp.selectWeapon(input('Digit4')); assert.equal(mp.weapon,'MK5');                   // 4 não escolhe mais a sniper: ela é uma principal do loadout
   mp.self.robot = true;
-  for (const key of ['Digit1','Digit2','Digit3','Digit4']) { mp.selectWeapon(input(key)); assert.equal(mp.weapon,'SD9'); }
+  for (const key of ['Digit1','Digit2','Digit3']) { mp.selectWeapon(input(key)); assert.equal(mp.weapon,'MK5'); }
 });
 
 test('each selectable weapon has a registered model and deployed model file, including the FPS arm poses', async () => {

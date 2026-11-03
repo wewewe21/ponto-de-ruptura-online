@@ -23,6 +23,13 @@ export const GUN_SPECS = {
   AX50: {   // sniper brasileira (cano para -X no modelo): `scope` = centro da lente da ocular
     file: 'sniper_br', flip: false, len: 1.15, handScale: 0.6, rightWrist: [0, 0, 0.07], origin: [0.02, 0.14], muzzle: [-0.5, 0.168], right: [0.208, 0.063], left: [-0.07, 0.118],
     holo: null, scope: [0.206, 0.221], scopeLat: 0.03, rightCurl: [0.9, 1.0], leftCurl: [0.7, 0.8],
+    mag: { x: [-0.045, 0.065], y: [-1, 0.1], pivot: [0.01, 0.1] },
+    bolt: { box: [0.07, 0.135, 0.09, 0.17, 0.005], pivot: [0.08, 0.158], ball: [0.113, 0.113, -0.055] },   // alavanca do ferrolho (do lado esquerdo) e a bola onde a mão segura
+  },
+  DE50: {   // pistola pesada (modelo antigo da P-19): mesma pose da Glock; `like` = ocupa o mesmo lugar na mão (posição/escala feitas no Blender)
+    file: 'pistol', like: 'P19', flip: false, len: 0.42, handScale: 0.6, rightWrist: [0, 0, 0.035], leftWrist: [0, 0, 0.05], origin: [0.139, 0.492], muzzle: [-0.5, 0.528], right: [0.37, 0.28], left: [0.28, 0.2], leftLat: -0.03,
+    holo: [0.08, 0.585], holoScale: 0.6, mag: { x: [0.25, 0.5], y: [-1, 0.12], pivot: [0.36, 0.12] }, slide: { y: [0.43, 1], travel: 0.045 },
+    rightCurl: [1.0, 1.1], leftCurl: [0.9, 1.0],
   },
   VK12: {
     file: 'scifi', flip: true, len: 1.05, handScale: 0.6, rightWrist: [0, 0, 0.07], origin: [0.0, 0.171], muzzle: [0.5, 0.171], right: [-0.322, 0.072], left: [0.06, 0.1],
@@ -106,6 +113,11 @@ export function makeHoloSight(scale = 1, riser = 0) {
 }
 
 // monta o gun a partir da ficha. flash: sprite do cano (do ViewModel)
+// matriz que leva o modelo (espaço do GLB) para o espaço da arma, antes do ajuste feito no Blender
+export function baseMatrix(spec) {
+  const s = spec.len, rotY = spec.flip ? Math.PI / 2 : -Math.PI / 2;
+  return new THREE.Matrix4().makeRotationY(rotY).multiply(new THREE.Matrix4().makeScale(s, s, s)).multiply(new THREE.Matrix4().makeTranslation(-spec.origin[0], -spec.origin[1], 0));
+}
 export function makeGlbGun(src, spec, placement = null) {
   const s = spec.len, sign = spec.flip ? -1 : 1, rotY = spec.flip ? Math.PI / 2 : -Math.PI / 2;
   const [ox, oy] = spec.origin;
@@ -133,16 +145,19 @@ export function makeGlbGun(src, spec, placement = null) {
   const root = new THREE.Group(), mroot = new THREE.Group(); root.add(mroot);
   if (D) { mroot.matrixAutoUpdate = false; mroot.matrix.copy(D); }
   const base = new THREE.Mesh(mesh0.geometry, mat);
-  let body = base, magOuter = null, slideOuter = null;
+  let body = base, magOuter = null, slideOuter = null, boltOuter = null;
   const inMag = spec.mag ? (x, y) => x > spec.mag.x[0] && x < spec.mag.x[1] && y > spec.mag.y[0] && y < spec.mag.y[1] : null;
   const inSlide = spec.slide ? (x, y) => y > spec.slide.y[0] && y < spec.slide.y[1] : null;
+  const inBolt = spec.bolt ? (x, y, z) => x > spec.bolt.box[0] && x < spec.bolt.box[1] && y > spec.bolt.box[2] && y < spec.bolt.box[3] && z > spec.bolt.box[4] : null;
   const parts = [];
   if (inMag) { const r = splitMesh(new THREE.Mesh(mesh0.geometry, mat), inMag); parts.push(['mag', r.mag]); body = r.body; }
   if (inSlide) { const r = splitMesh(body, inSlide); parts.push(['slide', r.mag]); body = r.body; }
+  if (inBolt) { const r = splitMesh(body, inBolt); parts.push(['bolt', r.mag]); body = r.body; }
   body.material = mat; mroot.add(part(body, ox, oy));
   for (const [kind, mesh] of parts) {
     mesh.material = mat;
     if (kind === 'mag') { magOuter = part(mesh, ...spec.mag.pivot); mroot.add(magOuter); }
+    else if (kind === 'bolt') { boltOuter = part(mesh, ...spec.bolt.pivot); mroot.add(boltOuter); }
     else { slideOuter = part(mesh, ox, oy); mroot.add(slideOuter); }
   }
   const out = {
@@ -156,6 +171,11 @@ export function makeGlbGun(src, spec, placement = null) {
     const rest = magOuter.position.clone(), magBase = fix(toGun(spec.mag.pivot[0], 0.02));
     out.setMagDrop = (d) => { magOuter.position.y = rest.y - d * 0.2; magOuter.rotation.x = -d * 0.3; };
     out.magHand = (d) => new THREE.Vector3(magBase.x, magBase.y - d * 0.2, magBase.z);
+  }
+  if (boltOuter) {
+    const rest = boltOuter.position.clone();
+    out.setBolt = (lift, back) => { boltOuter.rotation.z = -lift * 1.2; boltOuter.position.z = rest.z + back * 0.1; };   // levanta (gira em torno do eixo do cano) e recua
+    out.extra.boltPivot = fix(toGun(spec.bolt.pivot[0], spec.bolt.pivot[1])); out.extra.boltBall = fix(toGun(spec.bolt.ball[0], spec.bolt.ball[1], spec.bolt.ball[2]));
   }
   if (slideOuter) { out.extra.slide = slideOuter; out.extra.slideBase = 0; out.extra.slideTravel = spec.slide.travel; }
   if (spec.holo) {

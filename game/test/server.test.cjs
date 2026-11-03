@@ -26,7 +26,7 @@ test('balanced team joins, capacity, reconnect reservation and public flattened 
   assert.equal(c.name,'Charlie');assert.throws(()=>h.room.join('Fifth'),/cheia/);
   h.room.disconnect(c.id);assert.equal(h.room.join('changed',c.token).id,c.id);
   const state=h.room.snapshot();assert.equal(state.t,'state');assert.equal(state.room.phase,'playing');
-  const keys=['id','name','team','x','y','z','vy','onGround','yaw','pitch','hp','maxHp','robot','dead','respawnAt','protectedUntil','kills','deaths','points','streak','streakPoints','robotReady','ammo','weapon','reloadUntil','seq','crouch','slideT','sdx','sdz','sprinting'].sort();
+  const keys=['id','name','team','x','y','z','vy','onGround','yaw','pitch','hp','maxHp','robot','dead','respawnAt','protectedUntil','kills','deaths','points','streak','streakPoints','robotReady','ammo','weapon','reloadUntil','seq','loadout','loadoutNext','crouch','slideT','sdx','sdz','sprinting'].sort();
   assert.deepEqual(Object.keys(state.players[0]).sort(),keys);assert.equal(JSON.stringify(state).includes(h.a.token),false);
 });
 test('shared authoritative movement collides, obeys arena and acknowledges one queued command per tick',async()=>{
@@ -80,11 +80,12 @@ test('weapon choice is validated, ammo is kept per weapon, damage and range foll
   for(const bad of [{weapon:5},{weapon:'123456789'}])assert.equal(validateInput(command(0,bad)),null);
   const pick=(id)=>{h.room.enqueue(h.a,command(++seq,{weapon:id}));h.tick();};
   for (const invalid of ['RPL2', '__proto__', 'toString']) { pick(invalid); assert.equal(h.a.weapon,'SD9'); }
-  pick('P19');assert.equal(h.a.weapon,'P19');assert.equal(h.a.ammo,15);
+  pick('P19');assert.equal(h.a.weapon,'P19');assert.equal(h.a.ammo,17);
   assert.equal(h.room.shoot(h.a,h.now()),false);                                  // troca em andamento
-  h.advance(500);assert(h.room.shoot(h.a,h.now()));assert.equal(h.a.ammo,14);
-  pick('SD9');assert.equal(h.a.ammo,30);pick('P19');assert.equal(h.a.ammo,14);    // munição guardada por arma
-  pick('AX50');h.advance(500);aim(h.a,h.b);h.b.protectedUntil=0;
+  h.advance(500);assert(h.room.shoot(h.a,h.now()));assert.equal(h.a.ammo,16);
+  pick('SD9');assert.equal(h.a.ammo,30);pick('P19');assert.equal(h.a.ammo,16);    // munição guardada por arma
+  pick('AX50');assert.equal(h.a.weapon,'P19');   // fora do loadout: recusada
+  h.a.loadout={primary:'AX50',secondary:'P19'};pick('AX50');h.advance(500);aim(h.a,h.b);h.b.protectedUntil=0;
   assert(h.room.shoot(h.a,h.now()));assert.equal(h.b.dead,true);assert.equal(h.a.ammo,4);   // sniper: um tiro mata
   assert.equal(h.room.events.filter(e=>e.type==='shot').pop().weapon,'AX50');
   const k=await harness();k.room.enqueue(k.a,command(1,{weapon:'KNIFE'}));k.tick();k.advance(500);
@@ -242,4 +243,26 @@ test('aiming at the head centre is a headshot (the body cylinder must not shadow
   b.crouched=true;b.h=1.05;h.b.hist=[];   // agachado: cabeça ~0,9
   const crouchShot=(y)=>{b.x=a.x;b.z=a.z-10;b.y=a.y;b.crouched=true;b.h=1.05;h.a.yaw=0;h.a.pitch=Math.atan2(b.y+y-(a.y+eye),10);h.advance(300);assert(h.room.shoot(h.a,h.now()));return h.room.events.filter(e=>e.type==='shot').pop();};
   assert.equal(crouchShot(0.92).head,true);assert.equal(crouchShot(0.4).head,false);
+});
+
+test('loadout: choose primary and secondary, only those and the knife are usable, new choice applies on the next spawn (instantly in warmup), headshots always do more damage',async()=>{
+  const h=await harness();const room=h.room,a=h.a;
+  assert.deepEqual(a.loadout,{primary:'SD9',secondary:'P19'});
+  assert.deepEqual(room.sanitizeLoadout({primary:'RPL2',secondary:'hack'}),{primary:'SD9',secondary:'P19'});
+  room.setLoadout(a,{primary:'MK5',secondary:'DE50'});                              // partida em andamento: só no próximo reaparecimento
+  assert.equal(a.weapon,'SD9');assert.deepEqual(a.loadoutNext,{primary:'MK5',secondary:'DE50'});
+  room.kill(h.b,a,h.now());h.tick(3100);h.tick(2);
+  assert.equal(a.dead,false);assert.equal(a.weapon,'MK5');assert.deepEqual(a.loadout,{primary:'MK5',secondary:'DE50'});assert.equal(a.loadoutNext,null);assert.equal(a.ammo,32);
+  let seq=100;const pick=(id)=>{room.enqueue(a,command(++seq,{weapon:id}));h.tick();};
+  pick('SD9');assert.equal(a.weapon,'MK5');pick('DE50');assert.equal(a.weapon,'DE50');assert.equal(a.ammo,7);pick('KNIFE');assert.equal(a.weapon,'KNIFE');
+  // cabeça: dano multiplicado (DE50: 62 no corpo, 124 na cabeça = um tiro só)
+  const aimAt=(p,v,f)=>{p.yaw=Math.atan2(-(v.body.x-p.body.x),-(v.body.z-p.body.z));p.pitch=Math.atan2(v.body.y+v.body.h*f-(p.body.y+baseRules.human.eye),Math.hypot(v.body.x-p.body.x,v.body.z-p.body.z));};
+  h.b.protectedUntil=0;h.advance(600);pick('DE50');h.advance(600);aimAt(a,h.b,0.5);assert(room.shoot(a,h.now()));assert.equal(h.b.hp,100-62);
+  h.b.hp=100;h.advance(600);aimAt(a,h.b,0.96);assert(room.shoot(a,h.now()));assert.equal(h.b.dead,true);
+  assert.equal(room.events.filter(e=>e.type==='kill').pop().head,true);
+});
+test('warmup: loadout change applies immediately without moving the player',async()=>{
+  let time=100000;const room=await Room.create(fixture(),rules(),{now:()=>time,random:()=>0}),p=room.join('Solo',undefined,{primary:'AX50',secondary:'DE50'});
+  assert.equal(p.weapon,'AX50');assert.equal(room.phase,'waiting');const z=p.body.z;
+  room.setLoadout(p,{primary:'MK5',secondary:'P19'});assert.equal(p.weapon,'MK5');assert.equal(p.body.z,z);assert.deepEqual(p.loadout,{primary:'MK5',secondary:'P19'});
 });

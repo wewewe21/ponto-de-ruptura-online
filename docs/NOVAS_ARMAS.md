@@ -15,6 +15,14 @@ Os modelos antigos da sniper e da pistola estão guardados em `Assets/antigas/`.
 
 Se você mover, girar ou redimensionar o `Modelo_XX` dentro do `ARMA_XX` no Blender, essa posição também é exportada (`model` em `fps_poses.json`) e o jogo aplica igual: a arma fica no jogo exatamente onde está no Blender, junto com a mão e os dedos.
 
+## Loadout online
+
+Antes de entrar (lobby → **Escolher armas**) e dentro da partida (ESC → **Loadout**) o jogador escolhe a arma **principal** (SD-9, KR-7, MK-5, VK-12 ou sniper brasileira) e a **secundária** (Glock brasileira — rápida, menos dano — ou a pistola pesada P-19 — lenta, muito dano). A faca é fixa. A escolha é validada no servidor (`shared/rules.json` → `loadouts`) e vale a cada reaparecimento (no aquecimento, na hora). Tiro na cabeça multiplica o dano pelo campo `head` de cada arma. Teclas: 1 principal, 2 secundária, 3 faca, roda do mouse alterna.
+
+## Recarga
+
+A coreografia das mãos fica em `src/actors/reloadanim.js` (fuzis/SMG/DMR: pente; pistolas: mão de apoio; sniper: ferrolho do lado esquerdo + troca de pente). `fpsarms.js` aceita deslocamento e giro para as duas mãos.
+
 ## Braços em primeira pessoa
 
 - Vêm do `FPS Arms.fbx` (51 ossos, com dedos) → `assets/models/fps_arms.glb` (gerado por `tools/blender/export_arms_glb.py`).

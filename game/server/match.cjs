@@ -90,7 +90,7 @@ class Room {
     this.lastActive = this.now(); this.eventSeq = 0;
   }
   summary() { return {id:this.id,name:this.name,players:[...this.players.values()].filter(p => p.connected).length,maxPlayers:this.maxPlayers,phase:this.phase,weather:this.weather}; }
-  join(name, token) {
+  join(name, token, loadout) {
     const now = this.now();
     if (token) {
       const old = [...this.players.values()].find(p => p.token === token && !p.connected && now - p.disconnectedAt <= 15000);
@@ -102,16 +102,31 @@ class Room {
     const team = alpha <= bravo ? 'alpha' : 'bravo';
     const p = { id:randomUUID(), token:randomBytes(24).toString('hex'), name:String(name || 'Soldado').replace(/[\x00-\x1f\x7f<>]/g,'').trim().slice(0,24) || 'Soldado',team,
       connected:true,queue:[],input:null,lastReceived:now,acceptedSeq:-1,seq:-1,kills:0,deaths:0,points:0,streak:0,streakPoints:0,robotReady:false,
-      rateStart:now,rateCount:0,lastShot:-Infinity,robot:false,dead:false };
+      rateStart:now,rateCount:0,lastShot:-Infinity,robot:false,dead:false,loadout:null,loadoutNext:this.sanitizeLoadout(loadout) };
     this.players.set(p.id,p); this.spawn(p,now); this.lastActive = now;
     if (this.phase === 'waiting' && this.connectedCount() >= 2) this.startRound(now);
     return p;
+  }
+  // loadout (principal + secundária): valores fora da lista permitida voltam para o padrão
+  sanitizeLoadout(l) {
+    const o=this.rules.loadouts||{},d=o.default||{primary:'SD9',secondary:'P19'};
+    return {primary:Array.isArray(o.primary)&&o.primary.includes(l&&l.primary)?l.primary:d.primary,secondary:Array.isArray(o.secondary)&&o.secondary.includes(l&&l.secondary)?l.secondary:d.secondary};
+  }
+  // vale no próximo reaparecimento; no aquecimento (sozinho na sala) vale na hora, sem mover o jogador
+  setLoadout(p,l,now=this.now()) {
+    p.loadoutNext=this.sanitizeLoadout(l);
+    if(!p.robot&&!p.dead&&this.phase==='waiting')this.applyLoadout(p,now);
+  }
+  applyLoadout(p,now) {
+    p.loadout=p.loadoutNext||p.loadout||this.sanitizeLoadout(null);p.loadoutNext=null;
+    p.weapon=p.loadout.primary;p.ammoBy=this.freshAmmo();p.lastShotBy={};p.ammo=p.ammoBy[p.weapon];p.reloadUntil=0;p.lastShot=-Infinity;p.switchUntil=now+(this.rules.swapSeconds||0.45)*1000;
   }
   freshAmmo() { return Object.fromEntries(Object.entries(this.rules.weapons||{}).map(([id,w])=>[id,w.mag])); }
   // configuração de combate do jogador: o Colosso usa a do robô; senão a da arma empunhada (SD9 = regra humana original)
   combat(p) { return p.robot?this.rules.robot:(this.rules.weapons&&this.rules.weapons[p.weapon])||this.rules.human; }
   switchWeapon(p,id,now) {
     if(p.robot||p.dead||!this.rules.weapons||!Object.hasOwn(this.rules.weapons,id)||id===p.weapon)return false;
+    const lo=p.loadout||this.sanitizeLoadout(null);if(id!=='KNIFE'&&id!==lo.primary&&id!==lo.secondary)return false;   // só a principal, a secundária e a faca do loadout
     p.ammoBy[p.weapon]=p.ammo;p.lastShotBy[p.weapon]=p.lastShot;p.weapon=id;p.ammo=p.ammoBy[id];p.lastShot=p.lastShotBy[id]??-Infinity;p.reloadUntil=0;p.switchUntil=now+(this.rules.swapSeconds||0.45)*1000;return true;
   }
   connectedCount() { return [...this.players.values()].filter(p => p.connected).length; }
@@ -144,7 +159,8 @@ class Room {
     p.body={x:chosen[0],y:chosen[1],z:chosen[2],vy:0,r:cfg.radius,h:cfg.height,step:0.5,onGround:true};
     p.yaw=chosen[3];p.pitch=0;p.hp=cfg.hp;p.maxHp=cfg.hp;p.robot=false;p.dead=false;
     p.respawnAt=0;p.protectedUntil=now+this.rules.spawnProtectionSeconds*1000;
-    p.weapon=this.rules.weapons&&this.rules.weapons[p.weapon]?p.weapon:'SD9';p.ammoBy=this.freshAmmo();p.lastShotBy={};p.ammo=p.ammoBy[p.weapon];p.switchUntil=0;
+    p.loadout=p.loadoutNext||p.loadout||this.sanitizeLoadout(null);p.loadoutNext=null;   // o loadout escolhido vale a cada reaparecimento
+    p.weapon=p.loadout.primary;p.ammoBy=this.freshAmmo();p.lastShotBy={};p.ammo=p.ammoBy[p.weapon];p.switchUntil=0;
     p.reloadUntil=0;p.lastShot=-Infinity;p.queue=[];p.input=null;
     this.emit('respawn',{player:p.id});
   }
@@ -211,7 +227,8 @@ class Room {
     const end=origin.map((v,i)=>v+dir[i]*distance);
     const dealt=!!victim&&victim.team!==p.team&&now>=victim.protectedUntil;   // só confirma acerto que realmente tirou vida
     this.emit('shot',{player:p.id,origin,end,hit:victim?.id||null,dealt,head:dealt&&head,robot:p.robot,weapon:p.robot?'ROBOT':p.weapon});
-    if(dealt){victim.hp=Math.max(0,victim.hp-cfg.damage);if(victim.hp===0)this.kill(p,victim,now,head);}
+    const dmg=Math.round(cfg.damage*(head?(cfg.head||this.rules.headDefault||1.5):1));   // tiro na cabeça sempre dá mais dano
+    if(dealt){victim.hp=Math.max(0,victim.hp-dmg);if(victim.hp===0)this.kill(p,victim,now,head);}
     return true;
   }
   tick(dt=1/this.rules.tickRate,now=this.now()) {
@@ -247,7 +264,7 @@ class Room {
   }
   snapshot() {
     return {t:'state',serverTime:this.now(),room:{id:this.id,name:this.name,phase:this.phase,round:this.round,endsAt:this.endsAt,nextRoundAt:this.nextRoundAt,weather:this.weather,scores:{...this.scores},scoreLimit:this.rules.scoreLimit},
-      players:[...this.players.values()].filter(p=>p.connected).map(p=>({id:p.id,name:p.name,team:p.team,x:p.body.x,y:p.body.y,z:p.body.z,vy:p.body.vy,onGround:p.body.onGround,yaw:p.yaw,pitch:p.pitch,hp:p.hp,maxHp:p.maxHp,robot:p.robot,dead:p.dead,respawnAt:p.respawnAt,protectedUntil:p.protectedUntil,kills:p.kills,deaths:p.deaths,points:p.points,streak:p.streak,streakPoints:p.streakPoints,robotReady:p.robotReady,ammo:p.ammo,weapon:p.weapon,reloadUntil:p.reloadUntil,seq:p.seq,crouch:!!p.body.crouched,slideT:p.body.slideT||0,sdx:p.body.sdx||0,sdz:p.body.sdz||0,sprinting:!!p.body.sprinting}))};
+      players:[...this.players.values()].filter(p=>p.connected).map(p=>({id:p.id,name:p.name,team:p.team,x:p.body.x,y:p.body.y,z:p.body.z,vy:p.body.vy,onGround:p.body.onGround,yaw:p.yaw,pitch:p.pitch,hp:p.hp,maxHp:p.maxHp,robot:p.robot,dead:p.dead,respawnAt:p.respawnAt,protectedUntil:p.protectedUntil,kills:p.kills,deaths:p.deaths,points:p.points,streak:p.streak,streakPoints:p.streakPoints,robotReady:p.robotReady,ammo:p.ammo,weapon:p.weapon,reloadUntil:p.reloadUntil,seq:p.seq,loadout:p.loadout,loadoutNext:p.loadoutNext,crouch:!!p.body.crouched,slideT:p.body.slideT||0,sdx:p.body.sdx||0,sdz:p.body.sdz||0,sprinting:!!p.body.sprinting}))};
   }
 }
 module.exports={Room,Match:Room,loadEngine,chooseWeather,validateWorld,validateInput,rayBox,rayCylinder,raySphere,HIT};

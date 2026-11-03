@@ -19,9 +19,9 @@ export function splitMesh(mesh, inRegion) {
   const a = { p: [], n: [], u: [] }, b = { p: [], n: [], u: [] };
   const vi = (t, k) => (idx ? idx[t * 3 + k] : t * 3 + k);
   for (let t = 0; t < triCount; t++) {
-    let cx = 0, cy = 0;
-    for (let k = 0; k < 3; k++) { const i = vi(t, k); cx += pos.getX(i); cy += pos.getY(i); }
-    const dst = inRegion(cx / 3, cy / 3) ? a : b;
+    let cx = 0, cy = 0, cz = 0;
+    for (let k = 0; k < 3; k++) { const i = vi(t, k); cx += pos.getX(i); cy += pos.getY(i); cz += pos.getZ(i); }
+    const dst = inRegion(cx / 3, cy / 3, cz / 3) ? a : b;
     for (let k = 0; k < 3; k++) {
       const i = vi(t, k);
       dst.p.push(pos.getX(i), pos.getY(i), pos.getZ(i));

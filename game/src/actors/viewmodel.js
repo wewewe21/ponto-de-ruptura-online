@@ -4,7 +4,8 @@ import * as THREE from 'three';
 import { clamp, lerp, damp, smoothstep } from '../core/utils.js';
 import { loadRifleScene, makeRifleGun } from './gunmodel.js';
 import { FPSArms } from './fpsarms.js';
-import { GUN_SPECS, loadWeaponGLB, loadPlacements, makeGlbGun, makeKnifeGun, makeReticle } from './weaponmodels.js';
+import { reloadPose, makeReloadState } from './reloadanim.js';
+import { GUN_SPECS, loadWeaponGLB, loadPlacements, baseMatrix, makeGlbGun, makeKnifeGun, makeReticle } from './weaponmodels.js';
 
 const C = {
   poly: new THREE.MeshStandardMaterial({ color: 0x1c1d1f, roughness: 0.62, metalness: 0.15 }),
@@ -152,7 +153,7 @@ function buildArms(isPistol) {
 
 // posições da arma na tela (espaço da câmera do viewmodel; x direita, y cima, -z à frente): [x, y, z]
 export const HIP = { default: [0.13, -0.16, -0.78], P19: [0.1, -0.11, -0.8], MK5: [0.12, -0.15, -0.8], AX50: [0.1, -0.14, -0.98], VK12: [0.11, -0.14, -0.9], KNIFE: [0.14, -0.16, -0.7], RPL2: [0.15, -0.14, -0.62], BRK8: [0.14, -0.15, -0.78], LASER: [0.13, -0.14, -0.7] };
-export const ADS_DIST = { default: 0.38, P19: 0.26, MK5: 0.36, VK12: 0.36, RPL2: 0.24, AX50: 0.052 };
+export const ADS_DIST = { default: 0.38, P19: 0.26, DE50: 0.26, MK5: 0.36, VK12: 0.36, RPL2: 0.24, AX50: 0.052 };
 
 function fallbackKnife() {
   const g = new THREE.Group();
@@ -173,6 +174,7 @@ const MUZZLE_FX = {
   KR7: { size: 0.24, dur: 0.05, light: 2.0 },
   VK12: { size: 0.3, dur: 0.06, light: 2.6 },
   P19: { size: 0.18, dur: 0.045, light: 1.5 },
+  DE50: { size: 0.3, dur: 0.06, light: 2.6 },
   AX50: { size: 0.42, dur: 0.07, light: 3.5 },
 };
 
@@ -247,7 +249,12 @@ export class ViewModel {
     let n = 0;
     const placements = await loadPlacements();
     await Promise.all(Object.entries(GUN_SPECS).map(async ([id, spec]) => {
-      try { const gm = makeGlbGun(await loadWeaponGLB(spec.file), spec, placements[id]); this._flash(gm); this._install(id, gm); n++; }
+      let place = placements[id];
+      if (!place && spec.like && placements[spec.like]) {   // mesmo ajuste de posição/escala de outra arma, com a base desta
+        const like = GUN_SPECS[spec.like];
+        place = new THREE.Matrix4().fromArray(placements[spec.like]).multiply(baseMatrix(like).invert()).multiply(baseMatrix(spec)).toArray();
+      }
+      try { const gm = makeGlbGun(await loadWeaponGLB(spec.file), spec, place); this._flash(gm); this._install(id, gm); n++; }
       catch (e) { console.warn('Arma indisponível:', id, e); }
     }));
     try { const kg = makeKnifeGun(await loadWeaponGLB('knife')); this._flash(kg); this._install('KNIFE', kg); n++; } catch (e) { console.warn('Faca indisponível:', e); }
@@ -318,7 +325,7 @@ export class ViewModel {
     // recarga
     const L = g.arms.L;
     L.position.copy(g.leftHome);
-    let leftTarget = null, leftExtra = null;
+    let leftTarget = null, leftExtra = null, handAnim = null;
     if (g.mag) { g.mag.visible = st.id !== 'BRK8'; }
     if (g.extra.warhead) g.extra.warhead.visible = st.loaded !== false;
     if (st.reload && !quick) {
@@ -332,31 +339,20 @@ export class ViewModel {
       } else if (st.id === 'RPL2') {
         const d = Math.sin(clamp(t, 0, 1) * Math.PI);
         py -= d * 0.25; rx -= d * 0.6;
-      } else if (st.id === 'AX50') {
-        // ferrolho: gira o conjunto e puxa/empurra a arma
-        const tilt = smoothstep(0, 0.15, t) * (1 - smoothstep(0.85, 1, t));
-        rz += tilt * 0.35; rx += tilt * 0.12; py -= tilt * 0.02;
-        const cyc = smoothstep(0.25, 0.4, t) * (1 - smoothstep(0.4, 0.55, t)) + smoothstep(0.65, 0.78, t) * (1 - smoothstep(0.78, 0.9, t));
-        pz += cyc * 0.03; L.position.z = g.leftHome.z + 0.02 * Math.sin(t * Math.PI * 4);
       } else {
-        const tilt = smoothstep(0, 0.15, t) * (1 - smoothstep(0.85, 1, t));
-        rz += tilt * 0.28; rx += tilt * 0.12; py -= tilt * 0.02;
-        const out = smoothstep(0.12, 0.32, t), back = smoothstep(0.42, 0.62, t);
-        const magDrop = out * (1 - back);
-        const handToMag = smoothstep(0.08, 0.2, t) * (1 - smoothstep(0.6, 0.72, t));
-        if (g.setMagDrop) { g.setMagDrop(magDrop); L.position.lerp(g.magHand(magDrop), handToMag); }
-        else {
-          if (g.mag) { g.mag.position.y = (st.id === 'P19' ? -0.03 : -0.04) - magDrop * 0.28; g.mag.rotation.x = magDrop * 0.4; }
-          if (g.mag) L.position.lerp(new THREE.Vector3(g.mag.position.x - 0.01, g.mag.position.y - 0.1, g.mag.position.z), handToMag);
-        }
-        if (empty) {
-          const b = smoothstep(0.7, 0.78, t) * (1 - smoothstep(0.8, 0.9, t));
-          rz += b * 0.25; px -= b * 0.02;
-          if (g.extra.slide) g.extra.slide.position.z = (g.extra.slideBase ?? -0.04) + b * (g.extra.slideTravel ?? 0.04);
-        }
+        // coreografia de recarga com as duas mãos (reloadanim.js): inclinação da arma, mãos, pente, ferrolho e culatra
+        const R = reloadPose(st.id, t, empty, g, this._rl || (this._rl = makeReloadState()));
+        rx += R.rx; rz += R.rz; py += R.py; pz += R.pz; px += R.px;
+        if (g.setMagDrop) g.setMagDrop(R.magDrop);
+        if (g.mag) g.mag.visible = R.magVisible;
+        if (g.setBolt) g.setBolt(R.lift, R.back);
+        if (g.extra.slide && R.slide != null) g.extra.slide.position.z = (g.extra.slideBase ?? 0) + R.slide * (g.extra.slideTravel ?? 0.04);
+        handAnim = R;
       }
     }
     if (!st.reload && g.setMagDrop) g.setMagDrop(0);
+    if (!st.reload && g.setBolt) g.setBolt(0, 0);
+    if (!st.reload && g.mag) g.mag.visible = true;
     if (g.extra.pump) g.extra.pump.position.z = -0.28 + (st.pumpT || 0) * 0.08;
     if (g.extra.slide && !st.reload) g.extra.slide.position.z = (g.extra.slideBase ?? -0.04) + (st.slideT || 0) * (g.extra.slideTravel ?? 0.04);
     // troca de arma
@@ -416,6 +412,7 @@ export class ViewModel {
         const opts = {};
         if (leftTarget) opts.leftTarget = leftTarget;
         else if (g.extra.knife) { opts.leftStatic = true; opts.leftExtra = leftExtra; }
+        else if (handAnim) { opts.leftDelta = handAnim.L; opts.rightDelta = handAnim.R; opts.leftRot = handAnim.lq; opts.rightRot = handAnim.rq; }
         else if (st.reload) opts.leftDelta = _dl.copy(g.arms.L.position).sub(g.leftHome);
         this.fps.update(g.group.matrixWorld, key, opts);
       }

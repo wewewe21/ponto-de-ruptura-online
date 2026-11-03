@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-const SHOT_SOUND = { SD9: 'SD9', MK5: 'SD9', KR7: 'KR7', VK12: 'VK12', AX50: 'VK12', P19: 'P19' };
+const SHOT_SOUND = { SD9: 'SD9', MK5: 'SD9', KR7: 'KR7', VK12: 'VK12', AX50: 'VK12', P19: 'P19', DE50: 'VK12' };
 import { createSoldier } from '../actors/soldier.js';
 import { hasMeshSoldier } from '../actors/meshsoldier.js';
 import { BossAnimator } from '../actors/bossanim.js';
